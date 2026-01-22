@@ -1,5 +1,5 @@
 # 🏸 Badminton Manager
-<img width="1367" height="821" alt="image" src="https://github.com/user-attachments/assets/4c529009-67a1-4962-b9d7-649ec1c56aa7" />
+<img width="1106" height="827" alt="image" src="https://github.com/user-attachments/assets/1b12307d-4a56-4c91-9fb3-98bcef0b4e6c" />
 
 **Badminton Manager**는 배드민턴 클럽 및 동호회 모임에서 **게임 매칭, 코트 배정, 경기 기록**을 효율적으로 관리하기 위해 제작된 웹 애플리케이션입니다.
 
