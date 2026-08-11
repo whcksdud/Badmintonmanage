@@ -52,9 +52,20 @@
             display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
             position: sticky; top: 0; z-index: 5;
         }
-        .wc-title-row { display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
+        .wc-title-row { display: flex; flex-direction:column; align-items:stretch; gap:8px; font-weight: 700; }
+        .wc-heading-line { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+        .waiting-toggle { flex:0 0 auto; width:30px; height:30px; border:1px solid #cbd5e1; border-radius:7px; background:#fff; color:#475569; cursor:pointer; font-weight:900; }
+        .wc-title { white-space:nowrap; font-size:0.9rem; }
+        .wc-actions { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+        .wc-actions .btn-text { white-space:nowrap; padding:7px 8px; border-radius:6px; background:#eff6ff; }
         .search-input { width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem; background: #fff; outline: none; }
         .wc-list { flex: 1; overflow-y: auto; padding: 10px; display: grid; gap: 8px; align-content: start; }
+        .main-container.waiting-collapsed { grid-template-columns:54px 1fr; }
+        .main-container.waiting-collapsed .wc-header { padding:10px; }
+        .main-container.waiting-collapsed .wc-title, .main-container.waiting-collapsed .wc-actions,
+        .main-container.waiting-collapsed .search-input, .main-container.waiting-collapsed .wc-header > div:last-child,
+        .main-container.waiting-collapsed .wc-list { display:none !important; }
+        .main-container.waiting-collapsed .wc-header > div:last-child { display:none !important; }
 
         /* --- Court Area --- */
         .court-area { 
@@ -79,6 +90,7 @@
             .court-area { order: 1; padding-bottom: 10px; }
             .court-grid { grid-template-columns: 1fr; }
             .waiting-court { display: flex !important; order: 2; border-top: 2px solid var(--border); }
+            .main-container.waiting-collapsed { grid-template-columns:1fr; grid-template-rows:1fr 52px; }
         }
 
         .court-card { background: #fff; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; }
@@ -104,6 +116,14 @@
         .player-chip { background: #fff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.03); transition: 0.2s; user-select: none; }
         .player-chip:active { transform: scale(0.96); background: #f1f5f9; }
         .waiting-chip { flex-direction: row; justify-content: space-between; padding: 10px 12px; }
+        .roster-chip { flex-direction:column; align-items:stretch; gap:7px; }
+        .roster-chip .roster-main { min-width:0; }
+        .roster-chip .p-name { min-width:0; white-space:normal; overflow-wrap:anywhere; }
+        .roster-chip .roster-meta { justify-content:flex-end; flex-wrap:wrap; }
+        .status-toggle { border: 0; border-radius: 7px; padding: 5px 7px; font-size: 0.68rem; font-weight: 800; cursor: pointer; white-space: nowrap; }
+        .status-toggle.rest { background:#e2e8f0; color:#475569; }
+        .status-toggle.resume { background:#dcfce7; color:#166534; }
+        .list-section { display:flex; align-items:center; justify-content:space-between; padding:9px 10px 5px; color:#64748b; font-size:0.72rem; font-weight:900; }
         .next-chip { padding: 10px; font-size: 0.9rem; background: #fff; border: 1px dashed #cbd5e1; box-shadow: none; }
         
         .manual-chip { border: 2px solid transparent; opacity: 0.8; transition: all 0.2s; }
@@ -158,13 +178,16 @@
     </div>
 </div>
 
-<div class="main-container">
+<div id="mainContainer" class="main-container">
     <!-- 대기실 -->
     <div class="waiting-court">
         <div class="wc-header">
             <div class="wc-title-row">
-                <span>대기실 (<span id="waitCount">0</span>)</span>
-                <div style="display:flex; gap:5px;">
+                <div class="wc-heading-line">
+                    <span class="wc-title">대기실 (대기 <span id="waitCount">0</span> · 휴식 <span id="restCount">0</span>)</span>
+                    <button id="waitingToggle" class="waiting-toggle" onclick="toggleWaitingRoom()" title="대기실 접기">◀</button>
+                </div>
+                <div class="wc-actions">
                     <button class="btn-text" onclick="openBulkPModal()">+ 일괄</button>
                     <button class="btn-text" onclick="openPModal()">+ 개별</button>
                 </div>
@@ -197,6 +220,11 @@
     </div>
     <label>초기 게임 수 (지각 시 조정, 현재 평균-1 자동계산)</label>
     <input type="number" id="pGames" value="0">
+    <label>선수 상태</label>
+    <select id="pStatus">
+        <option value="waiting">대기</option>
+        <option value="resting">휴식 (자동 매칭 제외)</option>
+    </select>
     <div style="display:flex; gap:10px; margin-top:10px;">
         <button class="btn btn-primary" style="flex:1" onclick="savePlayer()">저장</button>
         <button class="btn btn-outline" style="flex:1" onclick="closePModal()">취소</button>
@@ -284,6 +312,17 @@
     <button class="btn btn-outline" style="width:100%; margin-top:15px;" onclick="closeSwapModal()">닫기</button>
 </div></div>
 
+<!-- 다음 대기 코트 이동 모달 -->
+<div id="transferModal" class="modal"><div class="modal-box" style="width:380px;">
+    <h3 style="margin-top:0;">다음 대기 이동</h3>
+    <p style="margin-top:0; color:#64748b; font-size:0.9rem;">선택한 4명을 이동할 코트를 고르세요.</p>
+    <select id="transferCourtSelect"></select>
+    <div style="display:flex; gap:10px; margin-top:5px;">
+        <button class="btn btn-primary" style="flex:1;" onclick="confirmTransferNext()">이동</button>
+        <button class="btn btn-outline" style="flex:1;" onclick="closeTransferModal()">취소</button>
+    </div>
+</div></div>
+
 <!-- ★ IOS Fix: 공통 확인(Confirm) 모달 (window.confirm 대체) ★ -->
 <div id="confirmModal" class="modal" style="z-index: 2000;">
     <div class="modal-box" style="width: 350px;">
@@ -307,6 +346,9 @@
     let swapTarget = null;
     let manualTargetCId = null;
     let manualSelected = new Set();
+    let restListCollapsed = false;
+    let waitingRoomCollapsed = false;
+    let transferSourceCourtId = null;
 
     // --- Custom Confirm Logic (iOS Fix) ---
     let onConfirmAction = null;
@@ -421,13 +463,19 @@
         else if(type === 'X') {
             const m = pool.filter(p => p.gender === 'M');
             const f = pool.filter(p => p.gender === 'F');
-            if(m.length < 2 || f.length < 2) return showToast("혼복 인원(남2, 여2)이 부족합니다.");
+            if(m.length < 2 || f.length < 2) {
+                const restingCount = players.filter(p => p.status === 'resting').length;
+                return showToast(`혼복 인원이 부족합니다. (대기 남 ${m.length}명, 여 ${f.length}명 · 휴식 ${restingCount}명)`);
+            }
             genderPool = pool;
         } else {
             genderPool = pool;
         }
 
-        if(type !== 'X' && genderPool.length < 4) return showToast("대기 인원이 부족합니다.");
+        if(type !== 'X' && genderPool.length < 4) {
+            const restingCount = players.filter(p => p.status === 'resting' && (type === 'A' || p.gender === type)).length;
+            return showToast(`대기 인원이 부족합니다. (매칭 가능 ${genderPool.length}명 · 휴식 ${restingCount}명)`);
+        }
 
         let selected = [];
         if(type === 'X') {
@@ -556,6 +604,40 @@
         save(); render();
     }
 
+    function openTransferNext(cId) {
+        const source = courts.find(c => c.id === cId);
+        if(!source || source.next.length === 0) return showToast("이동할 다음 대기 선수가 없습니다.");
+        const targets = courts.filter(c => c.id !== cId && c.next.length === 0);
+        if(targets.length === 0) return showToast("다음 대기가 비어 있는 다른 코트가 없습니다.");
+        transferSourceCourtId = cId;
+        document.getElementById('transferCourtSelect').innerHTML = targets.map(c => `<option value="${c.id}">${courts.indexOf(c) + 1}번 코트${c.active.length ? ' (게임 중)' : ' (비어 있음)'}</option>`).join('');
+        document.getElementById('transferModal').style.display = 'flex';
+    }
+
+    function closeTransferModal() {
+        document.getElementById('transferModal').style.display = 'none';
+        transferSourceCourtId = null;
+    }
+
+    function confirmTransferNext() {
+        const source = courts.find(c => c.id === transferSourceCourtId);
+        const target = courts.find(c => c.id === Number(document.getElementById('transferCourtSelect').value));
+        if(!source || !target || source.next.length === 0) return closeTransferModal();
+        if(target.next.length > 0) return showToast("대상 코트에 이미 다음 대기가 있습니다.");
+        target.next = source.next;
+        source.next = [];
+        save(); closeTransferModal(); render();
+        showToast(`${courts.indexOf(target) + 1}번 코트로 다음 대기를 이동했습니다.`);
+    }
+
+    function toggleWaitingRoom() {
+        waitingRoomCollapsed = !waitingRoomCollapsed;
+        document.getElementById('mainContainer').classList.toggle('waiting-collapsed', waitingRoomCollapsed);
+        const button = document.getElementById('waitingToggle');
+        button.innerText = waitingRoomCollapsed ? '▶' : '◀';
+        button.title = waitingRoomCollapsed ? '대기실 펼치기' : '대기실 접기';
+    }
+
     // --- Helpers ---
     function shuffleByGameCount(list) {
         const groups = {};
@@ -647,7 +729,7 @@
             let list = players.filter(p => p.name.toLowerCase().includes(keyword));
             
             list.sort((a,b) => {
-                const statusScore = { 'waiting': 0, 'reserved': 1, 'playing': 2 };
+                const statusScore = { 'waiting': 0, 'resting': 1, 'reserved': 2, 'playing': 3 };
                 if(statusScore[a.status] !== statusScore[b.status]) return statusScore[a.status] - statusScore[b.status];
                 if(a.games !== b.games) return a.games - b.games;
                 return a.lastTime - b.lastTime;
@@ -655,10 +737,18 @@
 
             if(containerId === 'waitList') {
                 const waitingCount = list.filter(p => p.status === 'waiting').length;
-                document.getElementById('waitCount').innerText = `${waitingCount}/${list.length}`;
+                const restingCount = list.filter(p => p.status === 'resting').length;
+                document.getElementById('waitCount').innerText = waitingCount;
+                document.getElementById('restCount').innerText = restingCount;
             }
 
+            let previousStatus = null;
             list.forEach(p => {
+                if(p.status === 'resting' && previousStatus !== 'resting') {
+                    container.innerHTML += `<div class="list-section"><span>휴식 중 (${list.filter(x => x.status === 'resting').length}명)</span><button class="btn-text" onclick="toggleRestList()">${restListCollapsed ? '펼치기' : '접기'}</button></div>`;
+                }
+                previousStatus = p.status;
+                if(p.status === 'resting' && restListCollapsed) return;
                 const scStyle = p.shuttlecock ? 'opacity:1; filter:none' : 'opacity:0.2; filter:grayscale(100%)';
                 
                 let statusBadge = '';
@@ -669,17 +759,20 @@
                 } else if (p.status === 'reserved') {
                     statusBadge = `<span class="badge" style="background:var(--reserved); font-size:0.6rem; margin-left:4px;">예약됨</span>`;
                     itemStyle = 'background:#fffbeb; border-color:#fcd34d;';
+                } else if (p.status === 'resting') {
+                    itemStyle = 'opacity:0.75; background:#f8fafc; border-color:#cbd5e1;';
                 }
 
                 container.innerHTML += `
-                <div class="player-chip waiting-chip" onclick="openPModal(${p.id})" style="${itemStyle}">
-                    <div style="display:flex; align-items:center; gap:8px;">
+                <div class="player-chip waiting-chip roster-chip" onclick="openPModal(${p.id})" style="${itemStyle}">
+                    <div class="roster-main" style="display:flex; align-items:center; gap:8px;">
                         <span class="badge ${p.gender==='M'?'b-m':'b-f'}">${p.gender === 'M' ? '남' : '여'}</span> <span class="p-name">${p.name}</span>
                         ${statusBadge}
                     </div>
-                    <div style="display:flex; align-items:center; gap:6px;">
+                    <div class="roster-meta" style="display:flex; align-items:center; gap:6px;">
                         <span onclick="event.stopPropagation(); toggleShuttlecock(${p.id})" style="cursor:pointer; font-size:1.1rem; ${scStyle}" title="셔틀콕">🏸</span>
                         <span class="p-info" style="margin-right:4px;">${tiers[p.tier]}</span> <span class="badge" style="background:#e2e8f0; color:#475569;">${p.games}회</span>
+                        ${(p.status === 'waiting' || p.status === 'resting') ? `<button class="status-toggle ${p.status === 'resting' ? 'resume' : 'rest'}" onclick="event.stopPropagation(); toggleRestStatus(${p.id})">${p.status === 'resting' ? '복귀' : '휴식'}</button>` : ''}
                     </div>
                 </div>`;
             });
@@ -702,7 +795,10 @@
             let nextHTML = '';
             if(hasNext) {
                 nextHTML = `<div class="player-grid">${c.next.map((p,i)=>renderChip(c,'next',i,'next-chip')).join('')}</div>
-                            <button class="btn btn-outline" style="margin-top:8px; width:100%; font-size:0.8rem;" onclick="cancelNext(${c.id})">예약 취소</button>`;
+                            <div style="display:flex; gap:6px; margin-top:8px;">
+                                <button class="btn btn-outline" style="flex:1; font-size:0.8rem;" onclick="openTransferNext(${c.id})">다른 코트로 이동</button>
+                                <button class="btn btn-outline" style="flex:1; font-size:0.8rem;" onclick="cancelNext(${c.id})">예약 취소</button>
+                            </div>`;
             } else {
                  nextHTML = `
                  <div style="display:flex; gap:5px;">
@@ -759,6 +855,11 @@
         document.getElementById('pGen').value = id ? p.gender : "M";
         document.getElementById('pTier').value = id ? p.tier : "0";
         document.getElementById('pGames').value = id ? p.games : getAverageGames();
+        const statusSelect = document.getElementById('pStatus');
+        const isAssigned = id && (p.status === 'playing' || p.status === 'reserved');
+        statusSelect.value = id && p.status === 'resting' ? 'resting' : 'waiting';
+        statusSelect.disabled = isAssigned;
+        statusSelect.title = isAssigned ? '게임 중이거나 예약된 선수는 상태를 변경할 수 없습니다.' : '';
         document.getElementById('pModal').style.display = 'flex';
         document.getElementById('pName').focus();
     }
@@ -804,13 +905,29 @@
         const tier = parseInt(document.getElementById('pTier').value);
         const gen = document.getElementById('pGen').value;
         const games = parseInt(document.getElementById('pGames').value) || 0;
-        if(editPId) { const p=players.find(x=>x.id===editPId); p.name=name; p.tier=tier; p.gender=gen; p.games=games; }
-        else { players.push({id:Date.now(), name, gender:gen, tier, games:games, lastTime:0, status:'waiting', shuttlecock:false}); }
+        const status = document.getElementById('pStatus').value;
+        if(editPId) {
+            const p=players.find(x=>x.id===editPId);
+            p.name=name; p.tier=tier; p.gender=gen; p.games=games;
+            if(p.status === 'waiting' || p.status === 'resting') p.status=status;
+        }
+        else { players.push({id:Date.now(), name, gender:gen, tier, games:games, lastTime:0, status, shuttlecock:false}); }
         save(); closePModal(); render(); showToast("저장됨");
     }
     function toggleShuttlecock(id) {
         const p = players.find(x => x.id === id);
         if (p) { p.shuttlecock = !p.shuttlecock; save(); render(); }
+    }
+    function toggleRestStatus(id) {
+        const p = players.find(x => x.id === id);
+        if(!p || (p.status !== 'waiting' && p.status !== 'resting')) return;
+        p.status = p.status === 'resting' ? 'waiting' : 'resting';
+        save(); render();
+        showToast(`${p.name} 선수가 ${p.status === 'resting' ? '휴식 상태로 변경되었습니다.' : '대기실로 복귀했습니다.'}`);
+    }
+    function toggleRestList() {
+        restListCollapsed = !restListCollapsed;
+        render();
     }
 
     function openHistory() {
