@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#2563eb">
     <meta name="description" content="배드민턴 모임의 선수, 코트, 경기 기록을 관리하는 웹 앱">
     <meta name="application-name" content="Badminton Manager">
@@ -24,31 +24,37 @@
             --success: #10b981;
         }
         * { box-sizing: border-box; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--dark); margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; }
+        html, body { width: 100%; max-width: 100%; overflow: hidden; }
+        body { background: var(--bg); color: var(--dark); margin: 0; padding: 0; height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
+        button, input, select, textarea { touch-action: manipulation; }
 
         /* --- Header --- */
-        .header { 
-            background: #fff; padding: 0 15px; border-bottom: 1px solid var(--border); 
-            display: flex; justify-content: space-between; align-items: center; height: 60px; flex-shrink: 0; z-index: 10;
+        .header {
+            background: #fff; padding: env(safe-area-inset-top) 15px 0; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center; height: calc(60px + env(safe-area-inset-top)); flex-shrink: 0; z-index: 10;
         }
         .logo { font-size: 1.2rem; font-weight: 900; color: var(--primary); display: flex; align-items: center; gap: 6px; }
-        .h-btn-group { display: flex; gap: 8px; align-items: center; }
+        .h-btn-group { display: flex; gap: 8px; align-items: center; min-width: 0; }
         
         .h-btn {
             height: 36px; padding: 0 12px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;
             border: 1px solid #cbd5e1; background: #fff; color: var(--dark); cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap;
+            display: flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; min-width: 0;
         }
         .h-btn.primary { background: var(--primary); color: #fff; border: none; }
         .h-btn:active { transform: scale(0.96); }
 
+        .mobile-view-tabs { display: none; }
+
         /* --- Main Layout --- */
-        .main-container { 
-            display: grid; 
-            grid-template-columns: 280px 1fr; 
-            gap: 20px; 
-            padding: 20px; 
-            height: calc(100vh - 60px); 
+        .main-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 20px;
+            padding: 20px;
+            flex: 1;
+            min-width: 0;
+            min-height: 0;
             overflow: hidden;
         }
 
@@ -56,7 +62,7 @@
         .waiting-court { 
             background: #fff; border-radius: 12px; border: 1px solid var(--border); 
             display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow);
-            order: 1; 
+            order: 1; min-width: 0; min-height: 0;
         }
         .wc-header { 
             padding: 12px 15px; background: #f8fafc; border-bottom: 1px solid var(--border); 
@@ -79,19 +85,20 @@
         .main-container.waiting-collapsed .wc-header > div:last-child { display:none !important; }
 
         /* --- Court Area --- */
-        .court-area { 
-            overflow-y: auto; 
-            padding-bottom: 60px; 
-            order: 2; 
+        .court-area {
+            overflow-y: auto;
+            padding-bottom: 60px;
+            order: 2; min-width: 0; min-height: 0;
+            overscroll-behavior: contain;
         }
-        .court-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        .court-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; min-width: 0; }
 
         /* --- Responsive --- */
         @media (max-width: 1024px) { 
             .main-container { padding: 10px; } 
         }
 
-        @media (max-width: 768px) { 
+        @media (max-width: 768px) {
             .main-container { 
                 grid-template-columns: 1fr; 
                 grid-template-rows: 1fr 300px;
@@ -104,9 +111,94 @@
             .main-container.waiting-collapsed { grid-template-columns:1fr; grid-template-rows:1fr 52px; }
         }
 
-        .court-card { background: #fff; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; }
+        @media (max-width: 600px), (max-height: 500px) and (max-width: 950px) {
+            .header {
+                height: calc(52px + env(safe-area-inset-top));
+                padding-top: env(safe-area-inset-top);
+                padding-left: max(8px, env(safe-area-inset-left));
+                padding-right: max(8px, env(safe-area-inset-right));
+                padding-bottom: 0;
+            }
+            .logo { font-size: 1.05rem; }
+            .h-btn-group { gap: 4px; }
+            .h-btn { width: 44px; height: 44px; padding: 0; border-radius: 10px; font-size: 1rem; }
+            .h-btn .h-label { display: none; }
+
+            .mobile-view-tabs {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 6px;
+                flex-shrink: 0;
+                padding: 6px max(8px, env(safe-area-inset-right)) 6px max(8px, env(safe-area-inset-left));
+                background: #fff;
+                border-bottom: 1px solid var(--border);
+                z-index: 9;
+            }
+            .mobile-view-tab {
+                min-width: 0;
+                min-height: 44px;
+                border: 1px solid transparent;
+                border-radius: 10px;
+                background: #f1f5f9;
+                color: #64748b;
+                font-size: 0.9rem;
+                font-weight: 800;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+            }
+            .mobile-view-tab.active {
+                background: #eff6ff;
+                border-color: #bfdbfe;
+                color: var(--primary);
+            }
+            .mobile-tab-count {
+                min-width: 22px;
+                height: 22px;
+                padding: 0 6px;
+                border-radius: 999px;
+                background: #fff;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.72rem;
+                color: inherit;
+                box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+            }
+
+            .main-container,
+            .main-container.waiting-collapsed {
+                grid-template-columns: minmax(0, 1fr);
+                grid-template-rows: minmax(0, 1fr);
+                gap: 0;
+                padding: 8px max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+            }
+            .main-container.mobile-view-courts .waiting-court { display: none !important; }
+            .main-container.mobile-view-waiting .court-area { display: none !important; }
+            .main-container.mobile-view-waiting .waiting-court {
+                display: flex !important;
+                order: 1;
+                border-top: 1px solid var(--border);
+            }
+
+            .waiting-toggle { display: none; }
+            .waiting-court { border-radius: 12px; }
+            .wc-header { padding: 10px; gap: 8px; }
+            .wc-actions .btn-text { min-height: 44px; }
+            .search-input { min-height: 44px; margin-bottom: 0; font-size: 16px; }
+            .wc-list { padding: 8px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+
+            .court-area { order: 1; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+            .court-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+        }
+
+        .court-card { background: #fff; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
         .cc-header { padding: 10px 15px; background: #fff; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .type-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.85rem; background: #f8fafc; }
+        .type-select { width: auto; max-width: 110px; margin-bottom: 0; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.85rem; background: #f8fafc; }
+        .court-delete { width: 30px; height: 30px; padding:0; border:0; background:transparent; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#94a3b8; border-radius:8px; font-size:1.2rem; }
+        .court-delete:active { background:#fee2e2; color:var(--danger); }
 
         .game-section { padding: 15px; display: flex; flex-direction: column; justify-content: center; min-height: 160px; position: relative; }
         .next-section { background: #f8fafc; padding: 12px 15px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
@@ -134,6 +226,7 @@
         .status-toggle { border: 0; border-radius: 7px; padding: 5px 7px; font-size: 0.68rem; font-weight: 800; cursor: pointer; white-space: nowrap; }
         .status-toggle.rest { background:#e2e8f0; color:#475569; }
         .status-toggle.resume { background:#dcfce7; color:#166534; }
+        .shuttle-toggle { min-width:28px; min-height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:7px; }
         .list-section { display:flex; align-items:center; justify-content:space-between; padding:9px 10px 5px; color:#64748b; font-size:0.72rem; font-weight:900; }
         .next-chip { padding: 10px; font-size: 0.9rem; background: #fff; border: 1px dashed #cbd5e1; box-shadow: none; }
         
@@ -150,7 +243,7 @@
         .p-name { font-size: 1rem; font-weight: 800; color: var(--dark); }
         .p-info { font-size: 0.8rem; color: #64748b; font-weight: 600; }
 
-        .btn { padding: 10px 14px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; font-size: 0.95rem; transition: 0.2s; display:inline-flex; align-items:center; justify-content:center; gap:5px; }
+        .btn { padding: 10px 14px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; font-size: 0.95rem; transition: 0.2s; display:inline-flex; align-items:center; justify-content:center; gap:5px; min-width: 0; }
         .btn-primary { background: var(--primary); color: #fff; }
         .btn-success { background: var(--success); color: #fff; }
         .btn-danger { background: var(--danger); color: #fff; }
@@ -163,7 +256,7 @@
         .empty-state { text-align: center; color: #cbd5e1; margin: auto; font-weight: 500; font-size: 0.9rem; padding: 20px; }
         
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(2px); }
-        .modal-box { background: #fff; width: 500px; max-width: 90%; max-height: 90vh; border-radius: 16px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display:flex; flex-direction:column; }
+        .modal-box { background: #fff; width: 500px; max-width: 90%; max-height: 90vh; border-radius: 16px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display:flex; flex-direction:column; overflow-y:auto; }
         input, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 15px; font-size: 1rem; }
         label { display: block; font-size: 0.85rem; font-weight: 700; color: #64748b; margin-bottom: 5px; }
 
@@ -177,6 +270,41 @@
         .algo-box { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.9rem; }
         .install-guide { margin: 0; padding-left: 22px; color: #334155; line-height: 1.8; }
         .install-guide strong { color: var(--primary); }
+
+        /* Base component rules above this point; keep phone overrides last in the cascade. */
+        @media (max-width: 600px), (max-height: 500px) and (max-width: 950px) {
+            .court-card { border-radius: 12px; }
+            .cc-header { padding: 10px 12px; }
+            .game-section { min-height: 140px; padding: 12px; }
+            .next-section { padding: 10px 12px; }
+            .player-grid { gap: 6px; min-width: 0; }
+            .player-chip { min-width: 0; padding: 10px 6px; }
+            .waiting-chip { padding: 10px; }
+            .status-toggle { min-height: 38px; padding: 7px 10px; }
+            .shuttle-toggle { min-width: 38px; min-height: 38px; }
+            .court-delete { width: 40px; height: 40px; }
+            .btn { min-width: 0; min-height: 44px; padding: 9px 10px; }
+            .btn-group { padding: 10px 12px; }
+            .modal { align-items: flex-end; padding-top: env(safe-area-inset-top); }
+            .modal-box {
+                width: 100% !important;
+                max-width: 100%;
+                max-height: calc(100dvh - max(16px, env(safe-area-inset-top)));
+                overflow-y: auto;
+                border-radius: 18px 18px 0 0;
+                padding: 20px max(18px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+            }
+            input, select, textarea { font-size: 16px; }
+            .type-select { min-height: 40px; font-size: 16px; }
+            #toast {
+                min-width: 0;
+                width: calc(100% - 24px);
+                max-width: 420px;
+                bottom: max(16px, env(safe-area-inset-bottom));
+                padding: 13px 14px;
+            }
+            #toast.show { bottom: max(24px, env(safe-area-inset-bottom)); }
+        }
     </style>
 </head>
 <body>
@@ -184,16 +312,25 @@
 <div class="header">
     <div class="logo">BM</div>
     <div class="h-btn-group">
-        <button class="h-btn" onclick="openInfoModal()">❓</button>
-        <button class="h-btn" onclick="openHistory()">📜 기록</button>
-        <button class="h-btn primary" onclick="addCourt()">+ 코트</button>
-        <button class="h-btn" onclick="openSettings()">⚙️ 설정</button>
+        <button class="h-btn" onclick="openInfoModal()" aria-label="도움말" title="도움말">❓</button>
+        <button class="h-btn" onclick="openHistory()" aria-label="경기 기록" title="경기 기록"><span aria-hidden="true">📜</span><span class="h-label">기록</span></button>
+        <button class="h-btn primary" onclick="addCourt()" aria-label="코트 추가" title="코트 추가"><span aria-hidden="true">➕</span><span class="h-label">코트</span></button>
+        <button class="h-btn" onclick="openSettings()" aria-label="설정" title="설정"><span aria-hidden="true">⚙️</span><span class="h-label">설정</span></button>
     </div>
 </div>
 
-<div id="mainContainer" class="main-container">
+<nav class="mobile-view-tabs" role="tablist" aria-label="모바일 화면 선택">
+    <button id="mobileCourtsTab" class="mobile-view-tab active" type="button" role="tab" aria-selected="true" aria-controls="courtArea" onclick="setMobileView('courts')">
+        <span aria-hidden="true">🏸</span><span>코트</span><span id="mobileCourtCount" class="mobile-tab-count">0</span>
+    </button>
+    <button id="mobileWaitingTab" class="mobile-view-tab" type="button" role="tab" aria-selected="false" aria-controls="waitingCourt" onclick="setMobileView('waiting')">
+        <span aria-hidden="true">👥</span><span>대기실</span><span id="mobileRosterCount" class="mobile-tab-count">0</span>
+    </button>
+</nav>
+
+<div id="mainContainer" class="main-container mobile-view-courts">
     <!-- 대기실 -->
-    <div class="waiting-court">
+    <div id="waitingCourt" class="waiting-court" role="tabpanel" aria-labelledby="mobileWaitingTab">
         <div class="wc-header">
             <div class="wc-title-row">
                 <div class="wc-heading-line">
@@ -215,7 +352,7 @@
     </div>
 
     <!-- 코트 영역 -->
-    <div class="court-area">
+    <div id="courtArea" class="court-area" role="tabpanel" aria-labelledby="mobileCourtsTab">
         <div id="courtGrid" class="court-grid"></div>
     </div>
 </div>
@@ -379,6 +516,29 @@
     let waitingRoomCollapsed = false;
     let transferSourceCourtId = null;
     let deferredInstallPrompt = null;
+
+    // --- Mobile View Navigation ---
+    function setMobileView(view) {
+        const showWaitingRoom = view === 'waiting';
+        const mainContainer = document.getElementById('mainContainer');
+        const courtsTab = document.getElementById('mobileCourtsTab');
+        const waitingTab = document.getElementById('mobileWaitingTab');
+
+        mainContainer.classList.toggle('mobile-view-courts', !showWaitingRoom);
+        mainContainer.classList.toggle('mobile-view-waiting', showWaitingRoom);
+        courtsTab.classList.toggle('active', !showWaitingRoom);
+        waitingTab.classList.toggle('active', showWaitingRoom);
+        courtsTab.setAttribute('aria-selected', String(!showWaitingRoom));
+        waitingTab.setAttribute('aria-selected', String(showWaitingRoom));
+
+        if (showWaitingRoom && waitingRoomCollapsed) {
+            waitingRoomCollapsed = false;
+            mainContainer.classList.remove('waiting-collapsed');
+            const toggleButton = document.getElementById('waitingToggle');
+            toggleButton.innerText = '◀';
+            toggleButton.title = '대기실 접기';
+        }
+    }
 
     // --- PWA Install ---
     function isRunningStandalone() {
@@ -804,6 +964,8 @@
     // --- Render Logic ---
     function render() {
         const keyword = document.getElementById('searchInput').value.toLowerCase();
+        document.getElementById('mobileCourtCount').innerText = courts.length;
+        document.getElementById('mobileRosterCount').innerText = players.filter(p => p.status === 'waiting' || p.status === 'resting').length;
         
         const renderWaitList = (containerId) => {
             const container = document.getElementById(containerId);
@@ -854,7 +1016,7 @@
                         ${statusBadge}
                     </div>
                     <div class="roster-meta" style="display:flex; align-items:center; gap:6px;">
-                        <span onclick="event.stopPropagation(); toggleShuttlecock(${p.id})" style="cursor:pointer; font-size:1.1rem; ${scStyle}" title="셔틀콕">🏸</span>
+                        <span class="shuttle-toggle" onclick="event.stopPropagation(); toggleShuttlecock(${p.id})" style="cursor:pointer; font-size:1.1rem; ${scStyle}" title="셔틀콕">🏸</span>
                         <span class="p-info" style="margin-right:4px;">${tiers[p.tier]}</span> <span class="badge" style="background:#e2e8f0; color:#475569;">${p.games}회</span>
                         ${(p.status === 'waiting' || p.status === 'resting') ? `<button class="status-toggle ${p.status === 'resting' ? 'resume' : 'rest'}" onclick="event.stopPropagation(); toggleRestStatus(${p.id})">${p.status === 'resting' ? '복귀' : '휴식'}</button>` : ''}
                     </div>
@@ -903,7 +1065,7 @@
                 <div class="cc-header">
                     <span style="font-weight:800; font-size:1.1rem;">코트 ${idx+1}</span>
                     <div style="display:flex; gap:8px; align-items:center;">
-                        ${typeSel} <span onclick="delCourt(${c.id})" style="cursor:pointer; color:#ccc;">×</span>
+                        ${typeSel} <button type="button" class="court-delete" onclick="delCourt(${c.id})" aria-label="코트 ${idx+1} 삭제" title="코트 삭제">×</button>
                     </div>
                 </div>
                 <div class="game-section">
@@ -930,7 +1092,11 @@
     }
 
     function setType(id, val) { courts.find(c=>c.id===id).type = val; save(); }
-    function addCourt() { courts.push({id:Date.now(), type:'A', active:[], next:[], startTime:null}); save(); render(); }
+    function addCourt() {
+        courts.push({id:Date.now(), type:'A', active:[], next:[], startTime:null});
+        save(); render();
+        if(window.matchMedia('(max-width: 600px), (max-height: 500px) and (max-width: 950px)').matches) setMobileView('courts');
+    }
     
     function openPModal(id=null) { 
         editPId = id; const p = players.find(x=>x.id===id);
