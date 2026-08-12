@@ -3,7 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="배드민턴 모임의 선수, 코트, 경기 기록을 관리하는 웹 앱">
+    <meta name="application-name" content="Badminton Manager">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="BM">
+    <meta name="format-detection" content="telephone=no">
     <title>Badminton Manager</title>
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="./assets/icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/apple-touch-icon.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
     <style>
         :root {
@@ -164,6 +175,8 @@
 
         .info-content { overflow-y: auto; text-align: left; line-height: 1.6; color: #334155; font-size: 0.95rem; padding-right: 5px; }
         .algo-box { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.9rem; }
+        .install-guide { margin: 0; padding-left: 22px; color: #334155; line-height: 1.8; }
+        .install-guide strong { color: var(--primary); }
     </style>
 </head>
 <body>
@@ -253,6 +266,8 @@
 <div id="settingsModal" class="modal"><div class="modal-box">
     <h3 style="margin-top:0;">⚙️ 설정 및 관리</h3>
     <div style="display:grid; gap:10px;">
+        <button id="installAppButton" class="btn btn-primary" onclick="installApp()">📱 앱으로 설치</button>
+        <div style="height:1px; background:#eee; margin:5px 0;"></div>
         <button class="btn btn-success" onclick="resetGamesOnly()">📅 새 모임 시작 (선수 유지/기록 초기화)</button>
         <div style="height:1px; background:#eee; margin:5px 0;"></div>
         <button class="btn btn-outline" onclick="exportData()">💾 데이터 백업 (다운로드)</button>
@@ -261,6 +276,20 @@
         <button class="btn btn-danger" onclick="resetAll()">⚠ 데이터 전체 초기화 (공장초기화)</button>
     </div>
     <button class="btn btn-outline" style="margin-top:20px;" onclick="closeSettings()">닫기</button>
+</div></div>
+
+<!-- 앱 설치 안내 모달 -->
+<div id="installModal" class="modal"><div class="modal-box" style="width:420px;">
+    <h3 style="margin-top:0;">📱 홈 화면에 앱 설치</h3>
+    <ol class="install-guide">
+        <li>이 페이지를 <strong>Safari</strong>에서 엽니다.</li>
+        <li>Safari의 <strong>공유 버튼(□↑)</strong>을 누릅니다.</li>
+        <li><strong>홈 화면에 추가</strong>를 선택합니다.</li>
+        <li><strong>웹 앱으로 열기</strong>를 켜고 추가합니다.</li>
+    </ol>
+    <p style="margin:14px 0 0; color:#64748b; font-size:0.85rem; line-height:1.5;">설치 후 홈 화면의 BM 아이콘을 누르면 주소창 없이 앱처럼 실행됩니다.</p>
+    <p style="margin:8px 0 0; color:#b45309; font-size:0.82rem; line-height:1.5;">기존 기록이 중요하다면 설치 전 설정에서 데이터 백업을 먼저 받아두세요.</p>
+    <button class="btn btn-primary" style="margin-top:18px;" onclick="closeInstallModal()">확인</button>
 </div></div>
 
 <!-- 도움말 모달 -->
@@ -349,6 +378,61 @@
     let restListCollapsed = false;
     let waitingRoomCollapsed = false;
     let transferSourceCourtId = null;
+    let deferredInstallPrompt = null;
+
+    // --- PWA Install ---
+    function isRunningStandalone() {
+        return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    }
+
+    function updateInstallButton() {
+        const button = document.getElementById('installAppButton');
+        if (!button) return;
+
+        if (isRunningStandalone()) {
+            button.textContent = '✓ 앱으로 실행 중';
+            button.disabled = true;
+            button.style.opacity = '0.65';
+        } else {
+            button.textContent = '📱 앱으로 설치';
+            button.disabled = false;
+            button.style.opacity = '1';
+        }
+    }
+
+    async function installApp() {
+        if (isRunningStandalone()) {
+            showToast('이미 앱으로 실행 중입니다.');
+            return;
+        }
+
+        if (deferredInstallPrompt) {
+            deferredInstallPrompt.prompt();
+            await deferredInstallPrompt.userChoice;
+            deferredInstallPrompt = null;
+            updateInstallButton();
+            return;
+        }
+
+        closeSettings();
+        document.getElementById('installModal').style.display = 'flex';
+    }
+
+    function closeInstallModal() {
+        document.getElementById('installModal').style.display = 'none';
+    }
+
+    window.addEventListener('beforeinstallprompt', event => {
+        event.preventDefault();
+        deferredInstallPrompt = event;
+        updateInstallButton();
+    });
+
+    window.addEventListener('appinstalled', () => {
+        deferredInstallPrompt = null;
+        updateInstallButton();
+        showToast('앱 설치가 완료되었습니다.');
+    });
 
     // --- Custom Confirm Logic (iOS Fix) ---
     let onConfirmAction = null;
@@ -977,6 +1061,15 @@
     function closeSwapModal() { document.getElementById('swapModal').style.display='none'; }
 
     render();
+    updateInstallButton();
+
+    if ('serviceWorker' in navigator && window.isSecureContext) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+                .then(registration => registration.update())
+                .catch(error => console.error('서비스 워커 등록 실패:', error));
+        });
+    }
 </script>
 </body>
 </html>
