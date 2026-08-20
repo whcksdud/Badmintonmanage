@@ -19,7 +19,7 @@
     <style>
         :root {
             --bg: #f1f5f9; --card: #ffffff; --primary: #2563eb; --dark: #1e293b;
-            --male: #3b82f6; --female: #ec4899; --danger: #ef4444; --reserved: #f59e0b;
+            --male: #2563eb; --female: #db2777; --danger: #ef4444; --reserved: #f59e0b;
             --border: #e2e8f0; --shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
             --success: #10b981;
         }
@@ -76,7 +76,7 @@
         .wc-actions { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
         .wc-actions .btn-text { white-space:nowrap; padding:7px 8px; border-radius:6px; background:#eff6ff; }
         .search-input { width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem; background: #fff; outline: none; }
-        .wc-list { flex: 1; overflow-y: auto; padding: 10px; display: grid; gap: 8px; align-content: start; }
+        .wc-list { flex: 1; overflow-y: auto; padding: 10px; display: grid; grid-auto-rows: max-content; gap: 8px; align-content: start; }
         .main-container.waiting-collapsed { grid-template-columns:54px 1fr; }
         .main-container.waiting-collapsed .wc-header { padding:10px; }
         .main-container.waiting-collapsed .wc-title, .main-container.waiting-collapsed .wc-actions,
@@ -195,8 +195,12 @@
         }
 
         .court-card { background: #fff; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
-        .cc-header { padding: 10px 15px; background: #fff; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .type-select { width: auto; max-width: 110px; margin-bottom: 0; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.85rem; background: #f8fafc; }
+        .cc-header { padding: 10px 12px; background: #fff; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 7px; }
+        .court-heading { min-width: 0; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+        .court-title { flex: 0 0 auto; font-weight: 800; font-size: 1.05rem; }
+        .court-live-state { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 3px; color: #64748b; font-size: 0.68rem; font-weight: 800; }
+        .cc-actions { flex: 0 0 auto; display: flex; gap: 5px; align-items: center; }
+        .type-select { width: 80px; max-width: 80px; margin-bottom: 0; padding: 4px 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.82rem; background: #f8fafc; }
         .court-delete { width: 30px; height: 30px; padding:0; border:0; background:transparent; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#94a3b8; border-radius:8px; font-size:1.2rem; }
         .court-delete:active { background:#fee2e2; color:var(--danger); }
 
@@ -205,42 +209,69 @@
         
         .section-label { font-size: 0.75rem; font-weight: 900; color: #94a3b8; letter-spacing: 1px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
         
-        .timer-badge { 
-            font-variant-numeric: tabular-nums; 
-            background: #ecfdf5; color: #059669; 
-            border: 1px solid #a7f3d0; 
-            padding: 4px 10px; border-radius: 20px; 
-            font-size: 0.9rem; font-weight: 800; 
-            display: none; align-items: center; gap: 4px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        .timer-badge {
+            font-variant-numeric: tabular-nums;
+            background: #ecfdf5; color: #059669;
+            border: 1px solid #a7f3d0;
+            padding: 3px 6px; border-radius: 20px;
+            font-size: 0.72rem; font-weight: 800; line-height: 1; white-space: nowrap;
+            display: none; align-items: center; gap: 4px;
         }
         
         .player-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .match-teams { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: stretch; min-width: 0; padding: 8px; border: 2px solid #cbd5e1; border-radius: 12px; background: #fff; }
+        .match-teams::after { content: ''; position: absolute; top: 8px; bottom: 8px; left: 50%; width: 2px; border-radius: 999px; background: #94a3b8; transform: translateX(-50%); }
+        .match-team { position: relative; z-index: 1; min-width: 0; }
+        .match-team-players { display: grid; gap: 6px; }
+        .match-team .player-chip { min-width: 0; height: 64px; min-height: 64px; padding: 6px 7px; box-shadow: none; overflow: hidden; }
         .player-chip { background: #fff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.03); transition: 0.2s; user-select: none; }
-        .player-chip:active { transform: scale(0.96); background: #f1f5f9; }
+        .player-chip:active { transform: scale(0.96); filter: brightness(0.97); }
         .waiting-chip { flex-direction: row; justify-content: space-between; padding: 10px 12px; }
-        .roster-chip { flex-direction:column; align-items:stretch; gap:7px; }
-        .roster-chip .roster-main { min-width:0; }
-        .roster-chip .p-name { min-width:0; white-space:normal; overflow-wrap:anywhere; }
-        .roster-chip .roster-meta { justify-content:flex-end; flex-wrap:wrap; }
-        .status-toggle { border: 0; border-radius: 7px; padding: 5px 7px; font-size: 0.68rem; font-weight: 800; cursor: pointer; white-space: nowrap; }
-        .status-toggle.rest { background:#e2e8f0; color:#475569; }
-        .status-toggle.resume { background:#dcfce7; color:#166534; }
-        .shuttle-toggle { min-width:28px; min-height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:7px; }
+        .match-player-chip { width: 100%; }
+        .match-player-content { width: 100%; height: 100%; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+        .match-player-chip .p-name { display: block; width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; line-height: 1.2; }
+        .next-playing-badge { position: absolute; z-index: 2; top: 4px; right: 4px; display: inline-flex; align-items: center; min-height: 13px; padding: 1px 4px; border-radius: 999px; background: var(--primary); color: #fff; font-size: 0.52rem; font-weight: 900; line-height: 1.1; white-space: nowrap; }
+        .roster-chip { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 0; min-height: 58px; padding: 0; overflow: hidden; background: #fff; cursor: pointer; }
+        .roster-chip:active { transform: none; }
+        .roster-chip.gender-card.gender-m { background: #fff; border-color: #e2e8f0; border-left: 5px solid #38bdf8; }
+        .roster-chip.gender-card.gender-f { background: #fff; border-color: #e2e8f0; border-left: 5px solid #f472b6; }
+        .roster-chip.gender-card.roster-status-resting { background: #e2e8f0; }
+        .roster-chip.gender-card.roster-status-reserved { background: #fef3c7; }
+        .roster-chip.gender-card.roster-status-playing { background: #dcfce7; }
+        .roster-chip.expanded { border-color: #93c5fd; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12); }
+        .roster-chip.gender-card.has-shuttlecock { border-right: 5px solid #7c3aed; }
+        .roster-summary { min-width: 0; min-height: 58px; padding: 9px 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .roster-identity { flex: 1 1 auto; min-width: 0; overflow: hidden; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; }
+        .roster-chip .p-name { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+        .roster-meta-line { flex: 0 0 auto; color: #64748b; font-size: 0.72rem; font-weight: 700; line-height: 1.2; white-space: nowrap; }
+        .roster-end { flex: 0 0 auto; display: flex; align-items: center; gap: 7px; }
+        .roster-toggle-icon { flex: 0 0 auto; width: 30px; height: 30px; border: 1px solid rgba(148, 163, 184, 0.55); border-radius: 999px; background: rgba(255, 255, 255, 0.82); color: #64748b; display: inline-flex; align-items: center; justify-content: center; }
+        .roster-toggle-icon svg { width: 17px; height: 17px; display: block; }
+        .roster-chip.expanded .roster-toggle-icon { border-color: #93c5fd; background: #eff6ff; color: #1d4ed8; }
+        .roster-action-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: 6px; padding: 8px 9px 9px; border-top: 1px solid #e2e8f0; background: #f8fafc; cursor: default; }
+        .roster-chip.roster-status-resting .roster-action-panel { background: #e2e8f0; }
+        .roster-chip.roster-status-reserved .roster-action-panel { background: #fef3c7; }
+        .roster-chip.roster-status-playing .roster-action-panel { background: #dcfce7; }
+        .roster-action { min-width: 0; min-height: 35px; padding: 7px 8px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #475569; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.68rem; font-weight: 800; white-space: nowrap; cursor: pointer; }
+        .roster-action.rest { background: #f1f5f9; color: #475569; }
+        .roster-action.resume, .roster-action.shuttle.active { border-color: #86efac; background: #dcfce7; color: #166534; }
+        .roster-action.edit { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
         .list-section { display:flex; align-items:center; justify-content:space-between; padding:9px 10px 5px; color:#64748b; font-size:0.72rem; font-weight:900; }
         .list-section .btn-text { min-height:32px; padding:4px 6px; }
         .next-chip { padding: 10px; font-size: 0.9rem; background: #fff; border: 1px dashed #cbd5e1; box-shadow: none; }
         
+        .badge { font-size: 0.7rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; color: #fff; }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+        .gender-card.gender-m { background: #e0f2fe; border-color: #38bdf8; }
+        .gender-card.gender-f { background: #fce7f3; border-color: #f472b6; }
+        .match-player-chip.gender-card.gender-m { background: #fff; border-color: #cbd5e1; border-left: 5px solid #38bdf8; }
+        .match-player-chip.gender-card.gender-f { background: #fff; border-color: #cbd5e1; border-left: 5px solid #f472b6; }
         .manual-chip { border: 2px solid transparent; opacity: 0.8; transition: all 0.2s; }
-        .manual-chip.selected { 
-            border-color: var(--primary); 
-            background: #eff6ff; 
-            opacity: 1; 
+        .manual-chip.selected {
+            border-color: var(--primary);
+            opacity: 1;
             box-shadow: 0 0 0 1px var(--primary);
         }
-
-        .badge { font-size: 0.7rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; color: #fff; }
-        .b-m { background: var(--male); } .b-f { background: var(--female); }
         .p-name { font-size: 1rem; font-weight: 800; color: var(--dark); }
         .p-info { font-size: 0.8rem; color: #64748b; font-weight: 600; }
 
@@ -252,6 +283,12 @@
         .btn-outline { background: #fff; border: 1px solid #cbd5e1; color: var(--dark); }
         .btn-text { background: none; color: var(--primary); border: none; font-weight: 700; cursor: pointer; }
         .btn:hover { opacity: 0.9; }
+        .player-delete-zone { display: flex; justify-content: flex-end; margin-top: 18px; padding-top: 14px; border-top: 1px solid #e2e8f0; }
+        .player-delete-button { min-height: 38px; padding: 8px 11px; border: 1px solid #fecaca; border-radius: 8px; background: #fff; color: #dc2626; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.8rem; font-weight: 800; cursor: pointer; }
+        .player-delete-button:hover { border-color: #fca5a5; background: #fef2f2; }
+        .player-delete-button:active { transform: scale(0.97); }
+        .player-delete-button svg { width: 16px; height: 16px; display: block; }
+        .player-delete-button[hidden] { display: none; }
 
         .btn-group { padding: 12px; border-top: 1px solid var(--border); display: flex; gap: 8px; background: #fff; }
         .empty-state { text-align: center; color: #cbd5e1; margin: auto; font-weight: 500; font-size: 0.9rem; padding: 20px; }
@@ -279,6 +316,54 @@
         .history-score { color:#0f172a; font-size:1.1rem; font-variant-numeric:tabular-nums; }
         .history-score-diff { color:#475569; font-size:0.76rem; font-weight:800; text-align:right; }
         .history-no-score { margin-top:5px; color:#94a3b8; font-size:0.75rem; font-weight:700; }
+
+        .stats-modal-box { width: 820px; height: min(720px, 90vh); overflow: hidden; }
+        .stats-modal-heading { flex: 0 0 auto; margin-bottom: 14px; }
+        .stats-modal-heading h3 { margin: 0; }
+        .stats-modal-heading p { margin: 5px 0 0; color: #64748b; font-size: 0.82rem; line-height: 1.45; }
+        .stats-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 14px; }
+        .stats-picker, .stats-detail { min-width: 0; min-height: 0; border: 1px solid var(--border); border-radius: 12px; background: #fff; }
+        .stats-picker { display: flex; flex-direction: column; padding: 12px; background: #f8fafc; }
+        .stats-picker label { margin-bottom: 7px; color: #334155; }
+        .stats-picker .search-input { flex: 0 0 auto; margin-bottom: 9px; }
+        .stats-player-list { flex: 1; min-height: 0; overflow-y: auto; display: grid; align-content: start; gap: 6px; }
+        .stats-player-option { width: 100%; min-height: 58px; overflow: hidden; border: 1px solid #e2e8f0; border-radius: 10px; padding: 9px 10px; background: #fff; color: var(--dark); cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; }
+        .stats-player-option:hover { filter: brightness(0.98); }
+        .stats-player-option.active { box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.24); }
+        .stats-player-option-main { flex: 1 1 auto; width: auto; min-width: 0; overflow: hidden; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .stats-player-option-name { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; }
+        .stats-player-option-meta { flex: 0 0 auto; color: #64748b; font-size: 0.7rem; font-weight: 700; line-height: 1.2; white-space: nowrap; }
+        .stats-detail { overflow-y: auto; padding: 16px; }
+        .stats-profile { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
+        .stats-profile.gender-card { min-height: 58px; padding: 10px 12px; border-width: 1px; border-style: solid; border-radius: 10px; }
+        .stats-profile-main { width: 100%; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .stats-profile-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.05rem; font-weight: 900; }
+        .stats-profile-meta { flex: 0 0 auto; color: #64748b; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+        .stats-player-option.gender-card.gender-m,
+        .stats-profile.gender-card.gender-m,
+        .stats-relation-row.gender-card.gender-m { background: #fff; border-color: #e2e8f0; border-left: 5px solid #38bdf8; }
+        .stats-player-option.gender-card.gender-f,
+        .stats-profile.gender-card.gender-f,
+        .stats-relation-row.gender-card.gender-f { background: #fff; border-color: #e2e8f0; border-left: 5px solid #f472b6; }
+        .stats-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-bottom: 15px; }
+        .stats-summary-card { min-width: 0; padding: 10px 7px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; text-align: center; }
+        .stats-summary-card strong { display: block; color: #0f172a; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+        .stats-summary-card span { display: block; margin-top: 3px; color: #64748b; font-size: 0.68rem; font-weight: 800; line-height: 1.25; }
+        .stats-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+        .stats-section-heading strong { font-size: 0.9rem; }
+        .stats-section-heading span { color: #94a3b8; font-size: 0.68rem; font-weight: 700; }
+        .stats-relation-head, .stats-relation-row { display: grid; grid-template-columns: minmax(120px, 1fr) repeat(3, 54px); gap: 6px; align-items: center; }
+        .stats-relation-head { padding: 0 9px 6px; color: #94a3b8; font-size: 0.66rem; font-weight: 900; text-align: center; }
+        .stats-relation-head span:first-child { text-align: left; }
+        .stats-relation-list { display: grid; gap: 6px; }
+        .stats-relation-row { width: 100%; border: 1px solid var(--border); border-radius: 9px; padding: 9px; background: #fff; color: var(--dark); text-align: center; }
+        button.stats-relation-row { cursor: pointer; }
+        button.stats-relation-row:hover { border-color: #60a5fa; filter: brightness(0.98); }
+        .stats-relation-player { min-width: 0; display: flex; align-items: center; gap: 7px; text-align: left; }
+        .stats-relation-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; }
+        .stats-relation-count { font-size: 0.86rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+        .stats-relation-total { color: var(--primary); }
+        .stats-empty { min-height: 220px; display: flex; align-items: center; justify-content: center; color: #94a3b8; text-align: center; line-height: 1.55; font-size: 0.86rem; }
         
         #toast { visibility: hidden; min-width: 250px; background-color: #1e293b; color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 2000; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 0.95rem; opacity: 0; transition: opacity 0.3s, bottom 0.3s; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
@@ -291,15 +376,26 @@
         /* Base component rules above this point; keep phone overrides last in the cascade. */
         @media (max-width: 600px), (max-height: 500px) and (max-width: 950px) {
             .court-card { border-radius: 12px; }
-            .cc-header { padding: 10px 12px; }
+            .cc-header { padding: 8px 10px; gap: 5px; }
+            .court-heading { gap: 5px; }
+            .court-title { font-size: 0.96rem; }
+            .court-live-state { font-size: 0.62rem; }
+            .timer-badge { padding: 3px 5px; font-size: 0.68rem; }
+            .cc-actions { gap: 3px; }
             .game-section { min-height: 140px; padding: 12px; }
             .next-section { padding: 10px 12px; }
             .player-grid { gap: 6px; min-width: 0; }
+            .match-teams { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; padding: 6px; border-radius: 10px; }
+            .match-teams::after { top: 6px; bottom: 6px; }
+            .match-team-players { gap: 5px; }
+            .match-team .player-chip { height: 60px; min-height: 60px; padding: 5px 6px; }
+            .next-playing-badge { top: 3px; right: 3px; min-height: 12px; padding: 1px 3px; font-size: 0.5rem; }
             .player-chip { min-width: 0; padding: 10px 6px; }
             .waiting-chip { padding: 10px; }
-            .status-toggle { min-height: 38px; padding: 7px 10px; }
-            .shuttle-toggle { min-width: 38px; min-height: 38px; }
-            .court-delete { width: 40px; height: 40px; }
+            .waiting-chip.roster-chip { gap: 0; padding: 0; }
+            .roster-summary { min-height: 60px; padding: 9px 10px; }
+            .roster-action { min-height: 42px; padding: 8px; }
+            .court-delete { width: 36px; height: 40px; }
             .btn { min-width: 0; min-height: 44px; padding: 9px 10px; }
             .btn-group { padding: 10px 12px; }
             .modal { align-items: flex-end; padding-top: env(safe-area-inset-top); }
@@ -312,7 +408,16 @@
                 padding: 20px max(18px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
             }
             input, select, textarea { font-size: 16px; }
-            .type-select { min-height: 40px; font-size: 16px; }
+            .type-select { width: 76px; max-width: 76px; min-height: 40px; padding: 4px 5px; font-size: 14px; }
+            .stats-modal-box { height: calc(100dvh - max(16px, env(safe-area-inset-top))); overflow: hidden; }
+            .stats-modal-heading { margin-bottom: 10px; }
+            .stats-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: 180px minmax(0, 1fr); gap: 10px; }
+            .stats-picker { padding: 10px; }
+            .stats-player-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .stats-player-option { padding: 8px; }
+            .stats-detail { padding: 12px; }
+            .stats-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .stats-relation-head, .stats-relation-row { grid-template-columns: minmax(100px, 1fr) repeat(3, 42px); gap: 3px; }
             #toast {
                 min-width: 0;
                 width: calc(100% - 24px);
@@ -331,6 +436,7 @@
     <div class="h-btn-group">
         <button class="h-btn" onclick="openInfoModal()" aria-label="도움말" title="도움말">❓</button>
         <button class="h-btn" onclick="openHistory()" aria-label="경기 기록" title="경기 기록"><span aria-hidden="true">📜</span><span class="h-label">기록</span></button>
+        <button class="h-btn" onclick="openStatsModal()" aria-label="선수 통계" title="선수 통계"><span aria-hidden="true">📊</span><span class="h-label">통계</span></button>
         <button class="h-btn primary" onclick="addCourt()" aria-label="코트 추가" title="코트 추가"><span aria-hidden="true">➕</span><span class="h-label">코트</span></button>
         <button class="h-btn" onclick="openSettings()" aria-label="설정" title="설정"><span aria-hidden="true">⚙️</span><span class="h-label">설정</span></button>
     </div>
@@ -360,10 +466,6 @@
                 </div>
             </div>
             <input type="text" id="searchInput" class="search-input" placeholder="이름 검색..." onkeyup="render()">
-            <div style="display:flex; justify-content:space-between; padding: 2px 10px; font-size:0.7rem; font-weight:800; color:#94a3b8; letter-spacing:0.5px; border-bottom:1px solid #f1f5f9;">
-                <span>성별 / 이름</span>
-                <span>콕 / 급수 / 경기수</span>
-            </div>
         </div>
         <div id="waitList" class="wc-list"></div>
     </div>
@@ -396,7 +498,12 @@
         <button class="btn btn-primary" style="flex:1" onclick="savePlayer()">저장</button>
         <button class="btn btn-outline" style="flex:1" onclick="closePModal()">취소</button>
     </div>
-    <button class="btn-text" style="width:100%; margin-top:15px; color:var(--danger)" onclick="deletePlayer()">선수 삭제</button>
+    <div class="player-delete-zone">
+        <button id="deletePlayerButton" type="button" class="player-delete-button" onclick="deletePlayer()" hidden>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>선수 삭제</span>
+        </button>
+    </div>
 </div></div>
 
 <!-- 일괄 등록 모달 -->
@@ -452,7 +559,12 @@
     <div class="info-content">
         <ul style="padding-left: 20px; margin: 0; list-style-type: disc;">
             <li><strong>선수 등록:</strong> '+ 개별' 또는 '+ 일괄' 사용.</li>
+            <li><strong>선수 통계:</strong> 상단 <strong>[📊 통계]</strong>에서 선수를 선택하면 함께 경기한 선수와 같은 팀·상대 팀 횟수를 확인할 수 있습니다.</li>
+            <li><strong>성별 구분:</strong> 파란색 선수 카드는 남성, 분홍색 선수 카드는 여성을 뜻합니다.</li>
+            <li><strong>대기실 빠른 조작:</strong> 선수 카드를 누르면 해당 선수의 휴식·복귀, 콕 냄, 정보 수정 버튼이 펼쳐집니다. 콕을 낸 선수는 카드 오른쪽 보라색 선으로 표시됩니다.</li>
             <li><strong>자동 매칭:</strong> <strong>[⚡ 자동 매칭]</strong> 클릭 시 4명 선발. 진행 중인 코트의 다음 예약은 게임 중인 선수도 후보에 포함합니다.</li>
+            <li><strong>팀 구분:</strong> 네 선수를 코트 모양 테두리 안에 배치하고 중앙 구분선 양쪽으로 두 팀을 표시합니다.</li>
+            <li><strong>경기 유형:</strong> 코트가 진행 중이어도 자율·남복·여복·혼복 유형을 변경할 수 있습니다.</li>
             <li><strong>수동 매칭:</strong> <strong>[수동]</strong> 버튼으로 4명 직접 선택. 다음 대기 편성에서는 게임 중인 선수도 선택할 수 있습니다.</li>
             <li><strong>선수 교체:</strong> 배치된 선수 클릭 시 교체. 다음 대기에서는 게임 중인 선수도 선택할 수 있습니다.</li>
             <li><strong>승계 기능:</strong> 다음 예약 선수가 다른 코트에서 게임 중이면 현재 경기만 종료하고 승계는 보류합니다.</li>
@@ -488,6 +600,23 @@
     <h3 style="margin-top:0">경기 기록 (최신순)</h3>
     <div id="historyList" class="history-list"></div>
     <button class="btn btn-outline" style="width:100%; margin-top:15px;" onclick="closeHModal()">닫기</button>
+</div></div>
+
+<!-- 선수 통계 모달 -->
+<div id="statsModal" class="modal"><div class="modal-box stats-modal-box">
+    <div class="stats-modal-heading">
+        <h3>📊 선수 통계</h3>
+        <p>보관된 경기 기록을 기준으로 함께 출전한 횟수를 같은 팀과 상대 팀으로 나누어 보여줍니다.</p>
+    </div>
+    <div class="stats-layout">
+        <section class="stats-picker" aria-label="통계를 볼 선수 선택">
+            <label for="statsSearch">선수 선택</label>
+            <input id="statsSearch" class="search-input" type="search" placeholder="이름 검색..." oninput="renderStatsPlayerList()">
+            <div id="statsPlayerList" class="stats-player-list"></div>
+        </section>
+        <section id="statsDetail" class="stats-detail" aria-live="polite"></section>
+    </div>
+    <button class="btn btn-outline" style="width:100%; margin-top:14px; flex:0 0 auto;" onclick="closeStatsModal()">닫기</button>
 </div></div>
 
 <!-- 경기 기록 점수 입력 모달 -->
@@ -559,6 +688,8 @@
     let manualSelected = new Set();
     const collapsedStatuses = new Set();
     let pendingHistoryIndex = null;
+    let statsPlayerId = null;
+    let expandedRosterPlayerId = null;
     let waitingRoomCollapsed = false;
     let transferSourceCourtId = null;
     let deferredInstallPrompt = null;
@@ -847,9 +978,9 @@
             const isSel = manualSelected.has(p.id);
             const isPlaying = isPlayerInCourtArea(p.id, 'active');
             list.innerHTML += `
-            <div class="player-chip waiting-chip manual-chip ${isSel?'selected':''}" onclick="toggleManualSelect(${p.id})">
+            <div class="player-chip waiting-chip manual-chip gender-card ${getGenderCardClass(p.gender)} ${isSel?'selected':''}" onclick="toggleManualSelect(${p.id})">
+                ${renderGenderAccessibility(p.gender)}
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <span class="badge ${p.gender==='M'?'b-m':'b-f'}">${p.gender === 'M' ? '남' : '여'}</span>
                     <span>${p.name}</span>
                     ${isPlaying ? '<span class="badge" style="background:var(--primary); font-size:0.6rem;">게임중</span>' : ''}
                 </div>
@@ -1118,6 +1249,12 @@
         const d = new Date(timestamp);
         return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
     }
+    function formatElapsedTime(startTime) {
+        const diff = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
+        const min = Math.floor(diff / 60);
+        const sec = diff % 60;
+        return `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+    }
 
     // --- Modal Controls & Export ---
     function openSettings() { document.getElementById('settingsModal').style.display='flex'; }
@@ -1154,10 +1291,8 @@
         courts.forEach(c => {
             const el = document.getElementById(`timer-${c.id}`);
             if(c.active.length > 0 && c.startTime) {
-                const diff = Math.floor((Date.now() - c.startTime) / 1000);
-                const min = Math.floor(diff / 60); const sec = diff % 60;
                 if(el) {
-                    el.innerText = `⏱ ${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+                    el.innerText = formatElapsedTime(c.startTime);
                     el.style.display = 'flex';
                 }
             } else {
@@ -1207,31 +1342,36 @@
                 }
                 previousStatus = p.status;
                 if(collapsedStatuses.has(p.status)) return;
-                const scStyle = p.shuttlecock ? 'opacity:1; filter:none' : 'opacity:0.2; filter:grayscale(100%)';
-                
-                let statusBadge = '';
-                let itemStyle = '';
-                if(p.status === 'playing') {
-                    statusBadge = `<span class="badge" style="background:var(--primary); font-size:0.6rem; margin-left:4px;">게임중</span>`;
-                    itemStyle = 'opacity:0.7; background:#f1f5f9; border-color:transparent;';
-                } else if (p.status === 'reserved') {
-                    statusBadge = `<span class="badge" style="background:var(--reserved); font-size:0.6rem; margin-left:4px;">예약됨</span>`;
-                    itemStyle = 'background:#fffbeb; border-color:#fcd34d;';
-                } else if (p.status === 'resting') {
-                    itemStyle = 'opacity:0.75; background:#f8fafc; border-color:#cbd5e1;';
-                }
+                const safePlayerName = escapeHTML(p.name);
+                const isExpanded = String(expandedRosterPlayerId) === String(p.id);
+                const canToggleRest = p.status === 'waiting' || p.status === 'resting';
+                const restActionLabel = p.status === 'resting' ? '대기로 복귀' : '휴식으로 전환';
+                const shuttleActionLabel = p.shuttlecock ? '콕 냄 표시 취소' : '콕 냄 표시';
+                const actionPanel = isExpanded ? `
+                    <div id="roster-actions-${p.id}" class="roster-action-panel" onclick="event.stopPropagation()">
+                        ${canToggleRest ? `<button type="button" class="roster-action ${p.status === 'resting' ? 'resume' : 'rest'}" onclick="event.stopPropagation(); toggleRestStatus(${p.id})">${p.status === 'resting' ? '↩ 대기 복귀' : '⏸ 휴식'}</button>` : ''}
+                        <button type="button" class="roster-action shuttle ${p.shuttlecock ? 'active' : ''}" onclick="event.stopPropagation(); toggleShuttlecock(${p.id})" aria-pressed="${p.shuttlecock}" aria-label="${shuttleActionLabel}">${p.shuttlecock ? '✓ 콕 취소' : '🏸 콕 냄'}</button>
+                        <button type="button" class="roster-action edit" onclick="event.stopPropagation(); openPModal(${p.id})">✎ 정보 수정</button>
+                    </div>` : '';
 
                 container.innerHTML += `
-                <div class="player-chip waiting-chip roster-chip" onclick="openPModal(${p.id})" style="${itemStyle}">
-                    <div class="roster-main" style="display:flex; align-items:center; gap:8px;">
-                        <span class="badge ${p.gender==='M'?'b-m':'b-f'}">${p.gender === 'M' ? '남' : '여'}</span> <span class="p-name">${p.name}</span>
-                        ${statusBadge}
+                <div class="player-chip waiting-chip roster-chip gender-card ${getGenderCardClass(p.gender)} roster-status-${p.status} ${p.shuttlecock ? 'has-shuttlecock' : ''} ${isExpanded ? 'expanded' : ''}" role="button" tabindex="0" aria-expanded="${isExpanded}" aria-controls="roster-actions-${p.id}" aria-label="${safePlayerName}${p.shuttlecock ? ' · 콕 냄' : ''} 빠른 동작 ${isExpanded ? '접기' : '펼치기'}" onclick="toggleRosterActions(${p.id})" onkeydown="handleRosterCardKey(event, ${p.id})">
+                    ${renderGenderAccessibility(p.gender)}
+                    ${p.shuttlecock ? '<span class="sr-only">콕 냄</span>' : ''}
+                    <div class="roster-summary">
+                        <div class="roster-identity">
+                            <span class="p-name" title="${safePlayerName}">${safePlayerName}</span>
+                            <span class="roster-meta-line">${tiers[p.tier]} · ${p.games}경기</span>
+                        </div>
+                        <div class="roster-end">
+                            <span class="roster-toggle-icon" aria-hidden="true">
+                                ${isExpanded
+                                    ? '<svg class="roster-close-icon" viewBox="0 0 24 24" fill="none"><path d="M7 7l10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+                                    : '<svg class="roster-more-icon" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></svg>'}
+                            </span>
+                        </div>
                     </div>
-                    <div class="roster-meta" style="display:flex; align-items:center; gap:6px;">
-                        <span class="shuttle-toggle" onclick="event.stopPropagation(); toggleShuttlecock(${p.id})" style="cursor:pointer; font-size:1.1rem; ${scStyle}" title="셔틀콕">🏸</span>
-                        <span class="p-info" style="margin-right:4px;">${tiers[p.tier]}</span> <span class="badge" style="background:#e2e8f0; color:#475569;">${p.games}회</span>
-                        ${(p.status === 'waiting' || p.status === 'resting') ? `<button class="status-toggle ${p.status === 'resting' ? 'resume' : 'rest'}" onclick="event.stopPropagation(); toggleRestStatus(${p.id})">${p.status === 'resting' ? '복귀' : '휴식'}</button>` : ''}
-                    </div>
+                    ${actionPanel}
                 </div>`;
             });
         };
@@ -1241,18 +1381,18 @@
         courts.forEach((c, idx) => {
             const hasActive = c.active.length > 0;
             const hasNext = c.next.length > 0;
-            const typeSel = `<select class="type-select" onchange="setType(${c.id}, this.value)" ${hasActive?'disabled':''}>
+            const typeSel = `<select class="type-select" onchange="setType(${c.id}, this.value)" aria-label="코트 ${idx + 1} 경기 유형">
                 <option value="A" ${c.type=='A'?'selected':''}>자율</option>
                 <option value="M" ${c.type=='M'?'selected':''}>남복</option>
                 <option value="F" ${c.type=='F'?'selected':''}>여복</option>
                 <option value="X" ${c.type=='X'?'selected':''}>혼복</option>
             </select>`;
 
-            let activeHTML = hasActive ? `<div class="player-grid">${c.active.map((p,i)=>renderChip(c,'active',i)).join('')}</div>` : `<div class="empty-state">🏸 매칭 대기</div>`;
+            let activeHTML = hasActive ? renderMatchTeams(c, 'active') : `<div class="empty-state">🏸 매칭 대기</div>`;
             
             let nextHTML = '';
             if(hasNext) {
-                nextHTML = `<div class="player-grid">${c.next.map((p,i)=>renderChip(c,'next',i,'next-chip')).join('')}</div>
+                nextHTML = `${renderMatchTeams(c, 'next', 'next-chip')}
                             <div style="display:flex; gap:6px; margin-top:8px;">
                                 <button class="btn btn-outline" style="flex:1; font-size:0.8rem;" onclick="openTransferNext(${c.id})">다른 코트로 이동</button>
                                 <button class="btn btn-outline" style="flex:1; font-size:0.8rem;" onclick="cancelNext(${c.id})">예약 취소</button>
@@ -1275,16 +1415,16 @@
             cg.innerHTML += `
             <div class="court-card">
                 <div class="cc-header">
-                    <span style="font-weight:800; font-size:1.1rem;">코트 ${idx+1}</span>
-                    <div style="display:flex; gap:8px; align-items:center;">
+                    <div class="court-heading">
+                        <span class="court-title">코트 ${idx+1}</span>
+                        <span class="court-live-state">진행 중 <span style="color:${hasActive?'#2563eb':'#cbd5e1'}">●</span></span>
+                        <span id="timer-${c.id}" class="timer-badge" style="display:${hasActive && c.startTime ? 'inline-flex' : 'none'}">${hasActive && c.startTime ? formatElapsedTime(c.startTime) : '00:00'}</span>
+                    </div>
+                    <div class="cc-actions">
                         ${typeSel} <button type="button" class="court-delete" onclick="delCourt(${c.id})" aria-label="코트 ${idx+1} 삭제" title="코트 삭제">×</button>
                     </div>
                 </div>
                 <div class="game-section">
-                    <div class="section-label">
-                        <span>진행 중 <span style="color:${hasActive?'#2563eb':'#cbd5e1'}">●</span></span>
-                        <span id="timer-${c.id}" class="timer-badge">⏱ 00:00</span>
-                    </div>
                     ${activeHTML}
                 </div>
                 <div class="next-section">
@@ -1296,14 +1436,47 @@
         });
     }
 
+    function renderMatchTeams(court, area, chipClass = '') {
+        const match = court[area];
+        if(!Array.isArray(match)) return '';
+        if(match.length !== 4) {
+            return `<div class="player-grid">${match.map((player, index) => renderChip(court, area, index, chipClass)).join('')}</div>`;
+        }
+
+        const renderTeamPlayers = indexes => indexes.map(index => renderChip(court, area, index, chipClass)).join('');
+        return `<div class="match-teams">
+            <div class="match-team team-a" role="group" aria-label="A팀">
+                <div class="match-team-players">${renderTeamPlayers([0, 1])}</div>
+            </div>
+            <div class="match-team team-b" role="group" aria-label="B팀">
+                <div class="match-team-players">${renderTeamPlayers([2, 3])}</div>
+            </div>
+        </div>`;
+    }
+
     function renderChip(court, area, idx, cls='') {
         const p = court[area][idx];
-        const playingBadge = area === 'next' && isPlayerInCourtArea(p.id, 'active')
-            ? `<span class="badge" style="background:var(--primary); font-size:0.6rem;">게임중</span>`
+        const safePlayerName = escapeHTML(p.name);
+        const isPlayingReservation = area === 'next' && isPlayerInCourtArea(p.id, 'active');
+        const playingBadge = isPlayingReservation
+            ? '<span class="next-playing-badge">게임 중</span>'
             : '';
-        return `<div class="player-chip ${cls}" onclick="openSwap(${court.id}, '${area}', ${idx})">
-            <span class="badge ${p.gender==='M'?'b-m':'b-f'}">${p.gender === 'M' ? '남' : '여'}</span> <span class="p-name">${p.name}</span> ${playingBadge} <span class="p-info">${tiers[p.tier]}</span>
+        return `<div class="player-chip match-player-chip gender-card ${getGenderCardClass(p.gender)} ${cls}" onclick="openSwap(${court.id}, '${area}', ${idx})">
+            ${renderGenderAccessibility(p.gender)}
+            ${playingBadge}
+            <div class="match-player-content">
+                <span class="p-name" title="${safePlayerName}">${safePlayerName}</span>
+                <span class="p-info">${tiers[p.tier]}</span>
+            </div>
         </div>`;
+    }
+
+    function getGenderCardClass(gender) {
+        return gender === 'M' ? 'gender-m' : 'gender-f';
+    }
+
+    function renderGenderAccessibility(gender) {
+        return `<span class="sr-only">성별: ${gender === 'M' ? '남성' : '여성'}</span>`;
     }
 
     function setType(id, val) { courts.find(c=>c.id===id).type = val; save(); }
@@ -1325,6 +1498,7 @@
         statusSelect.value = id && p.status === 'resting' ? 'resting' : 'waiting';
         statusSelect.disabled = isAssigned;
         statusSelect.title = isAssigned ? '게임 중이거나 예약된 선수는 상태를 변경할 수 없습니다.' : '';
+        document.getElementById('deletePlayerButton').hidden = !id;
         document.getElementById('pModal').style.display = 'flex';
         document.getElementById('pName').focus();
     }
@@ -1383,6 +1557,15 @@
         const p = players.find(x => x.id === id);
         if (p) { p.shuttlecock = !p.shuttlecock; save(); render(); }
     }
+    function toggleRosterActions(id) {
+        expandedRosterPlayerId = String(expandedRosterPlayerId) === String(id) ? null : id;
+        render();
+    }
+    function handleRosterCardKey(event, id) {
+        if(event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) return;
+        event.preventDefault();
+        toggleRosterActions(id);
+    }
     function toggleRestStatus(id) {
         const p = players.find(x => x.id === id);
         if(!p || (p.status !== 'waiting' && p.status !== 'resting')) return;
@@ -1405,6 +1588,182 @@
         return legacyNames.length === 4
             ? [legacyNames.slice(0, 2), legacyNames.slice(2, 4)]
             : null;
+    }
+
+    function escapeHTML(value) {
+        const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+        return String(value ?? '').replace(/[&<>"']/g, character => entities[character]);
+    }
+
+    function findStatsPlayer(playerId) {
+        return players.find(player => String(player.id) === String(playerId));
+    }
+
+    function getHistoryParticipantName(record, participantIndex, playerId) {
+        const currentPlayer = findStatsPlayer(playerId);
+        if(currentPlayer) return currentPlayer.name;
+
+        const recordedNames = getHistoryTeams(record)?.flat() || [];
+        return recordedNames[participantIndex] || '삭제된 선수';
+    }
+
+    function getPlayerStatistics(playerId) {
+        const playerKey = String(playerId);
+        const relationships = new Map();
+        let recordedGames = 0;
+
+        history.forEach(record => {
+            if(!Array.isArray(record.pIds) || record.pIds.length < 4) return;
+            const participantIds = record.pIds.slice(0, 4);
+            const playerIndex = participantIds.findIndex(id => String(id) === playerKey);
+            if(playerIndex < 0) return;
+
+            recordedGames++;
+            const playerTeamIndex = Math.floor(playerIndex / 2);
+
+            participantIds.forEach((otherPlayerId, participantIndex) => {
+                if(participantIndex === playerIndex || otherPlayerId === null || otherPlayerId === undefined) return;
+                const relationshipKey = String(otherPlayerId);
+                if(relationshipKey === playerKey) return;
+
+                if(!relationships.has(relationshipKey)) {
+                    relationships.set(relationshipKey, {
+                        playerId: otherPlayerId,
+                        name: getHistoryParticipantName(record, participantIndex, otherPlayerId),
+                        sameTeam: 0,
+                        opponent: 0
+                    });
+                }
+
+                const relationship = relationships.get(relationshipKey);
+                if(Math.floor(participantIndex / 2) === playerTeamIndex) relationship.sameTeam++;
+                else relationship.opponent++;
+            });
+        });
+
+        const relations = [...relationships.values()].map(relationship => {
+            const currentPlayer = findStatsPlayer(relationship.playerId);
+            return {
+                ...relationship,
+                name: currentPlayer?.name || relationship.name,
+                currentPlayer: currentPlayer || null,
+                together: relationship.sameTeam + relationship.opponent
+            };
+        }).sort((a, b) =>
+            b.together - a.together ||
+            b.sameTeam - a.sameTeam ||
+            a.name.localeCompare(b.name, 'ko')
+        );
+
+        return {
+            player: findStatsPlayer(playerId) || null,
+            recordedGames,
+            relations,
+            uniquePartners: relations.filter(relationship => relationship.sameTeam > 0).length,
+            uniqueOpponents: relations.filter(relationship => relationship.opponent > 0).length
+        };
+    }
+
+    function openStatsModal(playerId = null) {
+        const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+        const requestedPlayer = playerId === null ? null : findStatsPlayer(playerId);
+        const currentPlayer = statsPlayerId === null ? null : findStatsPlayer(statsPlayerId);
+        statsPlayerId = requestedPlayer?.id ?? currentPlayer?.id ?? sortedPlayers[0]?.id ?? null;
+
+        document.getElementById('statsSearch').value = '';
+        renderStatsPlayerList();
+        renderStatsDetail();
+        document.getElementById('statsModal').style.display = 'flex';
+    }
+
+    function closeStatsModal() {
+        document.getElementById('statsModal').style.display = 'none';
+    }
+
+    function selectStatsPlayer(playerId, clearSearch = false) {
+        const player = findStatsPlayer(playerId);
+        if(!player) return;
+        statsPlayerId = player.id;
+        if(clearSearch) document.getElementById('statsSearch').value = '';
+        renderStatsPlayerList();
+        renderStatsDetail();
+    }
+
+    function renderStatsPlayerList() {
+        const list = document.getElementById('statsPlayerList');
+        const keyword = document.getElementById('statsSearch').value.trim().toLowerCase();
+        const filteredPlayers = [...players]
+            .filter(player => player.name.toLowerCase().includes(keyword))
+            .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+
+        if(filteredPlayers.length === 0) {
+            list.innerHTML = '<div class="empty-state" style="padding:18px 8px;">검색된 선수가 없습니다.</div>';
+            return;
+        }
+
+        list.innerHTML = filteredPlayers.map(player => `
+            <button type="button" class="stats-player-option gender-card ${getGenderCardClass(player.gender)} ${String(player.id) === String(statsPlayerId) ? 'active' : ''}" onclick="selectStatsPlayer(${player.id})" aria-pressed="${String(player.id) === String(statsPlayerId)}">
+                ${renderGenderAccessibility(player.gender)}
+                <span class="stats-player-option-main">
+                    <span class="stats-player-option-name">${escapeHTML(player.name)}</span>
+                    <span class="stats-player-option-meta">${tiers[player.tier] || '급수 미지정'} · ${player.games}경기</span>
+                </span>
+            </button>
+        `).join('');
+    }
+
+    function renderStatsDetail() {
+        const detail = document.getElementById('statsDetail');
+        const statistics = statsPlayerId === null ? null : getPlayerStatistics(statsPlayerId);
+        const player = statistics?.player;
+
+        if(!player) {
+            detail.innerHTML = '<div class="stats-empty">선수를 등록하면 개인별 경기 관계 통계를 볼 수 있습니다.</div>';
+            return;
+        }
+
+        const relationRows = statistics.relations.map(relationship => {
+            const currentPlayer = relationship.currentPlayer;
+            const genderAccessibility = currentPlayer
+                ? renderGenderAccessibility(currentPlayer.gender)
+                : '<span class="badge" style="background:#94a3b8;">기록</span>';
+            const genderCardClass = currentPlayer
+                ? `gender-card ${getGenderCardClass(currentPlayer.gender)}`
+                : '';
+            const content = `
+                <span class="stats-relation-player">${genderAccessibility}<span class="stats-relation-name">${escapeHTML(relationship.name)}</span></span>
+                <span class="stats-relation-count stats-relation-total">${relationship.together}</span>
+                <span class="stats-relation-count">${relationship.sameTeam}</span>
+                <span class="stats-relation-count">${relationship.opponent}</span>`;
+
+            return currentPlayer
+                ? `<button type="button" class="stats-relation-row ${genderCardClass}" onclick="selectStatsPlayer(${currentPlayer.id}, true)" title="${escapeHTML(currentPlayer.name)} 선수 통계 보기">${content}</button>`
+                : `<div class="stats-relation-row" title="현재 명단에서 삭제된 선수">${content}</div>`;
+        }).join('');
+
+        detail.innerHTML = `
+            <div class="stats-profile gender-card ${getGenderCardClass(player.gender)}">
+                ${renderGenderAccessibility(player.gender)}
+                <div class="stats-profile-main">
+                    <span class="stats-profile-name">${escapeHTML(player.name)}</span>
+                    <span class="stats-profile-meta">${tiers[player.tier] || '급수 미지정'} · ${player.games}경기</span>
+                </div>
+            </div>
+            <div class="stats-summary">
+                <div class="stats-summary-card"><strong>${statistics.recordedGames}</strong><span>기록 경기</span></div>
+                <div class="stats-summary-card"><strong>${statistics.relations.length}</strong><span>함께한 선수</span></div>
+                <div class="stats-summary-card"><strong>${statistics.uniquePartners}</strong><span>같은 팀 선수</span></div>
+                <div class="stats-summary-card"><strong>${statistics.uniqueOpponents}</strong><span>상대한 선수</span></div>
+            </div>
+            <div class="stats-section-heading">
+                <strong>선수별 경기 관계</strong>
+                <span>전체 = 같은 팀 + 상대</span>
+            </div>
+            ${statistics.relations.length > 0 ? `
+                <div class="stats-relation-head"><span>선수</span><span>전체</span><span>같은 팀</span><span>상대</span></div>
+                <div class="stats-relation-list">${relationRows}</div>
+            ` : '<div class="stats-empty">아직 이 선수가 포함된 경기 기록이 없습니다.<br>경기가 종료되면 통계가 자동으로 쌓입니다.</div>'}
+        `;
     }
 
     function editHistoryScore(historyIndex) {
@@ -1514,9 +1873,9 @@
 
         candidates.forEach(p=>{
             const isPlaying = isPlayerInCourtArea(p.id, 'active');
-            list.innerHTML += `<div class="player-chip waiting-chip" onclick="doSwap(${p.id})">
+            list.innerHTML += `<div class="player-chip waiting-chip gender-card ${getGenderCardClass(p.gender)}" onclick="doSwap(${p.id})">
+                ${renderGenderAccessibility(p.gender)}
                 <div style="display:flex; align-items:center; gap:8px; min-width:0;">
-                    <span class="badge ${p.gender==='M'?'b-m':'b-f'}">${p.gender === 'M' ? '남' : '여'}</span>
                     <span class="p-name">${p.name}</span>
                     ${isPlaying ? '<span class="badge" style="background:var(--primary); font-size:0.6rem;">게임중</span>' : ''}
                 </div>
