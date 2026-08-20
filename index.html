@@ -453,9 +453,9 @@
         <ul style="padding-left: 20px; margin: 0; list-style-type: disc;">
             <li><strong>선수 등록:</strong> '+ 개별' 또는 '+ 일괄' 사용.</li>
             <li><strong>자동 매칭:</strong> <strong>[⚡ 자동 매칭]</strong> 클릭 시 4명 선발.</li>
-            <li><strong>수동 매칭:</strong> <strong>[수동]</strong> 버튼으로 4명 직접 선택.</li>
-            <li><strong>선수 교체:</strong> 배치된 선수 클릭 시 대기자와 교체.</li>
-            <li><strong>승계 기능:</strong> 다음 예약자 존재 시 '게임 종료' 후 자동 입장.</li>
+            <li><strong>수동 매칭:</strong> <strong>[수동]</strong> 버튼으로 4명 직접 선택. 다음 대기 편성에서는 게임 중인 선수도 선택할 수 있습니다.</li>
+            <li><strong>선수 교체:</strong> 배치된 선수 클릭 시 교체. 다음 대기에서는 게임 중인 선수도 선택할 수 있습니다.</li>
+            <li><strong>승계 기능:</strong> 다음 예약 선수가 다른 코트에서 게임 중이면 현재 경기만 종료하고 승계는 보류합니다.</li>
         </ul>
         <div style="margin-top:15px;">
             <strong>⚙️ 알고리즘 우선순위</strong>
@@ -473,6 +473,7 @@
 <!-- 수동 매칭 모달 -->
 <div id="manualModal" class="modal"><div class="modal-box" style="height:80vh;">
     <h3 style="margin-top:0;">수동 매칭 (4명 선택)</h3>
+    <p id="manualHelp" style="margin-top:-4px; color:#64748b; font-size:0.85rem;"></p>
     <div style="margin-bottom:10px; font-weight:bold; color:var(--primary);">선택됨: <span id="manualSelCount">0</span> / 4</div>
     <div id="manualList" class="wc-list" style="border:1px solid #eee; border-radius:8px;"></div>
     <div style="display:flex; gap:10px; margin-top:15px;">
@@ -515,6 +516,7 @@
 <!-- 선수 교체 모달 -->
 <div id="swapModal" class="modal"><div class="modal-box">
     <h3 style="margin-top:0">선수 교체</h3>
+    <p id="swapHelp" style="margin-top:-4px; color:#64748b; font-size:0.85rem;"></p>
     <div id="swapList" class="wc-list" style="max-height:300px; border:1px solid #eee; border-radius:8px;"></div>
     <button class="btn btn-outline" style="width:100%; margin-top:15px;" onclick="closeSwapModal()">닫기</button>
 </div></div>
@@ -552,6 +554,7 @@
     let editPId = null;
     let swapTarget = null;
     let manualTargetCId = null;
+    let manualTargetArea = null;
     let manualSelected = new Set();
     const collapsedStatuses = new Set();
     let pendingHistoryIndex = null;
@@ -708,16 +711,14 @@
     }
 
     // 3. 코트 삭제
-    function delCourt(id) { 
+    function delCourt(id) {
         showConfirmModal("이 코트를 삭제하시겠습니까?\n(배정된 선수들은 대기실로 이동합니다)", () => {
             const c = courts.find(x => x.id === id);
             if (c) {
-                [...c.active, ...c.next].forEach(p => {
-                    const player = players.find(x => x.id === p.id);
-                    if (player) player.status = 'waiting';
-                });
+                const affectedPlayerIds = [...c.active, ...c.next].map(p => p.id);
                 courts = courts.filter(x => x.id !== id);
-                save(); 
+                syncPlayerAssignmentStatuses(affectedPlayerIds, 'waiting');
+                save();
                 render();
                 showToast("코트가 삭제되었습니다.");
             }
@@ -782,22 +783,47 @@
     // --- Core: Manual Match ---
     function openManualMatch(cId) {
         const court = courts.find(c => c.id === cId);
-        if(court.active.length > 0 && court.next.length > 0) return showToast("예약이 꽉 찼습니다.");
-        manualTargetCId = cId; manualSelected.clear(); renderManualList();
+        if(!court) return;
+        if(court.next.length > 0) return showToast("예약이 꽉 찼습니다.");
+        manualTargetCId = cId;
+        manualTargetArea = court.active.length === 0 ? 'active' : 'next';
+        manualSelected.clear();
+        renderManualList();
         document.getElementById('manualModal').style.display = 'flex';
     }
 
     function renderManualList() {
         const list = document.getElementById('manualList'); list.innerHTML = '';
-        const waiters = players.filter(p => p.status === 'waiting').sort((a,b) => a.games - b.games || a.lastTime - b.lastTime);
+        const allowPlayingPlayers = manualTargetArea === 'next';
+        document.getElementById('manualHelp').innerText = allowPlayingPlayers
+            ? '다음 대기에는 대기 중인 선수와 현재 게임 중인 선수를 선택할 수 있습니다.'
+            : '빈 코트의 현재 경기에는 대기 중인 선수만 선택할 수 있습니다.';
+
+        const candidates = players.filter(player => {
+            const isPlaying = isPlayerInCourtArea(player.id, 'active');
+            const isAlreadyReserved = isPlayerInCourtArea(player.id, 'next');
+            if(isAlreadyReserved) return false;
+            if(isPlaying) return allowPlayingPlayers;
+            return player.status === 'waiting';
+        }).sort((a, b) => {
+            const playingOrder = Number(isPlayerInCourtArea(a.id, 'active')) - Number(isPlayerInCourtArea(b.id, 'active'));
+            return playingOrder || a.games - b.games || a.lastTime - b.lastTime;
+        });
         document.getElementById('manualSelCount').innerText = manualSelected.size;
-        
-        waiters.forEach(p => {
+
+        if(candidates.length === 0) {
+            list.innerHTML = '<div class="empty-state" style="padding:24px 12px;">선택 가능한 선수가 없습니다.</div>';
+        }
+
+        candidates.forEach(p => {
             const isSel = manualSelected.has(p.id);
+            const isPlaying = isPlayerInCourtArea(p.id, 'active');
             list.innerHTML += `
             <div class="player-chip waiting-chip manual-chip ${isSel?'selected':''}" onclick="toggleManualSelect(${p.id})">
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <span class="badge ${p.gender==='M'?'b-m':'b-f'}">${p.gender === 'M' ? '남' : '여'}</span> <span>${p.name}</span>
+                    <span class="badge ${p.gender==='M'?'b-m':'b-f'}">${p.gender === 'M' ? '남' : '여'}</span>
+                    <span>${p.name}</span>
+                    ${isPlaying ? '<span class="badge" style="background:var(--primary); font-size:0.6rem;">게임중</span>' : ''}
                 </div>
                 <div><span class="p-info">${tiers[p.tier]}</span> <span class="badge" style="background:#eee; color:#555;">${p.games}회</span></div>
             </div>`;
@@ -806,21 +832,49 @@
 
     function toggleManualSelect(pId) {
         if(manualSelected.has(pId)) manualSelected.delete(pId);
-        else { if(manualSelected.size >= 4) return showToast("4명까지만 선택 가능합니다."); manualSelected.add(pId); }
+        else {
+            const player = players.find(candidate => candidate.id === pId);
+            const isPlaying = player && isPlayerInCourtArea(pId, 'active');
+            const isAlreadyReserved = player && isPlayerInCourtArea(pId, 'next');
+            const isEligible = player && !isAlreadyReserved && (isPlaying ? manualTargetArea === 'next' : player.status === 'waiting');
+            if(!isEligible) return showToast("현재 선택할 수 없는 선수입니다.");
+            if(manualSelected.size >= 4) return showToast("4명까지만 선택 가능합니다.");
+            manualSelected.add(pId);
+        }
         renderManualList();
     }
 
     function confirmManualMatch() {
         if(manualSelected.size !== 4) return showToast("4명을 선택해야 합니다.");
-        const selectedIds = Array.from(manualSelected);
-        const selectedPlayers = selectedIds.map(id => players.find(p => p.id === id));
         const court = courts.find(c => c.id === manualTargetCId);
-        const targetArea = (court.active.length === 0) ? 'active' : 'next';
-        applyMatch(manualTargetCId, selectedPlayers, targetArea);
+        if(!court) return closeManualModal();
+        const targetArea = court.active.length === 0 ? 'active' : 'next';
+        if(targetArea !== manualTargetArea || court.next.length > 0) {
+            closeManualModal();
+            return showToast("코트 상태가 변경되어 다시 선택해야 합니다.");
+        }
+
+        const selectedPlayers = Array.from(manualSelected).map(id => players.find(p => p.id === id));
+        const hasInvalidPlayer = selectedPlayers.some(player => {
+            if(!player || isPlayerInCourtArea(player.id, 'next')) return true;
+            const isPlaying = isPlayerInCourtArea(player.id, 'active');
+            return isPlaying ? targetArea !== 'next' : player.status !== 'waiting';
+        });
+        if(hasInvalidPlayer) {
+            renderManualList();
+            return showToast("선수 상태가 변경되어 다시 선택해야 합니다.");
+        }
+
+        applyMatch(manualTargetCId, selectedPlayers, manualTargetArea);
         closeManualModal();
     }
 
-    function closeManualModal() { document.getElementById('manualModal').style.display='none'; }
+    function closeManualModal() {
+        document.getElementById('manualModal').style.display='none';
+        manualTargetCId = null;
+        manualTargetArea = null;
+        manualSelected.clear();
+    }
 
     // --- Apply Match ---
     function applyMatch(cId, selectedPlayers, targetArea) {
@@ -843,10 +897,7 @@
         }
 
         court[targetArea] = bestTeam;
-        bestTeam.forEach(p => {
-            const player = players.find(x=>x.id===p.id);
-            if(player) player.status = (targetArea === 'active' ? 'playing' : 'reserved');
-        });
+        syncPlayerAssignmentStatuses(bestTeam.map(p => p.id));
 
         if(targetArea === 'active') court.startTime = Date.now();
         save(); render();
@@ -891,6 +942,9 @@
         const court = courts.find(c => c.id === cId);
         if(!court) return;
         const now = Date.now();
+        const hadActiveGame = court.active.length > 0;
+        const successionBlockers = court.next.filter(player => isPlayerPlayingOutsideCourt(player.id, cId));
+        const affectedPlayerIds = [...court.active, ...court.next].map(p => p.id);
 
         if(court.active.length > 0) {
             const activePlayers = [...court.active];
@@ -914,26 +968,34 @@
 
             activePlayers.forEach(p => {
                 const target = players.find(x => x.id === p.id);
-                if(target) { target.games++; target.lastTime = now; target.status = 'waiting'; }
+                if(target) { target.games++; target.lastTime = now; }
             });
         }
 
-        if(court.next.length > 0) {
+        if(court.next.length > 0 && successionBlockers.length === 0) {
             court.active = [...court.next];
             court.next = [];
-            court.active.forEach(p => players.find(x=>x.id===p.id).status = 'playing');
             court.startTime = Date.now();
         } else {
             court.active = [];
             court.startTime = null;
         }
+        syncPlayerAssignmentStatuses(affectedPlayerIds, 'waiting');
         save(); render();
+
+        if(successionBlockers.length > 0) {
+            const blockerNames = successionBlockers.map(player => player.name).join(', ');
+            const prefix = hadActiveGame ? '게임 종료 · 승계 불가' : '게임 시작 불가';
+            showToast(`${prefix}: ${blockerNames} 선수가 아직 다른 코트에서 게임 중입니다.`);
+        }
     }
 
     function cancelNext(cId) {
         const court = courts.find(c => c.id === cId);
-        court.next.forEach(p => players.find(x=>x.id===p.id).status = 'waiting');
+        if(!court) return;
+        const affectedPlayerIds = court.next.map(p => p.id);
         court.next = [];
+        syncPlayerAssignmentStatuses(affectedPlayerIds, 'waiting');
         save(); render();
     }
 
@@ -972,6 +1034,28 @@
     }
 
     // --- Helpers ---
+    function isPlayerInCourtArea(playerId, area) {
+        return courts.some(court => court[area].some(player => player.id === playerId));
+    }
+
+    function isPlayerPlayingOutsideCourt(playerId, courtId) {
+        return courts.some(court => court.id !== courtId && court.active.some(player => player.id === playerId));
+    }
+
+    function syncPlayerAssignmentStatus(playerId, fallbackStatus = null) {
+        const player = players.find(candidate => candidate.id === playerId);
+        if(!player) return;
+
+        if(isPlayerInCourtArea(playerId, 'active')) player.status = 'playing';
+        else if(isPlayerInCourtArea(playerId, 'next')) player.status = 'reserved';
+        else if(fallbackStatus) player.status = fallbackStatus;
+        else if(player.status === 'playing' || player.status === 'reserved') player.status = 'waiting';
+    }
+
+    function syncPlayerAssignmentStatuses(playerIds, fallbackStatus = null) {
+        [...new Set(playerIds)].forEach(playerId => syncPlayerAssignmentStatus(playerId, fallbackStatus));
+    }
+
     function shuffleByGameCount(list) {
         const groups = {};
         list.forEach(p => { if(!groups[p.games]) groups[p.games] = []; groups[p.games].push(p); });
@@ -1182,8 +1266,11 @@
 
     function renderChip(court, area, idx, cls='') {
         const p = court[area][idx];
+        const playingBadge = area === 'next' && isPlayerInCourtArea(p.id, 'active')
+            ? `<span class="badge" style="background:var(--primary); font-size:0.6rem;">게임중</span>`
+            : '';
         return `<div class="player-chip ${cls}" onclick="openSwap(${court.id}, '${area}', ${idx})">
-            <span class="badge ${p.gender==='M'?'b-m':'b-f'}">${p.gender === 'M' ? '남' : '여'}</span> <span class="p-name">${p.name}</span> <span class="p-info">${tiers[p.tier]}</span>
+            <span class="badge ${p.gender==='M'?'b-m':'b-f'}">${p.gender === 'M' ? '남' : '여'}</span> <span class="p-name">${p.name}</span> ${playingBadge} <span class="p-info">${tiers[p.tier]}</span>
         </div>`;
     }
 
@@ -1368,24 +1455,65 @@
     function closeHModal() { document.getElementById('hModal').style.display='none'; }
 
     function openSwap(cId, area, idx) {
+        const court = courts.find(candidate => candidate.id === cId);
+        if(!court || !court[area] || !court[area][idx]) return;
+
         swapTarget = {cId, area, idx};
         const list = document.getElementById('swapList'); list.innerHTML='';
-        players.filter(p=>p.status==='waiting').sort((a,b)=>a.games-b.games).forEach(p=>{
+        const allowPlayingPlayers = area === 'next';
+        document.getElementById('swapHelp').innerText = allowPlayingPlayers
+            ? '대기 중인 선수와 현재 게임 중인 선수를 선택할 수 있습니다.'
+            : '대기 중인 선수를 선택할 수 있습니다.';
+
+        const candidates = players.filter(player => {
+            const isPlaying = isPlayerInCourtArea(player.id, 'active');
+            const isAlreadyReserved = isPlayerInCourtArea(player.id, 'next');
+            if(isAlreadyReserved) return false;
+            if(isPlaying) return allowPlayingPlayers;
+            return player.status === 'waiting';
+        }).sort((a, b) => {
+            const playingOrder = Number(isPlayerInCourtArea(a.id, 'active')) - Number(isPlayerInCourtArea(b.id, 'active'));
+            return playingOrder || a.games - b.games || a.lastTime - b.lastTime;
+        });
+
+        if(candidates.length === 0) {
+            list.innerHTML = '<div class="empty-state" style="padding:24px 12px;">교체 가능한 선수가 없습니다.</div>';
+        }
+
+        candidates.forEach(p=>{
+            const isPlaying = isPlayerInCourtArea(p.id, 'active');
             list.innerHTML += `<div class="player-chip waiting-chip" onclick="doSwap(${p.id})">
-                <span class="badge ${p.gender==='M'?'b-m':'b-f'}">${p.gender === 'M' ? '남' : '여'}</span> <span class="p-name">${p.name}</span>
+                <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+                    <span class="badge ${p.gender==='M'?'b-m':'b-f'}">${p.gender === 'M' ? '남' : '여'}</span>
+                    <span class="p-name">${p.name}</span>
+                    ${isPlaying ? '<span class="badge" style="background:var(--primary); font-size:0.6rem;">게임중</span>' : ''}
+                </div>
+                <span class="p-info">${tiers[p.tier]} · ${p.games}회</span>
             </div>`;
         });
         document.getElementById('swapModal').style.display='flex';
     }
     function doSwap(pId) {
+        if(!swapTarget) return;
         const c = courts.find(x=>x.id===swapTarget.cId);
+        const replacement = players.find(x=>x.id===pId);
+        if(!c || !replacement || !c[swapTarget.area] || !c[swapTarget.area][swapTarget.idx]) return closeSwapModal();
+
+        const replacementIsPlaying = isPlayerInCourtArea(pId, 'active');
+        if(swapTarget.area !== 'next' && replacementIsPlaying) return showToast('게임 중인 선수는 다음 대기에만 넣을 수 있습니다.');
+        if(isPlayerInCourtArea(pId, 'next')) return showToast('이미 다음 대기에 배정된 선수입니다.');
+
         const oldP = c[swapTarget.area][swapTarget.idx];
-        players.find(x=>x.id===oldP.id).status='waiting';
-        players.find(x=>x.id===pId).status = (swapTarget.area==='active')?'playing':'reserved';
-        c[swapTarget.area][swapTarget.idx] = players.find(x=>x.id===pId);
-        save(); closeSwapModal(); render(); showToast("교체 완료");
+        c[swapTarget.area][swapTarget.idx] = replacement;
+        syncPlayerAssignmentStatus(oldP.id, 'waiting');
+        syncPlayerAssignmentStatus(pId);
+        save(); closeSwapModal(); render();
+        showToast(replacementIsPlaying ? '교체 완료 · 현재 게임 중인 선수입니다.' : '교체 완료');
     }
-    function closeSwapModal() { document.getElementById('swapModal').style.display='none'; }
+    function closeSwapModal() {
+        document.getElementById('swapModal').style.display='none';
+        swapTarget = null;
+    }
 
     render();
     updateInstallButton();
