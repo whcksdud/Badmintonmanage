@@ -170,4 +170,75 @@ function assertInRuntime(context, assertion, message) {
     assertInRuntime(context, 'players.find(player => player.id === 9).status === "playing"', '승계된 선수의 상태가 게임 중으로 바뀌지 않았습니다.');
 }
 
-console.log('선수 교체·수동 매칭·승계 상태 테스트 통과');
+{
+    const players = createPlayers();
+    players.forEach(player => { player.status = 'resting'; player.games = 9; });
+    [1, 2, 3, 4].forEach(id => { players[id - 1].status = 'playing'; players[id - 1].games = id === 1 ? 0 : 5; });
+    [5, 6, 7].forEach(id => { players[id - 1].status = 'waiting'; players[id - 1].games = 0; });
+    const courts = [{ id: 1, type: 'A', active: courtPlayers(players, [1, 2, 3, 4]), next: [], startTime: Date.now() - 60000 }];
+    const context = createRuntime(players, courts);
+
+    vm.runInContext('matchCourt(1)', context);
+    assertInRuntime(context, 'courts[0].next.map(player => player.id).sort((a, b) => a - b).join(",") === "1,5,6,7"', '다음 자동 예약에서 게임 중 선수를 예상 게임 수에 따라 선발하지 못했습니다.');
+    assertInRuntime(context, 'players.find(player => player.id === 1).status === "playing"', '자동 예약에 포함된 게임 중 선수의 상태가 손실되었습니다.');
+    assertInRuntime(context, 'courts[0].next.some(player => player.id === 1) && renderChip(courts[0], "next", courts[0].next.findIndex(player => player.id === 1)).includes("게임중")', '자동 예약 카드에 게임 중 표시가 없습니다.');
+    if (!context.__elements.get('toast').innerText.includes('게임 중인 선수 1명 포함')) throw new Error('자동 예약 완료 안내에 게임 중 선수 수가 없습니다.');
+}
+
+{
+    const players = createPlayers();
+    players.forEach(player => { player.status = 'resting'; player.games = 9; });
+    [1, 2, 3, 4].forEach(id => { players[id - 1].status = 'playing'; players[id - 1].games = id === 1 ? 0 : 5; });
+    [5, 6, 8].forEach(id => { players[id - 1].status = 'waiting'; players[id - 1].games = 0; });
+    const courts = [{ id: 1, type: 'X', active: courtPlayers(players, [1, 2, 3, 4]), next: [], startTime: Date.now() - 60000 }];
+    const context = createRuntime(players, courts);
+
+    vm.runInContext('matchCourt(1)', context);
+    assertInRuntime(context, 'courts[0].next.map(player => player.id).sort((a, b) => a - b).join(",") === "1,5,6,8"', '혼복 다음 예약에서 게임 중 선수를 성별 조건에 맞게 선발하지 못했습니다.');
+    assertInRuntime(context, 'courts[0].next.filter(player => player.gender === "M").length === 2 && courts[0].next.filter(player => player.gender === "F").length === 2', '게임 중 선수를 고려한 혼복 성별 구성이 잘못되었습니다.');
+}
+
+{
+    const players = createPlayers();
+    players.forEach(player => { player.status = 'resting'; player.games = 9; });
+    [1, 2, 3, 4].forEach(id => { players[id - 1].status = 'playing'; players[id - 1].games = 0; });
+    [5, 6, 7, 8].forEach(id => { players[id - 1].status = 'waiting'; players[id - 1].games = 1; });
+    const courts = [{ id: 1, type: 'A', active: courtPlayers(players, [1, 2, 3, 4]), next: [], startTime: Date.now() - 60000 }];
+    const context = createRuntime(players, courts);
+
+    vm.runInContext('matchCourt(1)', context);
+    assertInRuntime(context, 'courts[0].next.every(player => [5, 6, 7, 8].includes(player.id))', '예상 게임 수가 같은데 게임 중 선수가 대기 선수보다 먼저 선발되었습니다.');
+}
+
+{
+    const players = createPlayers();
+    players.forEach(player => { player.status = 'resting'; player.games = 0; });
+    [1, 2, 3, 4].forEach(id => { players[id - 1].status = 'playing'; });
+    [5, 6, 7].forEach(id => { players[id - 1].status = 'waiting'; });
+    const courts = [
+        { id: 1, type: 'A', active: courtPlayers(players, [1, 2, 3, 4]), next: [], startTime: Date.now() - 60000 },
+        { id: 2, type: 'A', active: [], next: [], startTime: null }
+    ];
+    const context = createRuntime(players, courts);
+
+    vm.runInContext('matchCourt(2)', context);
+    assertInRuntime(context, 'courts[1].next.length === 0', '빈 코트의 첫 경기에 게임 중인 선수가 자동 배정되었습니다.');
+    if (!context.__elements.get('toast').innerText.includes('인원이 부족')) throw new Error('빈 코트 자동 매칭의 인원 부족 안내가 없습니다.');
+}
+
+{
+    const players = createPlayers();
+    players.forEach(player => { player.status = 'resting'; player.games = 9; });
+    [1, 2, 3, 4].forEach(id => { players[id - 1].status = 'playing'; players[id - 1].games = id === 1 ? 0 : 5; });
+    [5, 6, 7].forEach(id => { players[id - 1].status = 'waiting'; players[id - 1].games = 0; });
+    const courts = [
+        { id: 1, type: 'A', active: courtPlayers(players, [1, 2, 3, 4]), next: [], startTime: Date.now() - 60000 },
+        { id: 2, type: 'A', active: [], next: courtPlayers(players, [1]), startTime: null }
+    ];
+    const context = createRuntime(players, courts);
+
+    vm.runInContext('matchCourt(1)', context);
+    assertInRuntime(context, '!courts[0].next.some(player => player.id === 1)', '이미 다른 다음 경기에 예약된 게임 중 선수가 중복 배정되었습니다.');
+}
+
+console.log('선수 교체·수동 매칭·자동 예약·승계 상태 테스트 통과');
