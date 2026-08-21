@@ -616,7 +616,7 @@
     </div>
 </div>
 
-<section id="rosterActionSheet" class="roster-action-sheet" aria-label="선수 관리" hidden></section>
+<section id="rosterActionSheet" class="roster-action-sheet" aria-label="선수 관리" onclick="event.stopPropagation()" hidden></section>
 
 <div id="toast">알림 메시지</div>
 <input type="file" id="fileInput" style="display:none" onchange="importData(this)">
@@ -1775,6 +1775,12 @@
         selectedRosterPlayerId = null;
         render();
     }
+    function handleRosterActionSheetOutsideClick(event) {
+        if(selectedRosterPlayerId === null) return;
+        if(event.target?.closest?.('.roster-chip')) return;
+        closeRosterActionSheet();
+    }
+    document.addEventListener('click', handleRosterActionSheetOutsideClick);
     function handleRosterCardKey(event, id) {
         if(event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) return;
         event.preventDefault();

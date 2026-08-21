@@ -38,7 +38,8 @@ function createRuntime(players, history) {
                 if (!elements.has(id)) elements.set(id, createElement());
                 return elements.get(id);
             },
-            createElement
+            createElement,
+            addEventListener() {}
         },
         localStorage: {
             getItem(key) { return storage.has(key) ? storage.get(key) : null; },
