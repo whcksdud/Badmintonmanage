@@ -2,6 +2,7 @@ const fs = require('fs');
 const vm = require('vm');
 
 const html = fs.readFileSync('index.html', 'utf8');
+if (html.includes('>F조</option>') || html.includes('const tiers = ["F조"') || !html.includes('<option value="1" selected>E조</option>')) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
 const inlineScript = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 
 if (!inlineScript) throw new Error('index.html의 인라인 스크립트를 찾을 수 없습니다.');
@@ -150,23 +151,25 @@ function assertInRuntime(context, assertion, message) {
     vm.runInContext('toggleRosterActions(13)', context);
     let expandedRosterHtml = context.__elements.get('waitList').innerHTML;
     if ((expandedRosterHtml.match(/class="roster-action-panel"/g) || []).length !== 1 || !expandedRosterHtml.includes('aria-expanded="true"') || !expandedRosterHtml.includes('roster-close-icon')) throw new Error('선택한 선수의 빠른 동작만 펼쳐지거나 더보기 아이콘이 닫기 아이콘으로 바뀌지 않았습니다.');
-    if (!expandedRosterHtml.includes('⏸ 휴식') || !expandedRosterHtml.includes('🏸 콕 냄') || !expandedRosterHtml.includes('openPModal(13)')) throw new Error('펼친 대기 선수 카드의 휴식·콕·정보 수정 동작이 누락되었습니다.');
+    if (!expandedRosterHtml.includes('roster-action-icon-rest') || !expandedRosterHtml.includes('roster-action-icon-shuttle') || !expandedRosterHtml.includes('roster-action-icon-edit') || !expandedRosterHtml.includes('>휴식</span>') || !expandedRosterHtml.includes('>콕 냄</span>') || !expandedRosterHtml.includes('openPModal(13)')) throw new Error('펼친 대기 선수 카드의 통일된 휴식·콕·정보 수정 동작 아이콘이 누락되었습니다.');
+    if (!/\.roster-action-panel\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*nowrap/.test(html) || !/\.roster-action\s*\{[^}]*flex:\s*1 1 0/.test(html)) throw new Error('대기실 빠른 동작 버튼이 한 줄로 유지되지 않습니다.');
+    if (/[⏸↩✓🏸✎]/u.test(expandedRosterHtml)) throw new Error('대기실 빠른 동작에 OS마다 다르게 보이는 문자 이모지가 남아 있습니다.');
     assertInRuntime(context, 'expandedRosterPlayerId === 13', '펼친 선수 카드 상태를 유지하지 못했습니다.');
 
     vm.runInContext('toggleRosterActions(6)', context);
     expandedRosterHtml = context.__elements.get('waitList').innerHTML;
-    if ((expandedRosterHtml.match(/class="roster-action-panel"/g) || []).length !== 1 || !expandedRosterHtml.includes('openPModal(6)') || expandedRosterHtml.includes('⏸ 휴식')) throw new Error('예약 선수 카드 전환 시 한 카드만 펼쳐지거나 허용된 동작만 표시되지 않았습니다.');
+    if ((expandedRosterHtml.match(/class="roster-action-panel"/g) || []).length !== 1 || !expandedRosterHtml.includes('openPModal(6)') || expandedRosterHtml.includes('roster-action-icon-rest')) throw new Error('예약 선수 카드 전환 시 한 카드만 펼쳐지거나 허용된 동작만 표시되지 않았습니다.');
     vm.runInContext('toggleRosterActions(13)', context);
 
     vm.runInContext('toggleShuttlecock(13)', context);
     const shuttleActiveHtml = context.__elements.get('waitList').innerHTML;
-    if (!shuttleActiveHtml.includes('roster-action shuttle active') || !shuttleActiveHtml.includes('aria-pressed="true"') || !shuttleActiveHtml.includes('✓ 콕 취소') || !shuttleActiveHtml.includes('has-shuttlecock') || !shuttleActiveHtml.includes('· 콕 냄 빠른 동작')) throw new Error('콕 냄 선택 상태가 펼침 동작과 카드 접근성 정보에 표시되지 않았습니다.');
+    if (!shuttleActiveHtml.includes('roster-action shuttle active') || !shuttleActiveHtml.includes('aria-pressed="true"') || !shuttleActiveHtml.includes('roster-action-icon-cancel') || !shuttleActiveHtml.includes('>콕 취소</span>') || !shuttleActiveHtml.includes('has-shuttlecock') || !shuttleActiveHtml.includes('· 콕 냄 빠른 동작')) throw new Error('콕 냄 선택 상태가 펼침 동작과 카드 접근성 정보에 표시되지 않았습니다.');
     if (shuttleActiveHtml.includes('roster-shuttle-indicator') || !html.includes('.roster-chip.gender-card.has-shuttlecock { border-right: 5px solid #7c3aed; }')) throw new Error('콕 냄 표시가 성별 카드 색상보다 우선하는 오른쪽 보라색 선으로 적용되지 않았습니다.');
     vm.runInContext('toggleShuttlecock(13)', context);
 
     vm.runInContext('toggleRestStatus(13)', context);
     const restingRosterHtml = context.__elements.get('waitList').innerHTML;
-    if (!restingRosterHtml.includes('↩ 대기 복귀') || !restingRosterHtml.includes('휴식 중 (1명)') || !restingRosterHtml.includes('roster-status-resting')) throw new Error('펼친 휴식 선수 카드의 상태 표시나 대기 복귀 동작이 누락되었습니다.');
+    if (!restingRosterHtml.includes('roster-action-icon-resume') || !restingRosterHtml.includes('>대기 복귀</span>') || !restingRosterHtml.includes('휴식 중 (1명)') || !restingRosterHtml.includes('roster-status-resting')) throw new Error('펼친 휴식 선수 카드의 상태 표시나 대기 복귀 동작이 누락되었습니다.');
     vm.runInContext('toggleRestStatus(13)', context);
     assertInRuntime(context, 'players.find(player => player.id === 13).status === "waiting"', '펼친 카드 동작으로 대기 상태에 복귀하지 못했습니다.');
     vm.runInContext('toggleRosterActions(13)', context);
@@ -219,6 +222,9 @@ function assertInRuntime(context, assertion, message) {
     const nextManualHtml = context.__elements.get('manualList').innerHTML;
     if (!nextManualHtml.includes('onclick="toggleManualSelect(9)"')) throw new Error('게임 중 선수가 다음 대기 수동 매칭 후보에 없습니다.');
     if (!nextManualHtml.includes('게임중')) throw new Error('수동 매칭의 게임 중 후보에 상태 표시가 없습니다.');
+    if (!html.includes('.manual-chip.gender-card.gender-m { background: #fff; border: 1px solid #e2e8f0; border-left: 5px solid #38bdf8; }') || !html.includes('.manual-chip.gender-card.gender-f { background: #fff; border: 1px solid #e2e8f0; border-left: 5px solid #f472b6; }')) throw new Error('수동 매칭 선수 카드의 성별 표시가 왼쪽 구분선으로 적용되지 않았습니다.');
+    if (!nextManualHtml.includes('manual-chip gender-card gender-m') || !nextManualHtml.includes('manual-chip gender-card gender-f')) throw new Error('수동 매칭 선수 카드에 성별 구분 클래스가 없습니다.');
+    if (!html.includes('.manual-player-list { grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)); gap: 8px; }') || !html.includes('min-height: 84px; aspect-ratio: 1.45 / 1; padding: 6px 8px') || !nextManualHtml.includes('manual-player-name') || !nextManualHtml.includes('manual-player-meta')) throw new Error('수동 매칭 선수가 세로 여백을 줄인 카드 그리드로 표시되지 않았습니다.');
 
     vm.runInContext('[1, 2, 9, 10].forEach(toggleManualSelect); confirmManualMatch()', context);
     assertInRuntime(context, 'courts.find(court => court.id === 1).next.length === 4', '게임 중 선수를 포함한 수동 매칭에 실패했습니다.');

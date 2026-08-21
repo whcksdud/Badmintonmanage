@@ -27,6 +27,10 @@
         html, body { width: 100%; max-width: 100%; overflow: hidden; }
         body { background: var(--bg); color: var(--dark); margin: 0; padding: 0; height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
         button, input, select, textarea { touch-action: manipulation; }
+        .ui-icon-sprite { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+        .ui-icon { flex: 0 0 auto; width: 18px; height: 18px; display: block; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+        .modal-title { display: flex; align-items: center; gap: 7px; }
+        .modal-title .ui-icon { width: 20px; height: 20px; }
 
         /* --- Header --- */
         .header {
@@ -43,6 +47,7 @@
         }
         .h-btn.primary { background: var(--primary); color: #fff; border: none; }
         .h-btn:active { transform: scale(0.96); }
+        .h-btn .ui-icon { width: 17px; height: 17px; }
 
         .mobile-view-tabs { display: none; }
 
@@ -71,7 +76,8 @@
         }
         .wc-title-row { display: flex; flex-direction:column; align-items:stretch; gap:8px; font-weight: 700; }
         .wc-heading-line { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-        .waiting-toggle { flex:0 0 auto; width:30px; height:30px; border:1px solid #cbd5e1; border-radius:7px; background:#fff; color:#475569; cursor:pointer; font-weight:900; }
+        .waiting-toggle { flex:0 0 auto; width:30px; height:30px; border:1px solid #cbd5e1; border-radius:7px; background:#fff; color:#475569; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+        .waiting-toggle .ui-icon { width:16px; height:16px; }
         .wc-title { white-space:nowrap; font-size:0.9rem; }
         .wc-actions { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
         .wc-actions .btn-text { white-space:nowrap; padding:7px 8px; border-radius:6px; background:#eff6ff; }
@@ -154,6 +160,7 @@
                 border-color: #bfdbfe;
                 color: var(--primary);
             }
+            .mobile-view-tab .ui-icon { width:17px; height:17px; }
             .mobile-tab-count {
                 min-width: 22px;
                 height: 22px;
@@ -201,13 +208,15 @@
         .court-live-state { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 3px; color: #64748b; font-size: 0.68rem; font-weight: 800; }
         .cc-actions { flex: 0 0 auto; display: flex; gap: 5px; align-items: center; }
         .type-select { width: 80px; max-width: 80px; margin-bottom: 0; padding: 4px 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.82rem; background: #f8fafc; }
-        .court-delete { width: 30px; height: 30px; padding:0; border:0; background:transparent; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#94a3b8; border-radius:8px; font-size:1.2rem; }
+        .court-delete { width: 30px; height: 30px; padding:0; border:0; background:transparent; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#94a3b8; border-radius:8px; }
+        .court-delete .ui-icon { width:17px; height:17px; }
         .court-delete:active { background:#fee2e2; color:var(--danger); }
 
         .game-section { padding: 15px; display: flex; flex-direction: column; justify-content: center; min-height: 160px; position: relative; }
         .next-section { background: #f8fafc; padding: 12px 15px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
         
         .section-label { font-size: 0.75rem; font-weight: 900; color: #94a3b8; letter-spacing: 1px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .status-dot { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 999px; display: inline-block; background: #cbd5e1; }
         
         .timer-badge {
             font-variant-numeric: tabular-nums;
@@ -248,11 +257,12 @@
         .roster-toggle-icon { flex: 0 0 auto; width: 30px; height: 30px; border: 1px solid rgba(148, 163, 184, 0.55); border-radius: 999px; background: rgba(255, 255, 255, 0.82); color: #64748b; display: inline-flex; align-items: center; justify-content: center; }
         .roster-toggle-icon svg { width: 17px; height: 17px; display: block; }
         .roster-chip.expanded .roster-toggle-icon { border-color: #93c5fd; background: #eff6ff; color: #1d4ed8; }
-        .roster-action-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: 6px; padding: 8px 9px 9px; border-top: 1px solid #e2e8f0; background: #f8fafc; cursor: default; }
+        .roster-action-panel { display: flex; flex-wrap: nowrap; gap: 5px; padding: 8px 7px 9px; border-top: 1px solid #e2e8f0; background: #f8fafc; cursor: default; }
         .roster-chip.roster-status-resting .roster-action-panel { background: #e2e8f0; }
         .roster-chip.roster-status-reserved .roster-action-panel { background: #fef3c7; }
         .roster-chip.roster-status-playing .roster-action-panel { background: #dcfce7; }
-        .roster-action { min-width: 0; min-height: 35px; padding: 7px 8px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #475569; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.68rem; font-weight: 800; white-space: nowrap; cursor: pointer; }
+        .roster-action { flex: 1 1 0; min-width: 0; min-height: 35px; padding: 7px 5px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #475569; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.68rem; font-weight: 800; white-space: nowrap; cursor: pointer; }
+        .roster-action-icon { flex: 0 0 auto; width: 15px; height: 15px; display: block; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
         .roster-action.rest { background: #f1f5f9; color: #475569; }
         .roster-action.resume, .roster-action.shuttle.active { border-color: #86efac; background: #dcfce7; color: #166534; }
         .roster-action.edit { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
@@ -266,12 +276,19 @@
         .gender-card.gender-f { background: #fce7f3; border-color: #f472b6; }
         .match-player-chip.gender-card.gender-m { background: #fff; border-color: #cbd5e1; border-left: 5px solid #38bdf8; }
         .match-player-chip.gender-card.gender-f { background: #fff; border-color: #cbd5e1; border-left: 5px solid #f472b6; }
-        .manual-chip { border: 2px solid transparent; opacity: 0.8; transition: all 0.2s; }
+        .manual-player-list { grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)); gap: 8px; }
+        .manual-player-list .empty-state { grid-column: 1 / -1; }
+        .player-chip.manual-chip { min-height: 84px; aspect-ratio: 1.45 / 1; padding: 6px 8px; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; opacity: 0.8; transition: all 0.2s; }
+        .manual-chip.gender-card.gender-m { background: #fff; border: 1px solid #e2e8f0; border-left: 5px solid #38bdf8; }
+        .manual-chip.gender-card.gender-f { background: #fff; border: 1px solid #e2e8f0; border-left: 5px solid #f472b6; }
         .manual-chip.selected {
-            border-color: var(--primary);
             opacity: 1;
-            box-shadow: 0 0 0 1px var(--primary);
+            box-shadow: 0 0 0 2px var(--primary);
         }
+        .manual-player-main { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+        .manual-player-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dark); font-size: 0.92rem; font-weight: 900; }
+        .manual-player-meta { display: inline-flex; align-items: center; gap: 5px; color: #64748b; font-size: 0.72rem; font-weight: 800; }
+        .manual-player-meta span + span { padding-left: 5px; border-left: 1px solid #cbd5e1; }
         .p-name { font-size: 1rem; font-weight: 800; color: var(--dark); }
         .p-info { font-size: 0.8rem; color: #64748b; font-weight: 600; }
 
@@ -283,6 +300,7 @@
         .btn-outline { background: #fff; border: 1px solid #cbd5e1; color: var(--dark); }
         .btn-text { background: none; color: var(--primary); border: none; font-weight: 700; cursor: pointer; }
         .btn:hover { opacity: 0.9; }
+        .btn .ui-icon { width: 16px; height: 16px; }
         .player-delete-zone { display: flex; justify-content: flex-end; margin-top: 18px; padding-top: 14px; border-top: 1px solid #e2e8f0; }
         .player-delete-button { min-height: 38px; padding: 8px 11px; border: 1px solid #fecaca; border-radius: 8px; background: #fff; color: #dc2626; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.8rem; font-weight: 800; cursor: pointer; }
         .player-delete-button:hover { border-color: #fca5a5; background: #fef2f2; }
@@ -292,6 +310,8 @@
 
         .btn-group { padding: 12px; border-top: 1px solid var(--border); display: flex; gap: 8px; background: #fff; }
         .empty-state { text-align: center; color: #cbd5e1; margin: auto; font-weight: 500; font-size: 0.9rem; padding: 20px; }
+        .empty-state-content { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .empty-state-content .ui-icon { width: 17px; height: 17px; }
         
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(2px); }
         .modal-box { background: #fff; width: 500px; max-width: 90%; max-height: 90vh; border-radius: 16px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display:flex; flex-direction:column; overflow-y:auto; }
@@ -321,6 +341,11 @@
         .stats-modal-heading { flex: 0 0 auto; margin-bottom: 14px; }
         .stats-modal-heading h3 { margin: 0; }
         .stats-modal-heading p { margin: 5px 0 0; color: #64748b; font-size: 0.82rem; line-height: 1.45; }
+        .stats-tabs { flex: 0 0 auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; margin-bottom: 12px; padding: 4px; border-radius: 10px; background: #e2e8f0; }
+        .stats-tab { min-width: 0; min-height: 38px; border: 0; border-radius: 7px; background: transparent; color: #64748b; font-size: 0.82rem; font-weight: 900; cursor: pointer; }
+        .stats-tab.active { background: #fff; color: var(--primary); box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1); }
+        .stats-overall-panel { flex: 1; min-height: 0; overflow: hidden; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: #f8fafc; }
+        .stats-overall-panel[hidden], .stats-layout[hidden] { display: none; }
         .stats-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 14px; }
         .stats-picker, .stats-detail { min-width: 0; min-height: 0; border: 1px solid var(--border); border-radius: 12px; background: #fff; }
         .stats-picker { display: flex; flex-direction: column; padding: 12px; background: #f8fafc; }
@@ -349,6 +374,27 @@
         .stats-summary-card { min-width: 0; padding: 10px 7px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; text-align: center; }
         .stats-summary-card strong { display: block; color: #0f172a; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
         .stats-summary-card span { display: block; margin-top: 3px; color: #64748b; font-size: 0.68rem; font-weight: 800; line-height: 1.25; }
+        .stats-overall-summary { margin-bottom: 10px; }
+        .stats-overall-content { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: stretch; }
+        .stats-overall-ranking { grid-column: 1 / -1; }
+        .stats-overall-card { min-width: 0; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: #fff; }
+        .stats-overall-card h4 { margin: 0 0 7px; color: #334155; font-size: 0.82rem; }
+        .stats-ranking-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+        .stats-pair-list { display: grid; gap: 5px; }
+        .stats-ranking-row { min-width: 0; min-height: 36px; display: grid; grid-template-columns: 26px minmax(0, 1fr); grid-template-rows: auto auto; gap: 1px 6px; align-items: center; padding: 5px 7px; border-radius: 8px; background: #f8fafc; }
+        .stats-ranking-position { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: #e2e8f0; color: #475569; font-size: 0.68rem; font-weight: 900; }
+        .stats-ranking-row:first-child .stats-ranking-position { background: #dbeafe; color: #1d4ed8; }
+        .stats-ranking-name, .stats-pair-names { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #334155; font-size: 0.78rem; font-weight: 800; }
+        .stats-ranking-position { grid-row: 1 / 3; }
+        .stats-ranking-count, .stats-pair-count { color: var(--primary); font-size: 0.72rem; font-weight: 900; white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .stats-pair-row { min-width: 0; min-height: 30px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 7px; border-radius: 8px; background: #f8fafc; }
+        .stats-all-player-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(86px, 1fr)); gap: 4px; }
+        .stats-all-player-item { min-width: 0; min-height: 28px; display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 4px 6px; border-radius: 7px; background: #f8fafc; }
+        .stats-all-player-item.gender-card.gender-m { border: 1px solid #e2e8f0; border-left: 5px solid #38bdf8; background: #f8fafc; }
+        .stats-all-player-item.gender-card.gender-f { border: 1px solid #e2e8f0; border-left: 5px solid #f472b6; background: #f8fafc; }
+        .stats-all-player-name { min-width: 0; color: #334155; font-size: 0.7rem; font-weight: 800; line-height: 1.1; overflow-wrap: anywhere; }
+        .stats-all-player-count { flex: 0 0 auto; color: var(--primary); font-size: 0.62rem; font-weight: 900; white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .stats-pair-empty { margin: 0; padding: 8px 2px; color: #94a3b8; font-size: 0.75rem; line-height: 1.45; }
         .stats-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
         .stats-section-heading strong { font-size: 0.9rem; }
         .stats-section-heading span { color: #94a3b8; font-size: 0.68rem; font-weight: 700; }
@@ -357,8 +403,6 @@
         .stats-relation-head span:first-child { text-align: left; }
         .stats-relation-list { display: grid; gap: 6px; }
         .stats-relation-row { width: 100%; border: 1px solid var(--border); border-radius: 9px; padding: 9px; background: #fff; color: var(--dark); text-align: center; }
-        button.stats-relation-row { cursor: pointer; }
-        button.stats-relation-row:hover { border-color: #60a5fa; filter: brightness(0.98); }
         .stats-relation-player { min-width: 0; display: flex; align-items: center; gap: 7px; text-align: left; }
         .stats-relation-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; }
         .stats-relation-count { font-size: 0.86rem; font-weight: 900; font-variant-numeric: tabular-nums; }
@@ -372,6 +416,21 @@
         .algo-box { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.9rem; }
         .install-guide { margin: 0; padding-left: 22px; color: #334155; line-height: 1.8; }
         .install-guide strong { color: var(--primary); }
+
+        @media (min-width: 601px) and (max-width: 1024px) {
+            .stats-modal-box { height: calc(100dvh - 32px); max-height: calc(100dvh - 32px); }
+            .stats-overall-content { grid-template-rows: auto auto; }
+            .stats-overall-ranking { min-height: 0; }
+            .stats-overall-ranking .stats-all-player-list { grid-auto-rows: max-content; align-content: start; }
+            .stats-all-player-item { min-height: 44px; padding: 8px 7px; }
+            .stats-all-player-name { font-size: 0.74rem; }
+            .stats-all-player-count { font-size: 0.64rem; }
+        }
+
+        @media (min-width: 601px) and (max-width: 1024px) and (orientation: portrait) {
+            .stats-overall-ranking .stats-all-player-list { grid-auto-rows: max-content; align-content: start; }
+            .stats-all-player-item { min-height: 36px; padding: 5px 7px; }
+        }
 
         /* Base component rules above this point; keep phone overrides last in the cascade. */
         @media (max-width: 600px), (max-height: 500px) and (max-width: 950px) {
@@ -410,13 +469,36 @@
             input, select, textarea { font-size: 16px; }
             .type-select { width: 76px; max-width: 76px; min-height: 40px; padding: 4px 5px; font-size: 14px; }
             .stats-modal-box { height: calc(100dvh - max(16px, env(safe-area-inset-top))); overflow: hidden; }
-            .stats-modal-heading { margin-bottom: 10px; }
+            .stats-modal-heading { margin-bottom: 8px; }
+            .stats-modal-heading p { display: none; }
+            .stats-tabs { margin-bottom: 10px; }
+            .stats-overall-panel { padding: 8px; }
+            .stats-overall-content { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+            .stats-overall-card { padding: 8px; }
+            .stats-overall-card h4 { margin-bottom: 6px; font-size: 0.75rem; }
+            .stats-ranking-row { min-height: 32px; padding: 4px 5px; }
+            .stats-pair-row { min-height: 28px; padding: 4px 5px; }
+            .stats-ranking-name, .stats-pair-names { font-size: 0.68rem; }
+            .stats-ranking-count, .stats-pair-count { font-size: 0.66rem; }
+            .stats-all-player-list { grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 4px; }
+            .stats-overall-ranking { min-height: 0; }
+            .stats-overall-ranking .stats-all-player-list { grid-auto-rows: max-content; align-content: start; }
+            .stats-all-player-item { min-height: 44px; padding: 6px 4px; flex-direction: column; justify-content: center; gap: 2px; text-align: center; }
+            .stats-all-player-name { width: 100%; font-size: 0.68rem; line-height: 1.15; overflow-wrap: anywhere; }
+            .stats-all-player-count { font-size: 0.6rem; }
             .stats-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: 180px minmax(0, 1fr); gap: 10px; }
             .stats-picker { padding: 10px; }
-            .stats-player-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .stats-player-option { padding: 8px; }
+            .stats-player-list { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 40px; gap: 5px; }
+            .stats-player-option { height: 40px; min-height: 40px; padding: 5px 7px; border-radius: 8px; }
+            .stats-player-option-main { gap: 5px; }
+            .stats-player-option-name { font-size: 0.78rem; line-height: 1.1; }
+            .stats-player-option-meta { font-size: 0.62rem; }
             .stats-detail { padding: 12px; }
             .stats-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .stats-summary.stats-overall-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-bottom: 8px; }
+            .stats-overall-summary .stats-summary-card { padding: 6px 2px; border-radius: 8px; }
+            .stats-overall-summary .stats-summary-card strong { font-size: 1rem; }
+            .stats-overall-summary .stats-summary-card span { font-size: 0.58rem; }
             .stats-relation-head, .stats-relation-row { grid-template-columns: minmax(100px, 1fr) repeat(3, 42px); gap: 3px; }
             #toast {
                 min-width: 0;
@@ -431,23 +513,50 @@
 </head>
 <body>
 
+<svg class="ui-icon-sprite" aria-hidden="true" focusable="false">
+    <symbol id="icon-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.3 2.3 0 1 1 3.6 1.9c-.9.6-1.4 1-1.4 2.1M12 17h.01"/></symbol>
+    <symbol id="icon-history" viewBox="0 0 24 24"><path d="M7 3h8l3 3v15H7V3Z"/><path d="M15 3v4h4M10 11h5M10 15h5"/></symbol>
+    <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M4 20h16M7 17v-5h3v5M11 17V7h3v10M15 17v-8h3v8"/></symbol>
+    <symbol id="icon-add" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></symbol>
+    <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M4 7h5M15 7h5M4 17h7M17 17h3"/><circle cx="12" cy="7" r="3"/><circle cx="14" cy="17" r="3"/></symbol>
+    <symbol id="icon-shuttle" viewBox="0 0 24 24"><path d="M6 4h12l-4 10h-4L6 4Z"/><path d="m9 4 1 10M15 4l-1 10M8 9h8M10 14v1.5a2 2 0 0 0 4 0V14"/></symbol>
+    <symbol id="icon-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 20v-1.5a5.5 5.5 0 0 1 11 0V20"/><circle cx="17" cy="9" r="2.2"/><path d="M16 14.7a4.5 4.5 0 0 1 4.5 4.5V20"/></symbol>
+    <symbol id="icon-phone" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M10 5h4M11.5 18.5h1"/></symbol>
+    <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 9h16M8 13h2M14 13h2M8 17h2"/></symbol>
+    <symbol id="icon-backup" viewBox="0 0 24 24"><path d="M5 3h14v18H5V3Z"/><path d="M9 7h6M12 10v7m-3-3 3 3 3-3"/></symbol>
+    <symbol id="icon-restore" viewBox="0 0 24 24"><path d="M3 7h7l2 2h9v10H3V7Z"/><path d="M12 17v-6m-3 3 3-3 3 3"/></symbol>
+    <symbol id="icon-warning" viewBox="0 0 24 24"><path d="M10.3 4.2 2.8 18a2 2 0 0 0 1.8 3h14.8a2 2 0 0 0 1.8-3L13.7 4.2a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+    <symbol id="icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></symbol>
+    <symbol id="icon-bolt" viewBox="0 0 24 24"><path d="m13 2-8 12h7l-1 8 8-12h-7l1-8Z"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.7 2.7L16.5 9"/></symbol>
+    <symbol id="icon-chevron-left" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+    <symbol id="icon-chevron-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+    <symbol id="icon-rest" viewBox="0 0 24 24"><path d="M9 7v10M15 7v10"/></symbol>
+    <symbol id="icon-resume" viewBox="0 0 24 24"><path d="m9 7 8 5-8 5V7Z"/></symbol>
+    <symbol id="icon-cancel" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m9 9 6 6M15 9l-6 6"/></symbol>
+    <symbol id="icon-edit" viewBox="0 0 24 24"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"/><path d="m13.5 8.5 3 3"/></symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17"/></symbol>
+    <symbol id="icon-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.8" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5"/></symbol>
+</svg>
+
 <div class="header">
     <div class="logo">BM</div>
     <div class="h-btn-group">
-        <button class="h-btn" onclick="openInfoModal()" aria-label="도움말" title="도움말">❓</button>
-        <button class="h-btn" onclick="openHistory()" aria-label="경기 기록" title="경기 기록"><span aria-hidden="true">📜</span><span class="h-label">기록</span></button>
-        <button class="h-btn" onclick="openStatsModal()" aria-label="선수 통계" title="선수 통계"><span aria-hidden="true">📊</span><span class="h-label">통계</span></button>
-        <button class="h-btn primary" onclick="addCourt()" aria-label="코트 추가" title="코트 추가"><span aria-hidden="true">➕</span><span class="h-label">코트</span></button>
-        <button class="h-btn" onclick="openSettings()" aria-label="설정" title="설정"><span aria-hidden="true">⚙️</span><span class="h-label">설정</span></button>
+        <button class="h-btn" onclick="openInfoModal()" aria-label="도움말" title="도움말"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-help"></use></svg></button>
+        <button class="h-btn" onclick="openHistory()" aria-label="경기 기록" title="경기 기록"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-history"></use></svg><span class="h-label">기록</span></button>
+        <button class="h-btn" onclick="openStatsModal()" aria-label="경기 통계" title="경기 통계"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-chart"></use></svg><span class="h-label">통계</span></button>
+        <button class="h-btn primary" onclick="addCourt()" aria-label="코트 추가" title="코트 추가"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-add"></use></svg><span class="h-label">코트</span></button>
+        <button class="h-btn" onclick="openSettings()" aria-label="설정" title="설정"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><span class="h-label">설정</span></button>
     </div>
 </div>
 
 <nav class="mobile-view-tabs" role="tablist" aria-label="모바일 화면 선택">
     <button id="mobileCourtsTab" class="mobile-view-tab active" type="button" role="tab" aria-selected="true" aria-controls="courtArea" onclick="setMobileView('courts')">
-        <span aria-hidden="true">🏸</span><span>코트</span><span id="mobileCourtCount" class="mobile-tab-count">0</span>
+        <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-shuttle"></use></svg><span>코트</span><span id="mobileCourtCount" class="mobile-tab-count">0</span>
     </button>
     <button id="mobileWaitingTab" class="mobile-view-tab" type="button" role="tab" aria-selected="false" aria-controls="waitingCourt" onclick="setMobileView('waiting')">
-        <span aria-hidden="true">👥</span><span>대기실</span><span id="mobileRosterCount" class="mobile-tab-count">0</span>
+        <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-users"></use></svg><span>대기실</span><span id="mobileRosterCount" class="mobile-tab-count">0</span>
     </button>
 </nav>
 
@@ -458,7 +567,7 @@
             <div class="wc-title-row">
                 <div class="wc-heading-line">
                     <span class="wc-title">대기실 (총원 <span id="totalRosterCount">0</span>명)</span>
-                    <button id="waitingToggle" class="waiting-toggle" onclick="toggleWaitingRoom()" title="대기실 접기">◀</button>
+                    <button id="waitingToggle" class="waiting-toggle" onclick="toggleWaitingRoom()" aria-label="대기실 접기" title="대기실 접기"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron-left"></use></svg></button>
                 </div>
                 <div class="wc-actions">
                     <button class="btn-text" onclick="openBulkPModal()">+ 일괄</button>
@@ -485,7 +594,7 @@
     <input type="text" id="pName" placeholder="이름 입력">
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
         <div><label>성별</label><select id="pGen"><option value="M">남성</option><option value="F">여성</option></select></div>
-        <div><label>급수</label><select id="pTier"><option value="5">A조</option><option value="4">B조</option><option value="3">C조</option><option value="2">D조</option><option value="1">E조</option><option value="0" selected>F조</option></select></div>
+        <div><label>급수</label><select id="pTier"><option value="5">A조</option><option value="4">B조</option><option value="3">C조</option><option value="2">D조</option><option value="1" selected>E조</option></select></div>
     </div>
     <label>초기 게임 수 (지각 시 조정, 현재 평균-1 자동계산)</label>
     <input type="number" id="pGames" value="0">
@@ -500,7 +609,7 @@
     </div>
     <div class="player-delete-zone">
         <button id="deletePlayerButton" type="button" class="player-delete-button" onclick="deletePlayer()" hidden>
-            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-trash"></use></svg>
             <span>선수 삭제</span>
         </button>
     </div>
@@ -514,7 +623,7 @@
     
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
         <div><label>일괄 성별</label><select id="bulkGen"><option value="M">남성</option><option value="F">여성</option></select></div>
-        <div><label>일괄 급수</label><select id="bulkTier"><option value="5">A조</option><option value="4">B조</option><option value="3">C조</option><option value="2">D조</option><option value="1">E조</option><option value="0" selected>F조</option></select></div>
+        <div><label>일괄 급수</label><select id="bulkTier"><option value="5">A조</option><option value="4">B조</option><option value="3">C조</option><option value="2">D조</option><option value="1" selected>E조</option></select></div>
     </div>
     
     <div style="display:flex; gap:10px; margin-top:15px;">
@@ -525,23 +634,23 @@
 
 <!-- 설정 모달 -->
 <div id="settingsModal" class="modal"><div class="modal-box">
-    <h3 style="margin-top:0;">⚙️ 설정 및 관리</h3>
+    <h3 class="modal-title" style="margin-top:0;"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><span>설정 및 관리</span></h3>
     <div style="display:grid; gap:10px;">
-        <button id="installAppButton" class="btn btn-primary" onclick="installApp()">📱 앱으로 설치</button>
+        <button id="installAppButton" class="btn btn-primary" onclick="installApp()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-phone"></use></svg><span>앱으로 설치</span></button>
         <div style="height:1px; background:#eee; margin:5px 0;"></div>
-        <button class="btn btn-success" onclick="resetGamesOnly()">📅 새 모임 시작 (선수 유지/기록 초기화)</button>
+        <button class="btn btn-success" onclick="resetGamesOnly()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-calendar"></use></svg><span>새 모임 시작 (선수 유지/기록 초기화)</span></button>
         <div style="height:1px; background:#eee; margin:5px 0;"></div>
-        <button class="btn btn-outline" onclick="exportData()">💾 데이터 백업 (다운로드)</button>
-        <button class="btn btn-outline" onclick="triggerImport()">📂 데이터 복구 (파일열기)</button>
+        <button class="btn btn-outline" onclick="exportData()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-backup"></use></svg><span>데이터 백업 (다운로드)</span></button>
+        <button class="btn btn-outline" onclick="triggerImport()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-restore"></use></svg><span>데이터 복구 (파일열기)</span></button>
         <div style="height:1px; background:#eee; margin:5px 0;"></div>
-        <button class="btn btn-danger" onclick="resetAll()">⚠ 데이터 전체 초기화 (공장초기화)</button>
+        <button class="btn btn-danger" onclick="resetAll()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-warning"></use></svg><span>데이터 전체 초기화 (공장초기화)</span></button>
     </div>
     <button class="btn btn-outline" style="margin-top:20px;" onclick="closeSettings()">닫기</button>
 </div></div>
 
 <!-- 앱 설치 안내 모달 -->
 <div id="installModal" class="modal"><div class="modal-box" style="width:420px;">
-    <h3 style="margin-top:0;">📱 홈 화면에 앱 설치</h3>
+    <h3 class="modal-title" style="margin-top:0;"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-phone"></use></svg><span>홈 화면에 앱 설치</span></h3>
     <ol class="install-guide">
         <li>이 페이지를 <strong>Safari</strong>에서 엽니다.</li>
         <li>Safari의 <strong>공유 버튼(□↑)</strong>을 누릅니다.</li>
@@ -555,14 +664,14 @@
 
 <!-- 도움말 모달 -->
 <div id="infoModal" class="modal"><div class="modal-box">
-    <h3 style="margin-top:0;">ℹ️ 도움말</h3>
+    <h3 class="modal-title" style="margin-top:0;"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-info"></use></svg><span>도움말</span></h3>
     <div class="info-content">
         <ul style="padding-left: 20px; margin: 0; list-style-type: disc;">
             <li><strong>선수 등록:</strong> '+ 개별' 또는 '+ 일괄' 사용.</li>
-            <li><strong>선수 통계:</strong> 상단 <strong>[📊 통계]</strong>에서 선수를 선택하면 함께 경기한 선수와 같은 팀·상대 팀 횟수를 확인할 수 있습니다.</li>
+            <li><strong>경기 통계:</strong> 상단 <strong>[통계]</strong>에서 전체 현황과 선수별 같은 팀·상대 팀 횟수를 확인할 수 있습니다.</li>
             <li><strong>성별 구분:</strong> 파란색 선수 카드는 남성, 분홍색 선수 카드는 여성을 뜻합니다.</li>
             <li><strong>대기실 빠른 조작:</strong> 선수 카드를 누르면 해당 선수의 휴식·복귀, 콕 냄, 정보 수정 버튼이 펼쳐집니다. 콕을 낸 선수는 카드 오른쪽 보라색 선으로 표시됩니다.</li>
-            <li><strong>자동 매칭:</strong> <strong>[⚡ 자동 매칭]</strong> 클릭 시 4명 선발. 진행 중인 코트의 다음 예약은 게임 중인 선수도 후보에 포함합니다.</li>
+            <li><strong>자동 매칭:</strong> <strong>[자동 매칭]</strong> 클릭 시 4명 선발. 진행 중인 코트의 다음 예약은 게임 중인 선수도 후보에 포함합니다.</li>
             <li><strong>팀 구분:</strong> 네 선수를 코트 모양 테두리 안에 배치하고 중앙 구분선 양쪽으로 두 팀을 표시합니다.</li>
             <li><strong>경기 유형:</strong> 코트가 진행 중이어도 자율·남복·여복·혼복 유형을 변경할 수 있습니다.</li>
             <li><strong>수동 매칭:</strong> <strong>[수동]</strong> 버튼으로 4명 직접 선택. 다음 대기 편성에서는 게임 중인 선수도 선택할 수 있습니다.</li>
@@ -570,7 +679,7 @@
             <li><strong>승계 기능:</strong> 다음 예약 선수가 다른 코트에서 게임 중이면 현재 경기만 종료하고 승계는 보류합니다.</li>
         </ul>
         <div style="margin-top:15px;">
-            <strong>⚙️ 알고리즘 우선순위</strong>
+            <strong>알고리즘 우선순위</strong>
             <div class="algo-box" style="margin-top:5px;">
                 1. 예상 게임 수(G) 적은 순 (게임 중이면 +1)<br>
                 2. 예상 게임 수가 같으면 대기 선수 우선<br>
@@ -588,7 +697,7 @@
     <h3 style="margin-top:0;">수동 매칭 (4명 선택)</h3>
     <p id="manualHelp" style="margin-top:-4px; color:#64748b; font-size:0.85rem;"></p>
     <div style="margin-bottom:10px; font-weight:bold; color:var(--primary);">선택됨: <span id="manualSelCount">0</span> / 4</div>
-    <div id="manualList" class="wc-list" style="border:1px solid #eee; border-radius:8px;"></div>
+    <div id="manualList" class="wc-list manual-player-list" style="border:1px solid #eee; border-radius:8px;"></div>
     <div style="display:flex; gap:10px; margin-top:15px;">
         <button class="btn btn-primary" style="flex:2" onclick="confirmManualMatch()">매칭 확정</button>
         <button class="btn btn-outline" style="flex:1" onclick="closeManualModal()">취소</button>
@@ -602,13 +711,20 @@
     <button class="btn btn-outline" style="width:100%; margin-top:15px;" onclick="closeHModal()">닫기</button>
 </div></div>
 
-<!-- 선수 통계 모달 -->
+<!-- 경기 통계 모달 -->
 <div id="statsModal" class="modal"><div class="modal-box stats-modal-box">
     <div class="stats-modal-heading">
-        <h3>📊 선수 통계</h3>
-        <p>보관된 경기 기록을 기준으로 함께 출전한 횟수를 같은 팀과 상대 팀으로 나누어 보여줍니다.</p>
+        <h3 class="modal-title"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-chart"></use></svg><span>경기 통계</span></h3>
+        <p>보관된 경기 기록을 기준으로 전체 현황과 선수별 경기 관계를 보여줍니다.</p>
     </div>
-    <div class="stats-layout">
+    <div class="stats-tabs" role="tablist" aria-label="통계 보기">
+        <button id="statsOverallTab" class="stats-tab active" type="button" role="tab" aria-selected="true" aria-controls="statsOverallPanel" tabindex="0" onclick="setStatsView('overall')" onkeydown="handleStatsTabKey(event)">전체 통계</button>
+        <button id="statsPlayerTab" class="stats-tab" type="button" role="tab" aria-selected="false" aria-controls="statsPlayerPanel" tabindex="-1" onclick="setStatsView('player')" onkeydown="handleStatsTabKey(event)">선수별 통계</button>
+    </div>
+    <section id="statsOverallPanel" class="stats-overall-panel" role="tabpanel" aria-labelledby="statsOverallTab">
+        <div id="statsOverall"></div>
+    </section>
+    <div id="statsPlayerPanel" class="stats-layout" role="tabpanel" aria-labelledby="statsPlayerTab" hidden>
         <section class="stats-picker" aria-label="통계를 볼 선수 선택">
             <label for="statsSearch">선수 선택</label>
             <input id="statsSearch" class="search-input" type="search" placeholder="이름 검색..." oninput="renderStatsPlayerList()">
@@ -662,10 +778,10 @@
     </div>
 </div></div>
 
-<!-- ★ IOS Fix: 공통 확인(Confirm) 모달 (window.confirm 대체) ★ -->
+<!-- iOS용 공통 확인 모달 (window.confirm 대체) -->
 <div id="confirmModal" class="modal" style="z-index: 2000;">
     <div class="modal-box" style="width: 350px;">
-        <h3 style="margin-top:0;">⚠️ 확인</h3>
+        <h3 class="modal-title" style="margin-top:0;"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-warning"></use></svg><span>확인</span></h3>
         <p id="confirmMsg" style="white-space: pre-wrap; margin-bottom: 20px; line-height: 1.5; color:#334155;">내용</p>
         <div style="display:flex; gap:10px;">
             <button class="btn btn-danger" style="flex:1" onclick="executeConfirm()">실행</button>
@@ -679,7 +795,11 @@
     let players = JSON.parse(localStorage.getItem('bm_p_v13')) || [];
     let courts = JSON.parse(localStorage.getItem('bm_c_v13')) || [{id: 1, type: 'A', active: [], next: [], startTime: null}];
     let history = JSON.parse(localStorage.getItem('bm_h_v13')) || [];
-    const tiers = ["F조", "E조", "D조", "C조", "B조", "A조"];
+    const tiers = ["E조", "E조", "D조", "C조", "B조", "A조"];
+    players.forEach(player => {
+        const savedTier = Number(player.tier);
+        player.tier = Number.isFinite(savedTier) ? Math.min(5, Math.max(1, savedTier)) : 1;
+    });
 
     let editPId = null;
     let swapTarget = null;
@@ -689,6 +809,7 @@
     const collapsedStatuses = new Set();
     let pendingHistoryIndex = null;
     let statsPlayerId = null;
+    let statsView = 'overall';
     let expandedRosterPlayerId = null;
     let waitingRoomCollapsed = false;
     let transferSourceCourtId = null;
@@ -711,9 +832,7 @@
         if (showWaitingRoom && waitingRoomCollapsed) {
             waitingRoomCollapsed = false;
             mainContainer.classList.remove('waiting-collapsed');
-            const toggleButton = document.getElementById('waitingToggle');
-            toggleButton.innerText = '◀';
-            toggleButton.title = '대기실 접기';
+            updateWaitingToggleButton();
         }
     }
 
@@ -727,11 +846,11 @@
         if (!button) return;
 
         if (isRunningStandalone()) {
-            button.textContent = '✓ 앱으로 실행 중';
+            button.innerHTML = `${renderUIIcon('check')}<span>앱으로 실행 중</span>`;
             button.disabled = true;
             button.style.opacity = '0.65';
         } else {
-            button.textContent = '📱 앱으로 설치';
+            button.innerHTML = `${renderUIIcon('phone')}<span>앱으로 설치</span>`;
             button.disabled = false;
             button.style.opacity = '1';
         }
@@ -808,8 +927,8 @@
     // --- Data Management Functions (Refactored for iOS) ---
     
     // 1. 전체 초기화
-    function resetAll() { 
-        showConfirmModal("⚠ 모든 선수 데이터와 기록이 영구적으로 삭제됩니다.\n정말 초기화 하시겠습니까?", () => {
+    function resetAll() {
+        showConfirmModal("모든 선수 데이터와 기록이 영구적으로 삭제됩니다.\n정말 초기화 하시겠습니까?", () => {
             localStorage.clear(); 
             location.reload(); 
         });
@@ -817,7 +936,7 @@
 
     // 2. 새 모임 시작
     function resetGamesOnly() {
-        showConfirmModal("📅 선수 명단은 유지하고,\n게임 수와 경기 기록만 초기화 하시겠습니까?\n(새로운 모임 시작 시 권장)", () => {
+        showConfirmModal("선수 명단은 유지하고,\n게임 수와 경기 기록만 초기화 하시겠습니까?\n(새로운 모임 시작 시 권장)", () => {
             // 코트 상태 비우기
             courts.forEach(c => { 
                 c.active = []; 
@@ -977,14 +1096,15 @@
         candidates.forEach(p => {
             const isSel = manualSelected.has(p.id);
             const isPlaying = isPlayerInCourtArea(p.id, 'active');
+            const safePlayerName = escapeHTML(p.name);
             list.innerHTML += `
             <div class="player-chip waiting-chip manual-chip gender-card ${getGenderCardClass(p.gender)} ${isSel?'selected':''}" onclick="toggleManualSelect(${p.id})">
                 ${renderGenderAccessibility(p.gender)}
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <span>${p.name}</span>
+                <div class="manual-player-main">
+                    <span class="manual-player-name" title="${safePlayerName}">${safePlayerName}</span>
                     ${isPlaying ? '<span class="badge" style="background:var(--primary); font-size:0.6rem;">게임중</span>' : ''}
                 </div>
-                <div><span class="p-info">${tiers[p.tier]}</span> <span class="badge" style="background:#eee; color:#555;">${p.games}회</span></div>
+                <div class="manual-player-meta"><span>${tiers[p.tier]}</span><span>${p.games}경기</span></div>
             </div>`;
         });
     }
@@ -1187,9 +1307,15 @@
     function toggleWaitingRoom() {
         waitingRoomCollapsed = !waitingRoomCollapsed;
         document.getElementById('mainContainer').classList.toggle('waiting-collapsed', waitingRoomCollapsed);
+        updateWaitingToggleButton();
+    }
+
+    function updateWaitingToggleButton() {
         const button = document.getElementById('waitingToggle');
-        button.innerText = waitingRoomCollapsed ? '▶' : '◀';
+        if(!button) return;
+        button.innerHTML = renderUIIcon(waitingRoomCollapsed ? 'chevron-right' : 'chevron-left');
         button.title = waitingRoomCollapsed ? '대기실 펼치기' : '대기실 접기';
+        button.setAttribute('aria-label', button.title);
     }
 
     // --- Helpers ---
@@ -1349,9 +1475,9 @@
                 const shuttleActionLabel = p.shuttlecock ? '콕 냄 표시 취소' : '콕 냄 표시';
                 const actionPanel = isExpanded ? `
                     <div id="roster-actions-${p.id}" class="roster-action-panel" onclick="event.stopPropagation()">
-                        ${canToggleRest ? `<button type="button" class="roster-action ${p.status === 'resting' ? 'resume' : 'rest'}" onclick="event.stopPropagation(); toggleRestStatus(${p.id})">${p.status === 'resting' ? '↩ 대기 복귀' : '⏸ 휴식'}</button>` : ''}
-                        <button type="button" class="roster-action shuttle ${p.shuttlecock ? 'active' : ''}" onclick="event.stopPropagation(); toggleShuttlecock(${p.id})" aria-pressed="${p.shuttlecock}" aria-label="${shuttleActionLabel}">${p.shuttlecock ? '✓ 콕 취소' : '🏸 콕 냄'}</button>
-                        <button type="button" class="roster-action edit" onclick="event.stopPropagation(); openPModal(${p.id})">✎ 정보 수정</button>
+                        ${canToggleRest ? `<button type="button" class="roster-action ${p.status === 'resting' ? 'resume' : 'rest'}" onclick="event.stopPropagation(); toggleRestStatus(${p.id})">${renderRosterActionIcon(p.status === 'resting' ? 'resume' : 'rest')}<span>${p.status === 'resting' ? '대기 복귀' : '휴식'}</span></button>` : ''}
+                        <button type="button" class="roster-action shuttle ${p.shuttlecock ? 'active' : ''}" onclick="event.stopPropagation(); toggleShuttlecock(${p.id})" aria-pressed="${p.shuttlecock}" aria-label="${shuttleActionLabel}">${renderRosterActionIcon(p.shuttlecock ? 'cancel' : 'shuttle')}<span>${p.shuttlecock ? '콕 취소' : '콕 냄'}</span></button>
+                        <button type="button" class="roster-action edit" onclick="event.stopPropagation(); openPModal(${p.id})">${renderRosterActionIcon('edit')}<span>정보 수정</span></button>
                     </div>` : '';
 
                 container.innerHTML += `
@@ -1366,8 +1492,8 @@
                         <div class="roster-end">
                             <span class="roster-toggle-icon" aria-hidden="true">
                                 ${isExpanded
-                                    ? '<svg class="roster-close-icon" viewBox="0 0 24 24" fill="none"><path d="M7 7l10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
-                                    : '<svg class="roster-more-icon" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></svg>'}
+                                    ? renderUIIcon('close', 'roster-close-icon')
+                                    : renderUIIcon('more', 'roster-more-icon')}
                             </span>
                         </div>
                     </div>
@@ -1388,7 +1514,7 @@
                 <option value="X" ${c.type=='X'?'selected':''}>혼복</option>
             </select>`;
 
-            let activeHTML = hasActive ? renderMatchTeams(c, 'active') : `<div class="empty-state">🏸 매칭 대기</div>`;
+            let activeHTML = hasActive ? renderMatchTeams(c, 'active') : `<div class="empty-state"><span class="empty-state-content">${renderUIIcon('shuttle')}<span>매칭 대기</span></span></div>`;
             
             let nextHTML = '';
             if(hasNext) {
@@ -1400,7 +1526,7 @@
             } else {
                  nextHTML = `
                  <div style="display:flex; gap:5px;">
-                     <button class="btn btn-reserve" style="flex:2" onclick="matchCourt(${c.id})">${hasActive?'다음 예약':'⚡ 자동 매칭'}</button>
+                     <button class="btn btn-reserve" style="flex:2" onclick="matchCourt(${c.id})">${hasActive ? '다음 예약' : `${renderUIIcon('bolt')}<span>자동 매칭</span>`}</button>
                      <button class="btn btn-outline" style="flex:1" onclick="openManualMatch(${c.id})">수동</button>
                  </div>`;
             }
@@ -1417,18 +1543,18 @@
                 <div class="cc-header">
                     <div class="court-heading">
                         <span class="court-title">코트 ${idx+1}</span>
-                        <span class="court-live-state">진행 중 <span style="color:${hasActive?'#2563eb':'#cbd5e1'}">●</span></span>
+                        <span class="court-live-state">진행 중 <span class="status-dot" style="background:${hasActive?'#2563eb':'#cbd5e1'}" aria-hidden="true"></span></span>
                         <span id="timer-${c.id}" class="timer-badge" style="display:${hasActive && c.startTime ? 'inline-flex' : 'none'}">${hasActive && c.startTime ? formatElapsedTime(c.startTime) : '00:00'}</span>
                     </div>
                     <div class="cc-actions">
-                        ${typeSel} <button type="button" class="court-delete" onclick="delCourt(${c.id})" aria-label="코트 ${idx+1} 삭제" title="코트 삭제">×</button>
+                        ${typeSel} <button type="button" class="court-delete" onclick="delCourt(${c.id})" aria-label="코트 ${idx+1} 삭제" title="코트 삭제">${renderUIIcon('trash')}</button>
                     </div>
                 </div>
                 <div class="game-section">
                     ${activeHTML}
                 </div>
                 <div class="next-section">
-                    <div class="section-label">다음 대기 <span style="color:${hasNext?'#f59e0b':'#cbd5e1'}">●</span></div>
+                    <div class="section-label">다음 대기 <span class="status-dot" style="background:${hasNext?'#f59e0b':'#cbd5e1'}" aria-hidden="true"></span></div>
                     ${nextHTML}
                 </div>
                 ${mainBtnHTML ? `<div class="btn-group">${mainBtnHTML}</div>` : ''}
@@ -1479,6 +1605,10 @@
         return `<span class="sr-only">성별: ${gender === 'M' ? '남성' : '여성'}</span>`;
     }
 
+    function renderRosterActionIcon(action) {
+        return renderUIIcon(action, `roster-action-icon roster-action-icon-${action}`);
+    }
+
     function setType(id, val) { courts.find(c=>c.id===id).type = val; save(); }
     function addCourt() {
         courts.push({id:Date.now(), type:'A', active:[], next:[], startTime:null});
@@ -1491,7 +1621,7 @@
         document.getElementById('pModalTitle').innerText = id ? "선수 정보 수정" : "선수 등록";
         document.getElementById('pName').value = id ? p.name : "";
         document.getElementById('pGen').value = id ? p.gender : "M";
-        document.getElementById('pTier').value = id ? p.tier : "0";
+        document.getElementById('pTier').value = id ? p.tier : "1";
         document.getElementById('pGames').value = id ? p.games : getAverageGames();
         const statusSelect = document.getElementById('pStatus');
         const isAssigned = id && (p.status === 'playing' || p.status === 'reserved');
@@ -1595,6 +1725,11 @@
         return String(value ?? '').replace(/[&<>"']/g, character => entities[character]);
     }
 
+    function renderUIIcon(name, className = '') {
+        const classes = ['ui-icon', className].filter(Boolean).join(' ');
+        return `<svg class="${classes}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#icon-${name}"></use></svg>`;
+    }
+
     function findStatsPlayer(playerId) {
         return players.find(player => String(player.id) === String(playerId));
     }
@@ -1664,15 +1799,170 @@
         };
     }
 
+    function getOverallStatistics() {
+        const participantCounts = new Map();
+        const partnerPairs = new Map();
+        const opponentPairs = new Map();
+        let recordedGames = 0;
+        let totalAppearances = 0;
+
+        const addPair = (pairMap, firstParticipant, secondParticipant) => {
+            if(!firstParticipant || !secondParticipant || firstParticipant.key === secondParticipant.key) return;
+            const orderedParticipants = [firstParticipant, secondParticipant]
+                .sort((a, b) => a.key.localeCompare(b.key));
+            const pairKey = JSON.stringify(orderedParticipants.map(participant => participant.key));
+            const existingPair = pairMap.get(pairKey) || { names: [], count: 0 };
+            existingPair.names = orderedParticipants.map(participant => participant.name);
+            existingPair.count++;
+            pairMap.set(pairKey, existingPair);
+        };
+
+        history.forEach(record => {
+            const teams = getHistoryTeams(record);
+            if(!teams || teams.length !== 2 || teams.some(team => team.length < 2)) return;
+
+            const recordedNames = [...teams[0].slice(0, 2), ...teams[1].slice(0, 2)];
+            const participantIds = Array.isArray(record.pIds) ? record.pIds.slice(0, 4) : [];
+            const participants = recordedNames.map((recordedName, participantIndex) => {
+                const playerId = participantIds[participantIndex];
+                const currentPlayer = playerId === null || playerId === undefined
+                    ? null
+                    : findStatsPlayer(playerId);
+                const name = String(currentPlayer?.name || recordedName || '삭제된 선수');
+                return {
+                    key: playerId === null || playerId === undefined ? `name:${name}` : `id:${String(playerId)}`,
+                    name
+                };
+            });
+
+            if(participants.length !== 4) return;
+            recordedGames++;
+            totalAppearances += participants.length;
+
+            participants.forEach(participant => {
+                const existingParticipant = participantCounts.get(participant.key) || { ...participant, games: 0 };
+                existingParticipant.name = participant.name;
+                existingParticipant.games++;
+                participantCounts.set(participant.key, existingParticipant);
+            });
+
+            addPair(partnerPairs, participants[0], participants[1]);
+            addPair(partnerPairs, participants[2], participants[3]);
+            [participants[0], participants[1]].forEach(firstParticipant => {
+                [participants[2], participants[3]].forEach(secondParticipant => {
+                    addPair(opponentPairs, firstParticipant, secondParticipant);
+                });
+            });
+        });
+
+        const sortPairs = pairMap => [...pairMap.values()].sort((a, b) =>
+            b.count - a.count ||
+            a.names.join(' · ').localeCompare(b.names.join(' · '), 'ko')
+        );
+        const rankings = [...participantCounts.values()].sort((a, b) =>
+            b.games - a.games || a.name.localeCompare(b.name, 'ko')
+        );
+
+        return {
+            recordedGames,
+            participantCount: participantCounts.size,
+            totalAppearances,
+            averageAppearances: participantCounts.size > 0 ? totalAppearances / participantCounts.size : 0,
+            rankings: rankings.slice(0, 3),
+            playerAppearances: [...players].map(player => ({
+                name: player.name,
+                gender: player.gender,
+                games: participantCounts.get(`id:${String(player.id)}`)?.games || 0
+            })).sort((a, b) => b.games - a.games || a.name.localeCompare(b.name, 'ko')),
+            topPartners: sortPairs(partnerPairs).slice(0, 3),
+            topOpponents: sortPairs(opponentPairs).slice(0, 3)
+        };
+    }
+
+    function renderOverallStats() {
+        const container = document.getElementById('statsOverall');
+        const statistics = getOverallStatistics();
+        const allPlayerRows = statistics.playerAppearances.map(participant => `
+            <div class="stats-all-player-item gender-card ${getGenderCardClass(participant.gender)}">
+                <span class="stats-all-player-name">${escapeHTML(participant.name)}</span>
+                <strong class="stats-all-player-count">${participant.games}경기</strong>
+            </div>
+        `).join('');
+        const renderPairRows = (pairs, emptyMessage) => pairs.length > 0
+            ? pairs.map(pair => `
+                <div class="stats-pair-row">
+                    <span class="stats-pair-names" title="${pair.names.map(escapeHTML).join(' · ')}">${pair.names.map(escapeHTML).join(' · ')}</span>
+                    <strong class="stats-pair-count">${pair.count}회</strong>
+                </div>
+            `).join('')
+            : `<p class="stats-pair-empty">${emptyMessage}</p>`;
+
+        container.innerHTML = `
+            <div class="stats-summary stats-overall-summary">
+                <div class="stats-summary-card"><strong>${statistics.recordedGames}</strong><span>기록 경기</span></div>
+                <div class="stats-summary-card"><strong>${statistics.playerAppearances.length}</strong><span>등록 선수</span></div>
+                <div class="stats-summary-card"><strong>${statistics.totalAppearances}</strong><span>총 출전</span></div>
+                <div class="stats-summary-card"><strong>${statistics.averageAppearances.toFixed(1)}</strong><span>평균 출전</span></div>
+            </div>
+            ${statistics.recordedGames > 0 ? `
+                <div class="stats-overall-content">
+                    <section class="stats-overall-card stats-overall-ranking">
+                        <h4>전체 선수 ${statistics.playerAppearances.length}명</h4>
+                        <div class="stats-all-player-list">${allPlayerRows}</div>
+                    </section>
+                    <section class="stats-overall-card">
+                        <h4>같은 팀 TOP 3</h4>
+                        <div class="stats-pair-list">${renderPairRows(statistics.topPartners, '같은 팀 기록이 없습니다.')}</div>
+                    </section>
+                    <section class="stats-overall-card">
+                        <h4>상대 TOP 3</h4>
+                        <div class="stats-pair-list">${renderPairRows(statistics.topOpponents, '상대 팀 기록이 없습니다.')}</div>
+                    </section>
+                </div>
+            ` : '<div class="stats-empty">아직 완료된 경기 기록이 없습니다.<br>경기가 종료되면 전체 통계가 자동으로 쌓입니다.</div>'}
+        `;
+    }
+
+    function setStatsView(view) {
+        if(view !== 'overall' && view !== 'player') return;
+        statsView = view;
+        const showOverall = view === 'overall';
+        const overallTab = document.getElementById('statsOverallTab');
+        const playerTab = document.getElementById('statsPlayerTab');
+
+        overallTab.classList.toggle('active', showOverall);
+        playerTab.classList.toggle('active', !showOverall);
+        overallTab.setAttribute('aria-selected', String(showOverall));
+        playerTab.setAttribute('aria-selected', String(!showOverall));
+        overallTab.tabIndex = showOverall ? 0 : -1;
+        playerTab.tabIndex = showOverall ? -1 : 0;
+        document.getElementById('statsOverallPanel').hidden = !showOverall;
+        document.getElementById('statsPlayerPanel').hidden = showOverall;
+
+        if(showOverall) renderOverallStats();
+        else {
+            renderStatsPlayerList();
+            renderStatsDetail();
+        }
+    }
+
+    function handleStatsTabKey(event) {
+        if(!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const nextView = event.key === 'ArrowLeft' || event.key === 'Home' ? 'overall' : 'player';
+        setStatsView(nextView);
+        document.getElementById(nextView === 'overall' ? 'statsOverallTab' : 'statsPlayerTab').focus();
+    }
+
     function openStatsModal(playerId = null) {
         const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
         const requestedPlayer = playerId === null ? null : findStatsPlayer(playerId);
         const currentPlayer = statsPlayerId === null ? null : findStatsPlayer(statsPlayerId);
         statsPlayerId = requestedPlayer?.id ?? currentPlayer?.id ?? sortedPlayers[0]?.id ?? null;
+        if(playerId !== null) statsView = 'player';
 
         document.getElementById('statsSearch').value = '';
-        renderStatsPlayerList();
-        renderStatsDetail();
+        setStatsView(statsView);
         document.getElementById('statsModal').style.display = 'flex';
     }
 
@@ -1680,11 +1970,10 @@
         document.getElementById('statsModal').style.display = 'none';
     }
 
-    function selectStatsPlayer(playerId, clearSearch = false) {
+    function selectStatsPlayer(playerId) {
         const player = findStatsPlayer(playerId);
         if(!player) return;
         statsPlayerId = player.id;
-        if(clearSearch) document.getElementById('statsSearch').value = '';
         renderStatsPlayerList();
         renderStatsDetail();
     }
@@ -1736,9 +2025,8 @@
                 <span class="stats-relation-count">${relationship.sameTeam}</span>
                 <span class="stats-relation-count">${relationship.opponent}</span>`;
 
-            return currentPlayer
-                ? `<button type="button" class="stats-relation-row ${genderCardClass}" onclick="selectStatsPlayer(${currentPlayer.id}, true)" title="${escapeHTML(currentPlayer.name)} 선수 통계 보기">${content}</button>`
-                : `<div class="stats-relation-row" title="현재 명단에서 삭제된 선수">${content}</div>`;
+            const deletedPlayerTitle = currentPlayer ? '' : ' title="현재 명단에서 삭제된 선수"';
+            return `<div class="stats-relation-row ${genderCardClass}"${deletedPlayerTitle}>${content}</div>`;
         }).join('');
 
         detail.innerHTML = `
