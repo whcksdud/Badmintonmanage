@@ -142,8 +142,9 @@ function assertInRuntime(context, assertion, message) {
     if (!rosterHtml.includes('aria-expanded="false"') || rosterHtml.includes('roster-action-panel')) throw new Error('대기실 선수 카드가 기본 상태에서 접혀 있지 않습니다.');
     if (!rosterHtml.includes('roster-status-waiting') || !rosterHtml.includes('roster-status-reserved') || !rosterHtml.includes('roster-status-playing')) throw new Error('대기실 선수 카드에 상태별 클래스가 표시되지 않았습니다.');
     if (rosterHtml.includes('roster-state') || rosterHtml.includes('roster-top') || rosterHtml.includes('roster-bottom')) throw new Error('상태를 중복 표시하던 이전 대기실 카드 구조가 남아 있습니다.');
-    if (!html.includes('.roster-chip.gender-card.gender-m { background: #fff;') || !html.includes('border-left: 5px solid #38bdf8') || !html.includes('border-left: 5px solid #f472b6')) throw new Error('대기실 카드의 성별 세로 구분선 스타일이 없습니다.');
-    if (!html.includes('.roster-chip.gender-card.roster-status-resting { background: #e2e8f0; }') || !html.includes('.roster-chip.gender-card.roster-status-reserved { background: #fef3c7; }') || !html.includes('.roster-chip.gender-card.roster-status-playing { background: #dcfce7; }')) throw new Error('대기실 카드의 휴식·예약·게임 중 배경색 구분이 없습니다.');
+    if (!html.includes('.roster-chip.gender-card.gender-m { background: #fff; border-color: #e2e8f0; border-left: 5px solid #38bdf8; }') || !html.includes('.roster-chip.gender-card.gender-f { background: #fff; border-color: #e2e8f0; border-left: 5px solid #f472b6; }')) throw new Error('대기실 카드의 성별 세로 구분선 스타일이 없습니다.');
+    if (!html.includes('.roster-chip.gender-card.roster-status-resting { background: var(--rest-bg); }') || !html.includes('.roster-chip.gender-card.roster-status-reserved { background: var(--reserved-bg); }') || !html.includes('.roster-chip.gender-card.roster-status-playing { background: var(--playing-bg); }')) throw new Error('대기실 카드의 휴식·예약·게임 중 조화로운 배경색 구분이 없습니다.');
+    if (!rosterHtml.includes('list-section-reserved') || !rosterHtml.includes('list-section-playing') || !html.includes('.list-section-resting') || !html.includes('.list-section-reserved') || !html.includes('.list-section-playing')) throw new Error('대기실 상태 제목에 카드와 연결되는 색상 포인트가 없습니다.');
     if (!/\.wc-list\s*\{[^}]*grid-auto-rows:\s*max-content/.test(html)) throw new Error('낮은 화면에서 대기실 카드 행이 압축되지 않도록 하는 목록 스타일이 없습니다.');
     if (!/\.roster-chip\s*\{[^}]*min-height:\s*58px/.test(html)) throw new Error('해상도와 무관하게 대기실 카드의 최소 높이가 유지되지 않습니다.');
     if (html.includes('성별 / 이름') || html.includes('콕 / 급수 / 경기수')) throw new Error('새 카드 배치와 맞지 않는 이전 대기실 안내 줄이 남아 있습니다.');
@@ -164,7 +165,7 @@ function assertInRuntime(context, assertion, message) {
     vm.runInContext('toggleShuttlecock(13)', context);
     const shuttleActiveHtml = context.__elements.get('waitList').innerHTML;
     if (!shuttleActiveHtml.includes('roster-action shuttle active') || !shuttleActiveHtml.includes('aria-pressed="true"') || !shuttleActiveHtml.includes('roster-action-icon-cancel') || !shuttleActiveHtml.includes('>콕 취소</span>') || !shuttleActiveHtml.includes('has-shuttlecock') || !shuttleActiveHtml.includes('· 콕 냄 빠른 동작')) throw new Error('콕 냄 선택 상태가 펼침 동작과 카드 접근성 정보에 표시되지 않았습니다.');
-    if (shuttleActiveHtml.includes('roster-shuttle-indicator') || !html.includes('.roster-chip.gender-card.has-shuttlecock { border-right: 5px solid #7c3aed; }')) throw new Error('콕 냄 표시가 성별 카드 색상보다 우선하는 오른쪽 보라색 선으로 적용되지 않았습니다.');
+    if (shuttleActiveHtml.includes('roster-shuttle-indicator') || !html.includes('.roster-chip.gender-card { border-right: 5px solid transparent; }') || !html.includes('.roster-chip.gender-card.has-shuttlecock { border-right-color: #7c3aed; }') || !html.includes('.roster-chip.gender-card.has-shuttlecock::after { display: none; }') || !html.includes('* { box-sizing: border-box;')) throw new Error('콕 냄 전후에 카드 공간을 유지하는 성별 표시형 테두리가 적용되지 않았습니다.');
     vm.runInContext('toggleShuttlecock(13)', context);
 
     vm.runInContext('toggleRestStatus(13)', context);

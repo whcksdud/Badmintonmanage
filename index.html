@@ -22,6 +22,9 @@
             --male: #2563eb; --female: #db2777; --danger: #ef4444; --reserved: #f59e0b;
             --border: #e2e8f0; --shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
             --success: #10b981;
+            --rest-bg: #f1f5f9; --rest-panel: #e8edf3; --rest-accent: #64748b;
+            --reserved-bg: #fffbeb; --reserved-panel: #fef3c7; --reserved-accent: #d97706;
+            --playing-bg: #ecfdf5; --playing-panel: #d1fae5; --playing-accent: #059669;
         }
         * { box-sizing: border-box; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
         html, body { width: 100%; max-width: 100%; overflow: hidden; }
@@ -244,11 +247,14 @@
         .roster-chip:active { transform: none; }
         .roster-chip.gender-card.gender-m { background: #fff; border-color: #e2e8f0; border-left: 5px solid #38bdf8; }
         .roster-chip.gender-card.gender-f { background: #fff; border-color: #e2e8f0; border-left: 5px solid #f472b6; }
-        .roster-chip.gender-card.roster-status-resting { background: #e2e8f0; }
-        .roster-chip.gender-card.roster-status-reserved { background: #fef3c7; }
-        .roster-chip.gender-card.roster-status-playing { background: #dcfce7; }
+        .roster-chip.gender-card.roster-status-resting { background: var(--rest-bg); }
+        .roster-chip.gender-card.roster-status-reserved { background: var(--reserved-bg); }
+        .roster-chip.gender-card.roster-status-playing { background: var(--playing-bg); }
         .roster-chip.expanded { border-color: #93c5fd; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12); }
-        .roster-chip.gender-card.has-shuttlecock { border-right: 5px solid #7c3aed; }
+        .roster-chip.gender-card { border-right: 5px solid transparent; }
+        .roster-chip.gender-card::after { content: ''; position: absolute; top: -1px; right: -5px; bottom: -1px; width: 1px; background: #e2e8f0; pointer-events: none; }
+        .roster-chip.gender-card.has-shuttlecock { border-right-color: #7c3aed; }
+        .roster-chip.gender-card.has-shuttlecock::after { display: none; }
         .roster-summary { min-width: 0; min-height: 58px; padding: 9px 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
         .roster-identity { flex: 1 1 auto; min-width: 0; overflow: hidden; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; }
         .roster-chip .p-name { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
@@ -258,15 +264,20 @@
         .roster-toggle-icon svg { width: 17px; height: 17px; display: block; }
         .roster-chip.expanded .roster-toggle-icon { border-color: #93c5fd; background: #eff6ff; color: #1d4ed8; }
         .roster-action-panel { display: flex; flex-wrap: nowrap; gap: 5px; padding: 8px 7px 9px; border-top: 1px solid #e2e8f0; background: #f8fafc; cursor: default; }
-        .roster-chip.roster-status-resting .roster-action-panel { background: #e2e8f0; }
-        .roster-chip.roster-status-reserved .roster-action-panel { background: #fef3c7; }
-        .roster-chip.roster-status-playing .roster-action-panel { background: #dcfce7; }
+        .roster-chip.roster-status-resting .roster-action-panel { background: var(--rest-panel); }
+        .roster-chip.roster-status-reserved .roster-action-panel { background: var(--reserved-panel); }
+        .roster-chip.roster-status-playing .roster-action-panel { background: var(--playing-panel); }
         .roster-action { flex: 1 1 0; min-width: 0; min-height: 35px; padding: 7px 5px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #475569; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.68rem; font-weight: 800; white-space: nowrap; cursor: pointer; }
         .roster-action-icon { flex: 0 0 auto; width: 15px; height: 15px; display: block; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
         .roster-action.rest { background: #f1f5f9; color: #475569; }
         .roster-action.resume, .roster-action.shuttle.active { border-color: #86efac; background: #dcfce7; color: #166534; }
         .roster-action.edit { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
         .list-section { display:flex; align-items:center; justify-content:space-between; padding:9px 10px 5px; color:#64748b; font-size:0.72rem; font-weight:900; }
+        .list-section > span { display: inline-flex; align-items: center; gap: 6px; }
+        .list-section > span::before { content: ''; width: 7px; height: 7px; border-radius: 999px; background: var(--status-accent, #94a3b8); }
+        .list-section-resting { --status-accent: var(--rest-accent); }
+        .list-section-reserved { --status-accent: var(--reserved-accent); color: #92400e; }
+        .list-section-playing { --status-accent: var(--playing-accent); color: #047857; }
         .list-section .btn-text { min-height:32px; padding:4px 6px; }
         .next-chip { padding: 10px; font-size: 0.9rem; background: #fff; border: 1px dashed #cbd5e1; box-shadow: none; }
         
@@ -1464,7 +1475,7 @@
                 if(p.status !== previousStatus) {
                     const isCollapsed = collapsedStatuses.has(p.status);
                     const statusLabel = statusLabels[p.status] || p.status;
-                    container.innerHTML += `<div class="list-section"><span>${statusLabel} (${statusCounts[p.status]}명)</span><button class="btn-text" onclick="toggleStatusList('${p.status}')" aria-expanded="${!isCollapsed}" title="${statusLabel} 목록 ${isCollapsed ? '펼치기' : '접기'}">${isCollapsed ? '펼치기' : '접기'}</button></div>`;
+                    container.innerHTML += `<div class="list-section list-section-${p.status}"><span>${statusLabel} (${statusCounts[p.status]}명)</span><button class="btn-text" onclick="toggleStatusList('${p.status}')" aria-expanded="${!isCollapsed}" title="${statusLabel} 목록 ${isCollapsed ? '펼치기' : '접기'}">${isCollapsed ? '펼치기' : '접기'}</button></div>`;
                 }
                 previousStatus = p.status;
                 if(collapsedStatuses.has(p.status)) return;
