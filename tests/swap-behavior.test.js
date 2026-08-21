@@ -136,7 +136,7 @@ function assertInRuntime(context, assertion, message) {
     if (teamHtml.includes('>남<') || teamHtml.includes('>여<')) throw new Error('코트 선수에 남·녀 글자 배지가 남아 있습니다.');
 
     const rosterHtml = context.__elements.get('waitList').innerHTML;
-    if (!rosterHtml.includes('roster-summary') || !rosterHtml.includes('roster-identity') || !rosterHtml.includes('roster-meta-line') || !rosterHtml.includes('roster-toggle-icon') || !rosterHtml.includes('roster-more-icon')) throw new Error('대기실의 간결한 선수 요약 행과 더보기 아이콘이 렌더링되지 않았습니다.');
+    if (!rosterHtml.includes('roster-summary') || !rosterHtml.includes('roster-identity') || !rosterHtml.includes('roster-meta-line') || rosterHtml.includes('roster-toggle-icon') || rosterHtml.includes('roster-more-icon')) throw new Error('대기실 선수 요약에서 불필요한 더보기 아이콘이 제거되지 않았습니다.');
     if (!/\.roster-identity\s*\{[^}]*display:\s*flex[^}]*align-items:\s*center/.test(html) || !/\.roster-meta-line\s*\{[^}]*white-space:\s*nowrap/.test(html)) throw new Error('대기실 카드의 이름·급수·경기 수가 한 줄로 유지되지 않습니다.');
     if (rosterHtml.includes('roster-chevron') || rosterHtml.includes('>⌄</span>')) throw new Error('용도가 불분명한 이전 펼침 화살표가 남아 있습니다.');
     if (!rosterHtml.includes('aria-expanded="false"') || rosterHtml.includes('roster-action-panel')) throw new Error('대기실 선수 카드가 기본 상태에서 접혀 있지 않습니다.');
@@ -151,7 +151,7 @@ function assertInRuntime(context, assertion, message) {
 
     vm.runInContext('toggleRosterActions(13)', context);
     let expandedRosterHtml = context.__elements.get('waitList').innerHTML;
-    if ((expandedRosterHtml.match(/class="roster-action-panel"/g) || []).length !== 1 || !expandedRosterHtml.includes('aria-expanded="true"') || !expandedRosterHtml.includes('roster-close-icon')) throw new Error('선택한 선수의 빠른 동작만 펼쳐지거나 더보기 아이콘이 닫기 아이콘으로 바뀌지 않았습니다.');
+    if ((expandedRosterHtml.match(/class="roster-action-panel"/g) || []).length !== 1 || !expandedRosterHtml.includes('aria-expanded="true"') || expandedRosterHtml.includes('roster-close-icon')) throw new Error('선택한 선수의 빠른 동작만 아이콘 없이 펼쳐지지 않았습니다.');
     if (!expandedRosterHtml.includes('roster-action-icon-rest') || !expandedRosterHtml.includes('roster-action-icon-shuttle') || !expandedRosterHtml.includes('roster-action-icon-edit') || !expandedRosterHtml.includes('>휴식</span>') || !expandedRosterHtml.includes('>콕 냄</span>') || !expandedRosterHtml.includes('openPModal(13)')) throw new Error('펼친 대기 선수 카드의 통일된 휴식·콕·정보 수정 동작 아이콘이 누락되었습니다.');
     if (!/\.roster-action-panel\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*nowrap/.test(html) || !/\.roster-action\s*\{[^}]*flex:\s*1 1 0/.test(html)) throw new Error('대기실 빠른 동작 버튼이 한 줄로 유지되지 않습니다.');
     if (/[⏸↩✓🏸✎]/u.test(expandedRosterHtml)) throw new Error('대기실 빠른 동작에 OS마다 다르게 보이는 문자 이모지가 남아 있습니다.');

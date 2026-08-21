@@ -259,10 +259,6 @@
         .roster-identity { flex: 1 1 auto; min-width: 0; overflow: hidden; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; }
         .roster-chip .p-name { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
         .roster-meta-line { flex: 0 0 auto; color: #64748b; font-size: 0.72rem; font-weight: 700; line-height: 1.2; white-space: nowrap; }
-        .roster-end { flex: 0 0 auto; display: flex; align-items: center; gap: 7px; }
-        .roster-toggle-icon { flex: 0 0 auto; width: 30px; height: 30px; border: 1px solid rgba(148, 163, 184, 0.55); border-radius: 999px; background: rgba(255, 255, 255, 0.82); color: #64748b; display: inline-flex; align-items: center; justify-content: center; }
-        .roster-toggle-icon svg { width: 17px; height: 17px; display: block; }
-        .roster-chip.expanded .roster-toggle-icon { border-color: #93c5fd; background: #eff6ff; color: #1d4ed8; }
         .roster-action-panel { display: flex; flex-wrap: nowrap; gap: 5px; padding: 8px 7px 9px; border-top: 1px solid #e2e8f0; background: #f8fafc; cursor: default; }
         .roster-chip.roster-status-resting .roster-action-panel { background: var(--rest-panel); }
         .roster-chip.roster-status-reserved .roster-action-panel { background: var(--reserved-panel); }
@@ -1499,13 +1495,6 @@
                         <div class="roster-identity">
                             <span class="p-name" title="${safePlayerName}">${safePlayerName}</span>
                             <span class="roster-meta-line">${tiers[p.tier]} · ${p.games}경기</span>
-                        </div>
-                        <div class="roster-end">
-                            <span class="roster-toggle-icon" aria-hidden="true">
-                                ${isExpanded
-                                    ? renderUIIcon('close', 'roster-close-icon')
-                                    : renderUIIcon('more', 'roster-more-icon')}
-                            </span>
                         </div>
                     </div>
                     ${actionPanel}
