@@ -257,7 +257,7 @@
         .roster-chip.gender-card.roster-status-resting { background: var(--rest-bg); }
         .roster-chip.gender-card.roster-status-reserved { background: var(--reserved-bg); }
         .roster-chip.gender-card.roster-status-playing { background: var(--playing-bg); }
-        .roster-chip.expanded { border-color: #93c5fd; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12); }
+        .roster-chip.action-selected { border-color: #93c5fd; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12); }
         .roster-chip.gender-card { border-right: 5px solid transparent; }
         .roster-chip.gender-card::after { content: ''; position: absolute; top: -1px; right: -5px; bottom: -1px; width: 1px; background: #e2e8f0; pointer-events: none; }
         .roster-chip.gender-card.gender-m.has-shuttlecock { border-right-color: #38bdf8; }
@@ -267,14 +267,17 @@
         .roster-identity { flex: 1 1 auto; width: 100%; min-width: 0; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1.8fr) repeat(2, minmax(0, 0.7fr)); align-items: center; }
         .roster-chip .p-name { width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font-size: 0.94rem; line-height: 1.15; }
         .roster-meta-line { min-width: 0; overflow: hidden; text-overflow: ellipsis; padding-left: 3px; border-left: 1px solid rgba(100, 116, 139, 0.28); color: #64748b; font-size: 0.62rem; font-weight: 700; line-height: 1.15; white-space: nowrap; text-align: center; }
-        .roster-inline-actions { width: 100%; min-width: 0; display: flex; align-items: center; gap: 3px; }
-        .roster-chip.expanded .roster-identity { display: none; }
-        .roster-mobile-sheet-heading { display: none; }
-        .roster-inline-action-buttons { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 3px; }
-        .roster-inline-actions .roster-action { min-height: 40px; padding: 4px 3px; gap: 2px; font-size: 0.6rem; }
-        .roster-inline-actions .roster-action-icon { width: 13px; height: 13px; }
-        .roster-inline-close { flex: 0 0 24px; width: 24px; height: 40px; padding: 0; border: 1px solid #cbd5e1; border-radius: 7px; background: rgba(255, 255, 255, 0.82); color: #64748b; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
-        .roster-inline-close .ui-icon { width: 13px; height: 13px; }
+        .roster-action-sheet { position: fixed; z-index: 900; left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); bottom: max(8px, env(safe-area-inset-bottom)); width: auto; max-width: 720px; margin-inline: auto; display: grid; gap: 8px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 14px; background: #fff; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.24); }
+        .roster-action-sheet[hidden] { display: none; }
+        .roster-sheet-heading { min-width: 0; display: flex; align-items: center; gap: 6px; color: #64748b; font-size: 0.68rem; font-weight: 800; }
+        .roster-sheet-heading strong { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1e293b; font-size: 0.86rem; }
+        .roster-sheet-heading span { flex: 0 0 auto; white-space: nowrap; }
+        .roster-sheet-action-buttons { min-width: 0; display: flex; align-items: center; gap: 6px; }
+        .roster-action-sheet .roster-action { min-height: 48px; padding: 7px 6px; gap: 4px; font-size: 0.72rem; }
+        .roster-action-sheet .roster-action-icon { width: 16px; height: 16px; }
+        .roster-sheet-close { flex: 0 0 auto; width: 44px; height: 44px; padding: 0; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; color: #64748b; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .roster-sheet-close .ui-icon { width: 15px; height: 15px; }
+        .waiting-court.has-roster-selection .wc-list { padding-bottom: max(140px, calc(env(safe-area-inset-bottom) + 132px)); }
         .roster-action { flex: 1 1 0; min-width: 0; min-height: 35px; padding: 7px 5px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #475569; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.68rem; font-weight: 800; white-space: nowrap; cursor: pointer; }
         .roster-action-icon { flex: 0 0 auto; width: 15px; height: 15px; display: block; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
         .roster-action.rest { background: #f1f5f9; color: #475569; }
@@ -430,7 +433,7 @@
         .stats-relation-total { color: var(--primary); }
         .stats-empty { min-height: 220px; display: flex; align-items: center; justify-content: center; color: #94a3b8; text-align: center; line-height: 1.55; font-size: 0.86rem; }
         
-        #toast { visibility: hidden; min-width: 250px; background-color: #1e293b; color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 2000; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 0.95rem; opacity: 0; transition: opacity 0.3s, bottom 0.3s; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        #toast { visibility: hidden; min-width: 250px; background-color: #1e293b; color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 2000; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 0.95rem; opacity: 0; pointer-events: none; transition: opacity 0.3s, bottom 0.3s; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
 
         .info-content { overflow-y: auto; text-align: left; line-height: 1.6; color: #334155; font-size: 0.95rem; padding-right: 5px; }
@@ -531,21 +534,8 @@
             #toast.show { bottom: max(24px, env(safe-area-inset-bottom)); }
         }
 
-        /* Phone and tablet roster actions use the same touch-friendly bottom sheet. */
-        @media (max-width: 1024px), (hover: none) and (pointer: coarse) {
-            .roster-chip.expanded .roster-identity { display: grid; }
-            .roster-inline-actions { position: fixed; z-index: 900; left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); bottom: max(8px, env(safe-area-inset-bottom)); width: auto; max-width: 720px; margin-inline: auto; display: grid; gap: 8px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 14px; background: #fff; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.24); }
-            .roster-mobile-sheet-heading { min-width: 0; display: flex; align-items: center; gap: 6px; color: #64748b; font-size: 0.68rem; font-weight: 800; }
-            .roster-mobile-sheet-heading strong { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1e293b; font-size: 0.86rem; }
-            .roster-mobile-sheet-heading span { flex: 0 0 auto; white-space: nowrap; }
-            .roster-inline-action-buttons { gap: 6px; }
-            .roster-inline-actions .roster-action { min-height: 48px; padding: 7px 6px; gap: 4px; font-size: 0.72rem; }
-            .roster-inline-actions .roster-action-icon { width: 16px; height: 16px; }
-            .roster-inline-close { display: none; }
-            .roster-mobile-sheet-close { flex: 0 0 auto; width: 30px; height: 30px; padding: 0; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; color: #64748b; display: inline-flex; align-items: center; justify-content: center; }
-            .roster-mobile-sheet-close .ui-icon { width: 15px; height: 15px; }
-            .waiting-court.has-roster-selection .wc-list { padding-bottom: max(116px, calc(env(safe-area-inset-bottom) + 104px)); }
-        }
+        #toast.roster-sheet-open, #toast.roster-sheet-open.show { bottom: max(150px, calc(env(safe-area-inset-bottom) + 142px)); }
+
     </style>
 </head>
 <body>
@@ -625,6 +615,8 @@
         <div id="courtGrid" class="court-grid"></div>
     </div>
 </div>
+
+<section id="rosterActionSheet" class="roster-action-sheet" aria-label="선수 관리" hidden></section>
 
 <div id="toast">알림 메시지</div>
 <input type="file" id="fileInput" style="display:none" onchange="importData(this)">
@@ -851,7 +843,7 @@
     let pendingHistoryIndex = null;
     let statsPlayerId = null;
     let statsView = 'overall';
-    let expandedRosterPlayerId = null;
+    let selectedRosterPlayerId = null;
     let waitingRoomCollapsed = false;
     let transferSourceCourtId = null;
     let deferredInstallPrompt = null;
@@ -869,6 +861,8 @@
         waitingTab.classList.toggle('active', showWaitingRoom);
         courtsTab.setAttribute('aria-selected', String(!showWaitingRoom));
         waitingTab.setAttribute('aria-selected', String(showWaitingRoom));
+
+        if (!showWaitingRoom && selectedRosterPlayerId !== null) closeRosterActionSheet();
 
         if (showWaitingRoom && waitingRoomCollapsed) {
             waitingRoomCollapsed = false;
@@ -1350,6 +1344,7 @@
         waitingRoomCollapsed = !waitingRoomCollapsed;
         document.getElementById('mainContainer').classList.toggle('waiting-collapsed', waitingRoomCollapsed);
         updateWaitingToggleButton();
+        if(waitingRoomCollapsed && selectedRosterPlayerId !== null) closeRosterActionSheet();
     }
 
     function toggleRosterSearch(forceOpen = null) {
@@ -1493,6 +1488,40 @@
         });
     }, 1000);
 
+    function renderRosterActionSheet() {
+        const sheet = document.getElementById('rosterActionSheet');
+        const player = players.find(candidate => String(candidate.id) === String(selectedRosterPlayerId));
+        const waitingCourt = document.getElementById('waitingCourt');
+
+        if(!player) {
+            selectedRosterPlayerId = null;
+            sheet.innerHTML = '';
+            sheet.hidden = true;
+            waitingCourt.classList.remove('has-roster-selection');
+            document.getElementById('toast').classList.remove('roster-sheet-open');
+            return;
+        }
+
+        const safePlayerName = escapeHTML(player.name);
+        const canToggleRest = player.status === 'waiting' || player.status === 'resting';
+        const shuttleActionLabel = player.shuttlecock ? '콕 냄 표시 취소' : '콕 냄 표시';
+        sheet.innerHTML = `
+            <div class="roster-sheet-heading">
+                <span>선택</span>
+                <strong id="rosterActionSheetTitle" title="${safePlayerName}">${safePlayerName}</strong>
+                <span>${tiers[player.tier]} · ${player.games}경기</span>
+                <button type="button" class="roster-sheet-close" onclick="closeRosterActionSheet()" aria-label="선수 관리 닫기" title="선수 관리 닫기">${renderUIIcon('close')}</button>
+            </div>
+            <div class="roster-sheet-action-buttons" role="group" aria-label="${safePlayerName} 선수 관리 동작">
+                ${canToggleRest ? `<button type="button" class="roster-action ${player.status === 'resting' ? 'resume' : 'rest'}" onclick="toggleRestStatus(${player.id})" title="${player.status === 'resting' ? '대기로 복귀' : '휴식'}">${renderRosterActionIcon(player.status === 'resting' ? 'resume' : 'rest')}<span>${player.status === 'resting' ? '복귀' : '휴식'}</span></button>` : ''}
+                <button type="button" class="roster-action shuttle ${player.shuttlecock ? 'active' : ''}" onclick="toggleShuttlecock(${player.id})" aria-pressed="${player.shuttlecock}" aria-label="${shuttleActionLabel}">${renderRosterActionIcon(player.shuttlecock ? 'cancel' : 'shuttle')}<span>${player.shuttlecock ? '콕 취소' : '콕 냄'}</span></button>
+                <button type="button" class="roster-action edit" onclick="openPModal(${player.id})" title="정보 수정">${renderRosterActionIcon('edit')}<span>수정</span></button>
+            </div>`;
+        sheet.hidden = false;
+        waitingCourt.classList.add('has-roster-selection');
+        document.getElementById('toast').classList.add('roster-sheet-open');
+    }
+
     // --- Render Logic ---
     function render() {
         const keyword = document.getElementById('searchInput').value.toLowerCase();
@@ -1535,27 +1564,10 @@
                 previousStatus = p.status;
                 if(collapsedStatuses.has(p.status)) return;
                 const safePlayerName = escapeHTML(p.name);
-                const isExpanded = String(expandedRosterPlayerId) === String(p.id);
-                const canToggleRest = p.status === 'waiting' || p.status === 'resting';
-                const shuttleActionLabel = p.shuttlecock ? '콕 냄 표시 취소' : '콕 냄 표시';
-                const inlineActions = `
-                    <div id="roster-inline-actions-${p.id}" class="roster-inline-actions" role="group" aria-label="${safePlayerName} 선수 관리" onclick="event.stopPropagation()">
-                        <div class="roster-mobile-sheet-heading">
-                            <span>선택</span>
-                            <strong title="${safePlayerName}">${safePlayerName}</strong>
-                            <span>${tiers[p.tier]} · ${p.games}경기</span>
-                            <button type="button" class="roster-mobile-sheet-close" onclick="event.stopPropagation(); closeRosterActions()" aria-label="선수 관리 닫기" title="선수 관리 닫기">${renderUIIcon('close')}</button>
-                        </div>
-                        <div class="roster-inline-action-buttons">
-                            ${canToggleRest ? `<button type="button" class="roster-action ${p.status === 'resting' ? 'resume' : 'rest'}" onclick="event.stopPropagation(); toggleRestStatus(${p.id})" title="${p.status === 'resting' ? '대기로 복귀' : '휴식'}">${renderRosterActionIcon(p.status === 'resting' ? 'resume' : 'rest')}<span>${p.status === 'resting' ? '복귀' : '휴식'}</span></button>` : ''}
-                            <button type="button" class="roster-action shuttle ${p.shuttlecock ? 'active' : ''}" onclick="event.stopPropagation(); toggleShuttlecock(${p.id})" aria-pressed="${p.shuttlecock}" aria-label="${shuttleActionLabel}">${renderRosterActionIcon(p.shuttlecock ? 'cancel' : 'shuttle')}<span>${p.shuttlecock ? '콕 취소' : '콕 냄'}</span></button>
-                            <button type="button" class="roster-action edit" onclick="event.stopPropagation(); openPModal(${p.id})" title="정보 수정">${renderRosterActionIcon('edit')}<span>수정</span></button>
-                        </div>
-                        <button type="button" class="roster-inline-close" onclick="event.stopPropagation(); closeRosterActions()" aria-label="선수 관리 닫기" title="선수 관리 닫기">${renderUIIcon('close')}</button>
-                    </div>`;
+                const isSelected = String(selectedRosterPlayerId) === String(p.id);
 
                 container.innerHTML += `
-                <div class="player-chip waiting-chip roster-chip gender-card ${getGenderCardClass(p.gender)} roster-status-${p.status} ${p.shuttlecock ? 'has-shuttlecock' : ''} ${isExpanded ? 'expanded' : ''}" role="button" tabindex="0" aria-expanded="${isExpanded}" aria-controls="roster-inline-actions-${p.id}" aria-label="${safePlayerName}${p.shuttlecock ? ' · 콕 냄' : ''} 빠른 동작 ${isExpanded ? '닫기' : '열기'}" onclick="toggleRosterActions(${p.id})" onkeydown="handleRosterCardKey(event, ${p.id})">
+                <div class="player-chip waiting-chip roster-chip gender-card ${getGenderCardClass(p.gender)} roster-status-${p.status} ${p.shuttlecock ? 'has-shuttlecock' : ''} ${isSelected ? 'action-selected' : ''}" role="button" tabindex="0" aria-expanded="${isSelected}" aria-controls="rosterActionSheet" aria-label="${safePlayerName}${p.shuttlecock ? ' · 콕 냄' : ''} 선수 관리 ${isSelected ? '닫기' : '열기'}" onclick="toggleRosterActionSheet(${p.id})" onkeydown="handleRosterCardKey(event, ${p.id})">
                     ${renderGenderAccessibility(p.gender)}
                     ${p.shuttlecock ? '<span class="sr-only">콕 냄</span>' : ''}
                     <div class="roster-summary">
@@ -1564,13 +1576,12 @@
                             <span class="roster-meta-line">${tiers[p.tier]}</span>
                             <span class="roster-meta-line">${p.games}경기</span>
                         </div>
-                        ${isExpanded ? inlineActions : ''}
                     </div>
                 </div>`;
             });
         };
         renderWaitList('waitList');
-        document.getElementById('waitingCourt').classList.toggle('has-roster-selection', expandedRosterPlayerId !== null);
+        renderRosterActionSheet();
 
         const cg = document.getElementById('courtGrid'); cg.innerHTML = '';
         courts.forEach((c, idx) => {
@@ -1756,18 +1767,18 @@
         const p = players.find(x => x.id === id);
         if (p) { p.shuttlecock = !p.shuttlecock; save(); render(); }
     }
-    function toggleRosterActions(id) {
-        expandedRosterPlayerId = String(expandedRosterPlayerId) === String(id) ? null : id;
+    function toggleRosterActionSheet(id) {
+        selectedRosterPlayerId = String(selectedRosterPlayerId) === String(id) ? null : id;
         render();
     }
-    function closeRosterActions() {
-        expandedRosterPlayerId = null;
+    function closeRosterActionSheet() {
+        selectedRosterPlayerId = null;
         render();
     }
     function handleRosterCardKey(event, id) {
         if(event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) return;
         event.preventDefault();
-        toggleRosterActions(id);
+        toggleRosterActionSheet(id);
     }
     function toggleRestStatus(id) {
         const p = players.find(x => x.id === id);
@@ -2273,6 +2284,15 @@
     updateInstallButton();
 
     if ('serviceWorker' in navigator && window.isSecureContext) {
+        const hadServiceWorkerController = Boolean(navigator.serviceWorker.controller);
+        let reloadingForServiceWorkerUpdate = false;
+        if (hadServiceWorkerController) {
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if(reloadingForServiceWorkerUpdate) return;
+                reloadingForServiceWorkerUpdate = true;
+                window.location.reload();
+            });
+        }
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./service-worker.js', { scope: './' })
                 .then(registration => registration.update())
