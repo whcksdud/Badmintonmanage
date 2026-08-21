@@ -475,18 +475,6 @@
             .waiting-chip.roster-chip { gap: 0; padding: 0; }
             .roster-summary { min-height: 60px; padding: 9px 10px; }
             .roster-action { min-height: 42px; padding: 8px; }
-            .roster-chip.expanded .roster-identity { display: grid; }
-            .roster-inline-actions { position: fixed; z-index: 900; left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); bottom: max(8px, env(safe-area-inset-bottom)); width: auto; display: grid; gap: 8px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 14px; background: #fff; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.24); }
-            .roster-mobile-sheet-heading { min-width: 0; display: flex; align-items: center; gap: 6px; color: #64748b; font-size: 0.68rem; font-weight: 800; }
-            .roster-mobile-sheet-heading strong { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1e293b; font-size: 0.86rem; }
-            .roster-mobile-sheet-heading span { flex: 0 0 auto; white-space: nowrap; }
-            .roster-inline-action-buttons { gap: 6px; }
-            .roster-inline-actions .roster-action { min-height: 48px; padding: 7px 6px; gap: 4px; font-size: 0.72rem; }
-            .roster-inline-actions .roster-action-icon { width: 16px; height: 16px; }
-            .roster-inline-close { display: none; }
-            .roster-mobile-sheet-close { flex: 0 0 auto; width: 30px; height: 30px; padding: 0; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; color: #64748b; display: inline-flex; align-items: center; justify-content: center; }
-            .roster-mobile-sheet-close .ui-icon { width: 15px; height: 15px; }
-            .waiting-court.has-roster-selection .wc-list { padding-bottom: max(116px, calc(env(safe-area-inset-bottom) + 104px)); }
             .court-delete { width: 36px; height: 40px; }
             .btn { min-width: 0; min-height: 44px; padding: 9px 10px; }
             .btn-group { padding: 10px 12px; }
@@ -541,6 +529,22 @@
                 padding: 13px 14px;
             }
             #toast.show { bottom: max(24px, env(safe-area-inset-bottom)); }
+        }
+
+        /* Phone and tablet roster actions use the same touch-friendly bottom sheet. */
+        @media (max-width: 1024px), (hover: none) and (pointer: coarse) {
+            .roster-chip.expanded .roster-identity { display: grid; }
+            .roster-inline-actions { position: fixed; z-index: 900; left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); bottom: max(8px, env(safe-area-inset-bottom)); width: auto; max-width: 720px; margin-inline: auto; display: grid; gap: 8px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 14px; background: #fff; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.24); }
+            .roster-mobile-sheet-heading { min-width: 0; display: flex; align-items: center; gap: 6px; color: #64748b; font-size: 0.68rem; font-weight: 800; }
+            .roster-mobile-sheet-heading strong { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1e293b; font-size: 0.86rem; }
+            .roster-mobile-sheet-heading span { flex: 0 0 auto; white-space: nowrap; }
+            .roster-inline-action-buttons { gap: 6px; }
+            .roster-inline-actions .roster-action { min-height: 48px; padding: 7px 6px; gap: 4px; font-size: 0.72rem; }
+            .roster-inline-actions .roster-action-icon { width: 16px; height: 16px; }
+            .roster-inline-close { display: none; }
+            .roster-mobile-sheet-close { flex: 0 0 auto; width: 30px; height: 30px; padding: 0; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; color: #64748b; display: inline-flex; align-items: center; justify-content: center; }
+            .roster-mobile-sheet-close .ui-icon { width: 15px; height: 15px; }
+            .waiting-court.has-roster-selection .wc-list { padding-bottom: max(116px, calc(env(safe-area-inset-bottom) + 104px)); }
         }
     </style>
 </head>
