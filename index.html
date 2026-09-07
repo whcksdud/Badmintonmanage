@@ -50,6 +50,7 @@
         }
         .h-btn.primary { background: var(--primary); color: #fff; border: none; }
         .h-btn:active { transform: scale(0.96); }
+        .h-btn:disabled { opacity: 0.4; cursor: default; }
         .h-btn .ui-icon { width: 17px; height: 17px; }
 
         .mobile-view-tabs { display: none; }
@@ -536,6 +537,10 @@
 
         #toast.roster-sheet-open, #toast.roster-sheet-open.show { bottom: max(150px, calc(env(safe-area-inset-bottom) + 142px)); }
 
+        @media (max-width: 360px) {
+            .header .logo { display: none; }
+            .header .h-btn-group { flex: 1; justify-content: space-between; }
+        }
     </style>
 </head>
 <body>
@@ -576,9 +581,11 @@
         <button class="h-btn" onclick="openStatsModal()" aria-label="경기 통계" title="경기 통계"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-chart"></use></svg><span class="h-label">통계</span></button>
         <button class="h-btn primary" onclick="addCourt()" aria-label="코트 추가" title="코트 추가"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-add"></use></svg><span class="h-label">코트</span></button>
         <button class="h-btn" onclick="openSettings()" aria-label="설정" title="설정"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><span class="h-label">설정</span></button>
+        <button id="undoButton" class="h-btn" onclick="undoLastAction()" aria-label="최근 작업 되돌리기" title="최근 작업 되돌리기" disabled><svg class="ui-icon" aria-hidden="true"><use href="#icon-restore"></use></svg><span class="h-label">되돌리기</span></button>
     </div>
 </div>
 
+<div id="storageError" role="alert" style="padding:8px 16px; background:#fef2f2; color:#991b1b;" hidden></div>
 <nav class="mobile-view-tabs" role="tablist" aria-label="모바일 화면 선택">
     <button id="mobileCourtsTab" class="mobile-view-tab active" type="button" role="tab" aria-selected="true" aria-controls="courtArea" onclick="setMobileView('courts')">
         <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-shuttle"></use></svg><span>코트</span><span id="mobileCourtCount" class="mobile-tab-count">0</span>
@@ -629,8 +636,9 @@
         <div><label>성별</label><select id="pGen"><option value="M">남성</option><option value="F">여성</option></select></div>
         <div><label>급수</label><select id="pTier"><option value="5">A조</option><option value="4">B조</option><option value="3">C조</option><option value="2">D조</option><option value="1" selected>E조</option></select></div>
     </div>
-    <label>초기 게임 수 (지각 시 조정, 현재 평균-1 자동계산)</label>
-    <input type="number" id="pGames" value="0">
+    <label>실제 경기 수</label>
+    <input type="number" id="pGames" min="0" step="1" value="0">
+    <p id="playerMatchingInfo" style="color:#64748b; font-size:0.85rem;"></p>
     <label>선수 상태</label>
     <select id="pStatus">
         <option value="waiting">대기</option>
@@ -675,6 +683,7 @@
         <div style="height:1px; background:#eee; margin:5px 0;"></div>
         <button class="btn btn-outline" onclick="exportData()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-backup"></use></svg><span>데이터 백업 (다운로드)</span></button>
         <button class="btn btn-outline" onclick="triggerImport()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-restore"></use></svg><span>데이터 복구 (파일열기)</span></button>
+        <button class="btn btn-outline" onclick="restoreBeforeImport()">파일 복구 전 데이터로 되돌리기</button>
         <div style="height:1px; background:#eee; margin:5px 0;"></div>
         <button class="btn btn-danger" onclick="resetAll()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-warning"></use></svg><span>데이터 전체 초기화 (공장초기화)</span></button>
     </div>
@@ -825,14 +834,22 @@
 
 <script>
     // --- Data ---
-    let players = JSON.parse(localStorage.getItem('bm_p_v13')) || [];
-    let courts = JSON.parse(localStorage.getItem('bm_c_v13')) || [{id: 1, type: 'A', active: [], next: [], startTime: null}];
-    let history = JSON.parse(localStorage.getItem('bm_h_v13')) || [];
+    const STATE_KEY = 'bm_state_v14';
+    const IMPORT_BACKUP_KEY = 'bm_before_import_v14';
+    let storageError = '';
+    let storageBlocked = false;
+    const initialEnvelope = readInitialState();
+    let players = initialEnvelope.current.players;
+    let courts = initialEnvelope.current.courts;
+    let history = initialEnvelope.current.history;
     const tiers = ["E조", "E조", "D조", "C조", "B조", "A조"];
     players.forEach(player => {
         const savedTier = Number(player.tier);
         player.tier = Number.isFinite(savedTier) ? Math.min(5, Math.max(1, savedTier)) : 1;
     });
+    linkCourtPlayers();
+    let committedState = serializeState();
+    let undoState = initialEnvelope.previous ? JSON.stringify(initialEnvelope.previous) : null;
 
     let editPId = null;
     let swapTarget = null;
@@ -948,10 +965,79 @@
     }
 
     // --- Save & Load ---
-    function save() {
-        localStorage.setItem('bm_p_v13', JSON.stringify(players));
-        localStorage.setItem('bm_c_v13', JSON.stringify(courts));
-        localStorage.setItem('bm_h_v13', JSON.stringify(history));
+    function readInitialState() {
+        try {
+            const saved = localStorage.getItem(STATE_KEY);
+            const envelope = saved ? JSON.parse(saved) : { current: {
+                players: JSON.parse(localStorage.getItem('bm_p_v13')) || [],
+                courts: JSON.parse(localStorage.getItem('bm_c_v13')) || [{id:1, type:'A', active:[], next:[], startTime:null}],
+                history: JSON.parse(localStorage.getItem('bm_h_v13')) || []
+            }, previous: null };
+            const state = envelope.current;
+            if(!state || !Array.isArray(state.players) || !Array.isArray(state.courts) || !Array.isArray(state.history) ||
+                state.players.some(p => !p || typeof p.name !== 'string' || !Number.isFinite(p.games)) ||
+                state.courts.some(c => !c || !Array.isArray(c.active) || !Array.isArray(c.next)) ||
+                state.history.some(h => !h || typeof h !== 'object')) throw new Error('Invalid saved data');
+            validateImportData(state, true);
+            if(envelope.previous) {
+                try { validateImportData(envelope.previous, true); }
+                catch(error) { envelope.previous = null; }
+            }
+            return envelope;
+        } catch(error) {
+            storageBlocked = true;
+            storageError = '저장 데이터를 읽지 못했습니다. 기존 데이터는 보존되어 있습니다. 설정에서 정상 백업 파일을 복구하세요.';
+            return { current: {players:[], courts:[], history:[]}, previous:null };
+        }
+    }
+
+    function linkCourtPlayers() {
+        const roster = new Map(players.map(player => [player.id, player]));
+        courts.forEach(court => ['active', 'next'].forEach(area => {
+            court[area] = court[area].map(player => roster.get(player.id) || player);
+        }));
+    }
+
+    function serializeState() { return JSON.stringify({players, courts, history}); }
+
+    function applyState(serialized) {
+        const state = JSON.parse(serialized);
+        players = state.players; courts = state.courts; history = state.history;
+        linkCourtPlayers();
+    }
+
+    function save(recordUndo = true, force = false) {
+        try {
+            if(storageBlocked) throw new Error('Saved data needs recovery');
+            linkCourtPlayers();
+            const nextState = serializeState();
+            if(nextState === committedState && recordUndo && !force && !storageError) return true;
+            const previous = recordUndo ? committedState : null;
+            localStorage.setItem(STATE_KEY, JSON.stringify({current:JSON.parse(nextState), previous:previous ? JSON.parse(previous) : null}));
+            undoState = previous;
+            committedState = nextState;
+            storageError = '';
+            document.getElementById('storageError').hidden = true;
+            document.getElementById('undoButton').disabled = !undoState;
+            return true;
+        } catch(error) {
+            applyState(committedState);
+            if(!storageBlocked) storageError = '저장에 실패하여 방금 작업을 취소했습니다. 저장 공간과 브라우저 설정을 확인한 뒤 다시 시도하세요.';
+            render();
+            showToast('저장 실패: 작업이 적용되지 않았습니다.');
+            return false;
+        }
+    }
+
+    function undoLastAction() {
+        if(!undoState) return showToast('되돌릴 작업이 없습니다.');
+        showConfirmModal('최근 작업 한 단계를 되돌리시겠습니까? 경기 수·코트·예약·시작 시각을 함께 복원합니다.', () => {
+            applyState(undoState);
+            if(!save(false)) return;
+            closePModal(); closeManualModal(); closeSwapModal(); closeScoreModal(); closeHModal(); closeStatsModal(); closeTransferModal(); closeSettings();
+            selectedRosterPlayerId = null;
+            render(); showToast('최근 작업을 되돌렸습니다.');
+        });
     }
 
     function showToast(msg) {
@@ -963,9 +1049,10 @@
     
     // 1. 전체 초기화
     function resetAll() {
-        showConfirmModal("모든 선수 데이터와 기록이 영구적으로 삭제됩니다.\n정말 초기화 하시겠습니까?", () => {
-            localStorage.clear(); 
-            location.reload(); 
+        showConfirmModal("현재 선수·코트·기록을 초기화하시겠습니까?\n최근 작업 되돌리기로 한 단계 복원할 수 있습니다.", () => {
+            players = []; courts = [{id:1, type:'A', active:[], next:[], startTime:null}]; history = [];
+            if(!save()) return;
+            closeSettings(); render(); showToast('전체 데이터를 초기화했습니다. 최근 작업 되돌리기로 복원할 수 있습니다.');
         });
     }
 
@@ -980,16 +1067,17 @@
             });
             
             // 선수 상태 초기화
-            players.forEach(p => { 
-                p.games = 0; 
-                p.status = 'waiting'; 
+            players.forEach(p => {
+                p.games = 0;
+                p.matchingOffset = 0;
+                p.status = 'waiting';
                 p.lastTime = 0; 
             });
             
             // 기록 배열 비우기 (메모리 주소 유지)
             history.length = 0;
             
-            save(); 
+            if(!save()) return;
             render(); 
             closeSettings(); 
             showToast("새 모임이 시작되었습니다.");
@@ -1004,7 +1092,7 @@
                 const affectedPlayerIds = [...c.active, ...c.next].map(p => p.id);
                 courts = courts.filter(x => x.id !== id);
                 syncPlayerAssignmentStatuses(affectedPlayerIds, 'waiting');
-                save();
+                if(!save()) return;
                 render();
                 showToast("코트가 삭제되었습니다.");
             }
@@ -1012,10 +1100,13 @@
     }
 
     // 4. 선수 삭제
-    function deletePlayer() { 
-        showConfirmModal("선수를 삭제하시겠습니까?\n(삭제 후 복구할 수 없습니다)", () => {
-            players = players.filter(x => x.id !== editPId);
-            save(); 
+    function deletePlayer() {
+        const playerId = editPId;
+        if(isPlayerInCourtArea(playerId, 'active') || isPlayerInCourtArea(playerId, 'next')) return showToast('배정된 선수는 교체하거나 예약을 해제한 뒤 삭제하세요.');
+        showConfirmModal("선수를 삭제하시겠습니까?\n최근 작업 되돌리기로 한 단계 복원할 수 있습니다.", () => {
+            if(isPlayerInCourtArea(playerId, 'active') || isPlayerInCourtArea(playerId, 'next')) return showToast('선수가 코트에 배정되어 삭제할 수 없습니다.');
+            players = players.filter(x => x.id !== playerId);
+            if(!save()) return;
             closePModal(); 
             render(); 
             showToast("선수가 삭제되었습니다.");
@@ -1023,22 +1114,29 @@
     }
 
     // --- Core: Auto Match ---
-    function getAutoMatchPool(court) {
-        const isNextReservation = court.active.length > 0;
+    function getMatchingGameCount(player) {
+        const offset = Number(player.matchingOffset);
+        return player.games + (Number.isFinite(offset) && offset >= 0 ? offset : 0);
+    }
+
+    function setPlayerAvailability(player, status) {
+        if(player.status === 'resting' && status === 'waiting') {
+            const activePlayers = players.filter(candidate => candidate.id !== player.id && candidate.status !== 'resting');
+            if(activePlayers.length > 0) {
+                const baseline = Math.floor(activePlayers.reduce((sum, candidate) => sum + getMatchingGameCount(candidate), 0) / activePlayers.length);
+                // Preserve actual games and any existing rest adjustment.
+                player.matchingOffset = Math.max(getMatchingGameCount(player), baseline) - player.games;
+            }
+        }
+        player.status = status;
+    }
+
+    function getAutoMatchPool() {
         return players.filter(player => {
             if(isPlayerInCourtArea(player.id, 'next')) return false;
-            const isPlaying = isPlayerInCourtArea(player.id, 'active');
-            if(isPlaying) return isNextReservation;
+            if(isPlayerInCourtArea(player.id, 'active')) return false;
             return player.status === 'waiting';
         });
-    }
-
-    function getProjectedGameCount(player) {
-        return player.games + Number(isPlayerInCourtArea(player.id, 'active'));
-    }
-
-    function getAutoMatchPriority(player) {
-        return getProjectedGameCount(player) * 2 + Number(isPlayerInCourtArea(player.id, 'active'));
     }
 
     function matchCourt(cId) {
@@ -1047,7 +1145,7 @@
         if(court.next.length > 0) return showToast("이미 다음 경기가 예약되어 있습니다.");
 
         const isNextReservation = court.active.length > 0;
-        const pool = getAutoMatchPool(court);
+        const pool = getAutoMatchPool();
         const type = court.type;
 
         let genderPool = [];
@@ -1068,29 +1166,23 @@
 
         if(type !== 'X' && genderPool.length < 4) {
             const restingCount = players.filter(p => p.status === 'resting' && (type === 'A' || p.gender === type)).length;
-            const playingCount = genderPool.filter(player => isPlayerInCourtArea(player.id, 'active')).length;
-            const candidateDetails = isNextReservation ? ` · 게임 중 ${playingCount}명 포함` : '';
             const poolLabel = isNextReservation ? '후보' : '대기';
-            return showToast(`매칭 인원이 부족합니다. (${poolLabel} ${genderPool.length}명${candidateDetails} · 휴식 ${restingCount}명)`);
+            return showToast(`매칭 인원이 부족합니다. (${poolLabel} ${genderPool.length}명 · 휴식 ${restingCount}명)`);
         }
 
         let selected = [];
         if(type === 'X') {
             const m = pool.filter(p => p.gender === 'M');
             const f = pool.filter(p => p.gender === 'F');
-            const sm = shuffleByGameCount(m, getAutoMatchPriority);
-            const sf = shuffleByGameCount(f, getAutoMatchPriority);
+            const sm = shuffleByGameCount(m);
+            const sf = shuffleByGameCount(f);
             selected = [...sm.slice(0,2), ...sf.slice(0,2)];
         } else {
-            const shuffled = shuffleByGameCount(genderPool, getAutoMatchPriority);
+            const shuffled = shuffleByGameCount(genderPool);
             selected = shuffled.slice(0, 4);
         }
 
         applyMatch(cId, selected, 'next');
-        const playingSelectedCount = selected.filter(player => isPlayerInCourtArea(player.id, 'active')).length;
-        if(isNextReservation && playingSelectedCount > 0) {
-            showToast(`다음 예약 완료 · 게임 중인 선수 ${playingSelectedCount}명 포함`);
-        }
     }
 
     // --- Core: Manual Match ---
@@ -1207,15 +1299,18 @@
         } else {
              const sA = getScore(selectedPlayers[0].id, selectedPlayers[3].id) + getScore(selectedPlayers[1].id, selectedPlayers[2].id);
              const sB = getScore(selectedPlayers[0].id, selectedPlayers[2].id) + getScore(selectedPlayers[1].id, selectedPlayers[3].id);
-             bestTeam = (sA <= sB) ? [selectedPlayers[0], selectedPlayers[3], selectedPlayers[1], selectedPlayers[2]] 
+             const sC = getScore(selectedPlayers[0].id, selectedPlayers[1].id) + getScore(selectedPlayers[2].id, selectedPlayers[3].id) + 5;
+             bestTeam = (sA <= sB) ? [selectedPlayers[0], selectedPlayers[3], selectedPlayers[1], selectedPlayers[2]]
                                    : [selectedPlayers[0], selectedPlayers[2], selectedPlayers[1], selectedPlayers[3]];
+             if(sC < Math.min(sA, sB)) bestTeam = [...selectedPlayers];
         }
 
         court[targetArea] = bestTeam;
         syncPlayerAssignmentStatuses(bestTeam.map(p => p.id));
 
         if(targetArea === 'active') court.startTime = Date.now();
-        save(); render();
+        if(!save()) return;
+        render();
     }
 
     // --- Game End / Cancel ---
@@ -1248,7 +1343,7 @@
         const historyIndex = pendingHistoryIndex;
         history[historyIndex].scores = [...scores];
         closeScoreModal();
-        save();
+        if(!save()) return;
         openHistory();
         showToast('경기 점수가 저장되었습니다.');
     }
@@ -1296,7 +1391,8 @@
             court.startTime = null;
         }
         syncPlayerAssignmentStatuses(affectedPlayerIds, 'waiting');
-        save(); render();
+        if(!save()) return;
+        render();
 
         if(successionBlockers.length > 0) {
             const blockerNames = successionBlockers.map(player => player.name).join(', ');
@@ -1311,7 +1407,8 @@
         const affectedPlayerIds = court.next.map(p => p.id);
         court.next = [];
         syncPlayerAssignmentStatuses(affectedPlayerIds, 'waiting');
-        save(); render();
+        if(!save()) return;
+        render();
     }
 
     function openTransferNext(cId) {
@@ -1336,7 +1433,8 @@
         if(target.next.length > 0) return showToast("대상 코트에 이미 다음 대기가 있습니다.");
         target.next = source.next;
         source.next = [];
-        save(); closeTransferModal(); render();
+        if(!save()) return;
+        closeTransferModal(); render();
         showToast(`${courts.indexOf(target) + 1}번 코트로 다음 대기를 이동했습니다.`);
     }
 
@@ -1402,7 +1500,7 @@
         [...new Set(playerIds)].forEach(playerId => syncPlayerAssignmentStatus(playerId, fallbackStatus));
     }
 
-    function shuffleByGameCount(list, getGameCount = player => player.games) {
+    function shuffleByGameCount(list, getGameCount = getMatchingGameCount) {
         const groups = {};
         list.forEach(player => {
             const gameCount = getGameCount(player);
@@ -1420,21 +1518,22 @@
     
     function getScore(id1, id2) {
         let count = 0;
-        history.forEach(h => {
+        history.slice(0, 100).forEach(h => {
             if(!h.pIds) return;
             const t1 = [h.pIds[0], h.pIds[1]]; const t2 = [h.pIds[2], h.pIds[3]];
             if((t1.includes(id1) && t1.includes(id2)) || (t2.includes(id1) && t2.includes(id2))) count++;
         });
         return count;
     }
-    function getAverageGames() {
-        if(players.length === 0) return 0;
-        const total = players.reduce((sum, p) => sum + p.games, 0);
-        return Math.max(0, Math.floor(total / players.length) - 1);
-    }
     function formatTime(timestamp) {
         const d = new Date(timestamp);
         return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+    }
+
+    function getInitialMatchingGames() {
+        const activePlayers = players.filter(player => player.status !== 'resting');
+        if(activePlayers.length === 0) return 0;
+        return Math.max(0, Math.floor(activePlayers.reduce((sum, player) => sum + getMatchingGameCount(player), 0) / activePlayers.length) - 1);
     }
     function formatElapsedTime(startTime) {
         const diff = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
@@ -1450,7 +1549,7 @@
     function closeInfoModal() { document.getElementById('infoModal').style.display='none'; }
 
     function exportData() {
-        const data = { players, courts, history, version: 'v13_pro_ios' };
+        const data = { players, courts, history, version: 'v14' };
         const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url;
@@ -1458,16 +1557,91 @@
         a.click(); showToast("백업 파일 다운로드");
     }
     function triggerImport() { document.getElementById('fileInput').click(); }
+    function validateImportData(data, allowLegacyAssignments = false) {
+        const fail = () => { throw new Error('선수·코트·경기 기록의 형식이나 배정 관계가 올바르지 않습니다.'); };
+        const idOK = value => Number.isSafeInteger(value) && value >= 0;
+        const countOK = value => Number.isSafeInteger(value) && value >= 0;
+        const timeOK = value => value == null || (Number.isFinite(value) && value >= 0);
+        if(!data || !Array.isArray(data.players) || !Array.isArray(data.courts) || (data.history !== undefined && !Array.isArray(data.history))) fail();
+        const ids = new Set();
+        data.players.forEach(p => {
+            if(!p || !idOK(p.id) || ids.has(p.id) || typeof p.name !== 'string' || !p.name.trim() ||
+                !['M','F'].includes(p.gender) || !Number.isInteger(p.tier) || p.tier < 0 || p.tier > 5 ||
+                !countOK(p.games) || !['waiting','resting','playing','reserved'].includes(p.status) ||
+                (p.matchingOffset !== undefined && !countOK(p.matchingOffset)) || !timeOK(p.lastTime) ||
+                (p.shuttlecock !== undefined && typeof p.shuttlecock !== 'boolean')) fail();
+            ids.add(p.id);
+        });
+        const courtIds = new Set();
+        const assignments = {active:new Set(), next:new Set()};
+        data.courts.forEach(c => {
+            if(!c || !idOK(c.id) || courtIds.has(c.id) || !['A','M','F','X'].includes(c.type) || !timeOK(c.startTime)) fail();
+            courtIds.add(c.id);
+            ['active','next'].forEach(area => {
+                if(!Array.isArray(c[area]) || (allowLegacyAssignments ? c[area].length > 4 : ![0,4].includes(c[area].length))) fail();
+                c[area].forEach(p => {
+                    if(!p || !ids.has(p.id) || assignments[area].has(p.id)) fail();
+                    assignments[area].add(p.id);
+                });
+            });
+        });
+        (data.history || []).forEach(h => {
+            if(!h || typeof h !== 'object' || Array.isArray(h) || !timeOK(h.startTime) || !timeOK(h.endTime) || (h.cId !== undefined && !idOK(h.cId))) fail();
+            if(h.pIds !== undefined && (!Array.isArray(h.pIds) || h.pIds.length !== 4 || h.pIds.some(id => !idOK(id)) || new Set(h.pIds).size !== 4)) fail();
+            if(h.names !== undefined && typeof h.names !== 'string') fail();
+            if(h.teamNames !== undefined && (!Array.isArray(h.teamNames) || h.teamNames.length !== 2 || h.teamNames.some(team => !Array.isArray(team) || team.length !== 2 || team.some(name => typeof name !== 'string')))) fail();
+            if(!h.pIds && !h.teamNames && !h.names) fail();
+            if(h.scores !== undefined && (!Array.isArray(h.scores) || h.scores.length !== 2 || h.scores.some(score => !countOK(score) || score > 99) || h.scores[0] === h.scores[1])) fail();
+        });
+        return data;
+    }
+
+    function importValidatedData(data) {
+        try {
+            validateImportData(data);
+            // Preserve the exact pre-import state separately from one-step undo.
+            if(storageBlocked) {
+                const original = [STATE_KEY, 'bm_p_v13', 'bm_c_v13', 'bm_h_v13'].map(key => [key, localStorage.getItem(key)]);
+                localStorage.setItem('bm_unreadable_v14', JSON.stringify(original));
+            } else {
+                localStorage.setItem(IMPORT_BACKUP_KEY, committedState);
+            }
+        } catch(error) {
+            showToast('복구하지 않았습니다. 파일 형식과 저장 공간을 확인하세요.');
+            return false;
+        }
+        const wasBlocked = storageBlocked;
+        storageBlocked = false;
+        applyState(JSON.stringify({players:data.players, courts:data.courts, history:data.history || []}));
+        players.forEach(p => { p.tier = Math.max(1, p.tier); });
+        syncPlayerAssignmentStatuses(players.map(p => p.id));
+        if(!save(!wasBlocked, true)) { storageBlocked = wasBlocked; return false; }
+        render(); showToast(wasBlocked ? '정상 백업으로 데이터를 복구했습니다.' : '데이터 복구 완료! 설정에서 복구 전 데이터로 돌아갈 수 있습니다.');
+        return true;
+    }
+
+    function restoreBeforeImport() {
+        let data;
+        try {
+            const saved = localStorage.getItem(IMPORT_BACKUP_KEY);
+            if(!saved) return showToast('파일 복구 전 백업이 없습니다.');
+            data = validateImportData(JSON.parse(saved));
+        } catch(error) { return showToast('복구 전 백업을 읽지 못했습니다.'); }
+        showConfirmModal('파일 복구 직전의 선수·코트·기록으로 돌아가시겠습니까?', () => {
+            if(storageBlocked) { if(importValidatedData(data)) closeSettings(); return; }
+            applyState(JSON.stringify(data));
+            if(!save()) return;
+            closeSettings(); render(); showToast('파일 복구 전 데이터를 복원했습니다.');
+        });
+    }
+
     function importData(input) {
         const file = input.files[0]; if(!file) return;
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
                 const data = JSON.parse(e.target.result);
-                if(data.players && data.courts) {
-                    players = data.players; courts = data.courts; history = data.history || [];
-                    save(); render(); showToast("데이터 복구 완료!");
-                }
+                importValidatedData(data);
             } catch(err) { showToast("파일 형식이 올바르지 않습니다."); }
         };
         reader.readAsText(file); input.value = '';
@@ -1524,6 +1698,9 @@
 
     // --- Render Logic ---
     function render() {
+        document.getElementById('storageError').innerText = storageError;
+        document.getElementById('storageError').hidden = !storageError;
+        document.getElementById('undoButton').disabled = !undoState;
         const keyword = document.getElementById('searchInput').value.toLowerCase();
         document.getElementById('mobileCourtCount').innerText = courts.length;
         document.getElementById('mobileRosterCount').innerText = players.length;
@@ -1689,10 +1866,11 @@
         return renderUIIcon(action, `roster-action-icon roster-action-icon-${action}`);
     }
 
-    function setType(id, val) { courts.find(c=>c.id===id).type = val; save(); }
+    function setType(id, val) { courts.find(c=>c.id===id).type = val; if(!save()) return; render(); }
     function addCourt() {
         courts.push({id:Date.now(), type:'A', active:[], next:[], startTime:null});
-        save(); render();
+        if(!save()) return;
+        render();
         if(window.matchMedia('(max-width: 600px), (max-height: 500px) and (max-width: 950px)').matches) setMobileView('courts');
     }
     
@@ -1702,7 +1880,10 @@
         document.getElementById('pName').value = id ? p.name : "";
         document.getElementById('pGen').value = id ? p.gender : "M";
         document.getElementById('pTier').value = id ? p.tier : "1";
-        document.getElementById('pGames').value = id ? p.games : getAverageGames();
+        document.getElementById('pGames').value = id ? p.games : 0;
+        document.getElementById('playerMatchingInfo').innerText = id
+            ? `실제 ${p.games}경기 · 매칭 기준 ${getMatchingGameCount(p)}경기 (보정 +${getMatchingGameCount(p) - p.games})`
+            : `신규 선수는 실제 0경기로 시작합니다. 현재 매칭 기준은 ${getInitialMatchingGames()}경기입니다.`;
         const statusSelect = document.getElementById('pStatus');
         const isAssigned = id && (p.status === 'playing' || p.status === 'reserved');
         statusSelect.value = id && p.status === 'resting' ? 'resting' : 'waiting';
@@ -1729,7 +1910,7 @@
 
         const tier = parseInt(document.getElementById('bulkTier').value);
         const gen = document.getElementById('bulkGen').value;
-        const games = getAverageGames(); 
+        const matchingOffset = getInitialMatchingGames();
 
         let count = 0;
         lines.forEach((name, idx) => {
@@ -1738,7 +1919,8 @@
                 name: name,
                 gender: gen,
                 tier: tier,
-                games: games,
+                games: 0,
+                matchingOffset,
                 lastTime: 0,
                 status: 'waiting',
                 shuttlecock: false
@@ -1746,26 +1928,29 @@
             count++;
         });
 
-        save(); closeBulkPModal(); render(); showToast(`${count}명 등록 완료`);
+        if(!save()) return;
+        closeBulkPModal(); render(); showToast(`${count}명 등록 완료`);
     }
 
     function savePlayer() {
         const name = document.getElementById('pName').value.trim(); if(!name) return showToast("이름 필수");
         const tier = parseInt(document.getElementById('pTier').value);
         const gen = document.getElementById('pGen').value;
-        const games = parseInt(document.getElementById('pGames').value) || 0;
+        const games = Number(document.getElementById('pGames').value);
+        if(!Number.isSafeInteger(games) || games < 0) return showToast('실제 경기 수는 0 이상의 정수로 입력하세요.');
         const status = document.getElementById('pStatus').value;
         if(editPId) {
             const p=players.find(x=>x.id===editPId);
             p.name=name; p.tier=tier; p.gender=gen; p.games=games;
-            if(p.status === 'waiting' || p.status === 'resting') p.status=status;
+            if(p.status === 'waiting' || p.status === 'resting') setPlayerAvailability(p, status);
         }
-        else { players.push({id:Date.now(), name, gender:gen, tier, games:games, lastTime:0, status, shuttlecock:false}); }
-        save(); closePModal(); render(); showToast("저장됨");
+        else { players.push({id:Date.now(), name, gender:gen, tier, games, matchingOffset:Math.max(0, getInitialMatchingGames() - games), lastTime:0, status, shuttlecock:false}); }
+        if(!save()) return;
+        closePModal(); render(); showToast("저장됨");
     }
     function toggleShuttlecock(id) {
         const p = players.find(x => x.id === id);
-        if (p) { p.shuttlecock = !p.shuttlecock; save(); render(); }
+        if (p) { p.shuttlecock = !p.shuttlecock; if(!save()) return; render(); }
     }
     function toggleRosterActionSheet(id) {
         selectedRosterPlayerId = String(selectedRosterPlayerId) === String(id) ? null : id;
@@ -1789,8 +1974,9 @@
     function toggleRestStatus(id) {
         const p = players.find(x => x.id === id);
         if(!p || (p.status !== 'waiting' && p.status !== 'resting')) return;
-        p.status = p.status === 'resting' ? 'waiting' : 'resting';
-        save(); render();
+        setPlayerAvailability(p, p.status === 'resting' ? 'waiting' : 'resting');
+        if(!save()) return;
+        render();
         showToast(`${p.name} 선수가 ${p.status === 'resting' ? '휴식 상태로 변경되었습니다.' : '대기실로 복귀했습니다.'}`);
     }
     function toggleStatusList(status) {
@@ -2278,7 +2464,8 @@
         c[swapTarget.area][swapTarget.idx] = replacement;
         syncPlayerAssignmentStatus(oldP.id, 'waiting');
         syncPlayerAssignmentStatus(pId);
-        save(); closeSwapModal(); render();
+        if(!save()) return;
+        closeSwapModal(); render();
         showToast(replacementIsPlaying ? '교체 완료 · 현재 게임 중인 선수입니다.' : '교체 완료');
     }
     function closeSwapModal() {

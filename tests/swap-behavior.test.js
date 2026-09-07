@@ -4,7 +4,7 @@ const vm = require('vm');
 const html = fs.readFileSync('index.html', 'utf8');
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
 if (html.includes('>F조</option>') || html.includes('const tiers = ["F조"') || !html.includes('<option value="1" selected>E조</option>')) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
-if (!serviceWorker.includes('app-v9') || !serviceWorker.includes('runtime-v9') || !html.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
+if (!serviceWorker.includes('app-v12') || !serviceWorker.includes('runtime-v12') || !html.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
 const inlineScript = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 
 if (!inlineScript) throw new Error('index.html의 인라인 스크립트를 찾을 수 없습니다.');
@@ -41,16 +41,18 @@ function createElement() {
     };
 }
 
-function createRuntime(players, courts) {
+function createRuntime(players, courts, extraStorage = {}) {
     const storage = new Map([
         ['bm_p_v13', JSON.stringify(players)],
         ['bm_c_v13', JSON.stringify(courts)],
-        ['bm_h_v13', '[]']
+        ['bm_h_v13', '[]'],
+        ...Object.entries(extraStorage)
     ]);
     const elements = new Map();
     const context = {
         console,
         __elements: elements,
+        __storage: storage,
         document: {
             getElementById(id) {
                 if (!elements.has(id)) elements.set(id, createElement());
@@ -298,10 +300,10 @@ function assertInRuntime(context, assertion, message) {
     const context = createRuntime(players, courts);
 
     vm.runInContext('matchCourt(1)', context);
-    assertInRuntime(context, 'courts[0].next.map(player => player.id).sort((a, b) => a - b).join(",") === "1,5,6,7"', '다음 자동 예약에서 게임 중 선수를 예상 게임 수에 따라 선발하지 못했습니다.');
-    assertInRuntime(context, 'players.find(player => player.id === 1).status === "playing"', '자동 예약에 포함된 게임 중 선수의 상태가 손실되었습니다.');
-    assertInRuntime(context, 'courts[0].next.some(player => player.id === 1) && renderChip(courts[0], "next", courts[0].next.findIndex(player => player.id === 1)).includes("next-playing-badge")', '자동 예약 카드에 게임 중 상태표시가 없습니다.');
-    if (!context.__elements.get('toast').innerText.includes('게임 중인 선수 1명 포함')) throw new Error('자동 예약 완료 안내에 게임 중 선수 수가 없습니다.');
+    assertInRuntime(context, 'courts[0].next.length === 0', '대기 인원이 부족한데 게임 중 선수를 자동 예약했습니다.');
+    assertInRuntime(context, 'players.find(player => player.id === 1).status === "playing"', '자동 예약 실패 후 게임 중 상태가 손실되었습니다.');
+    assertInRuntime(context, '[5, 6, 7].every(id => players.find(player => player.id === id).status === "waiting")', '자동 예약 실패 후 대기 선수 상태가 변경되었습니다.');
+    if (!context.__elements.get('toast').innerText.includes('인원이 부족')) throw new Error('다음 자동 예약의 인원 부족 안내가 없습니다.');
 }
 
 {
@@ -313,8 +315,11 @@ function assertInRuntime(context, assertion, message) {
     const context = createRuntime(players, courts);
 
     vm.runInContext('matchCourt(1)', context);
-    assertInRuntime(context, 'courts[0].next.map(player => player.id).sort((a, b) => a - b).join(",") === "1,5,6,8"', '혼복 다음 예약에서 게임 중 선수를 성별 조건에 맞게 선발하지 못했습니다.');
-    assertInRuntime(context, 'courts[0].next.filter(player => player.gender === "M").length === 2 && courts[0].next.filter(player => player.gender === "F").length === 2', '게임 중 선수를 고려한 혼복 성별 구성이 잘못되었습니다.');
+    assertInRuntime(context, 'courts[0].next.length === 0', '혼복 대기 인원이 부족한데 게임 중 선수를 자동 예약했습니다.');
+    if (!context.__elements.get('toast').innerText.includes('혼복 인원이 부족')) throw new Error('혼복 자동 예약의 인원 부족 안내가 없습니다.');
+    vm.runInContext('players.find(player => player.id === 7).status = "waiting"; matchCourt(1)', context);
+    assertInRuntime(context, 'courts[0].next.map(player => player.id).sort((a, b) => a - b).join(",") === "5,6,7,8"', '혼복 자동 예약에서 대기 중인 남녀 2명씩을 선발하지 못했습니다.');
+    assertInRuntime(context, 'courts[0].next.slice(0, 2).filter(player => player.gender === "M").length === 1 && courts[0].next.slice(2).filter(player => player.gender === "M").length === 1', '혼복의 각 팀에 남녀 한 명씩 배정되지 않았습니다.');
 }
 
 {
@@ -326,7 +331,7 @@ function assertInRuntime(context, assertion, message) {
     const context = createRuntime(players, courts);
 
     vm.runInContext('matchCourt(1)', context);
-    assertInRuntime(context, 'courts[0].next.every(player => [5, 6, 7, 8].includes(player.id))', '예상 게임 수가 같은데 게임 중 선수가 대기 선수보다 먼저 선발되었습니다.');
+    assertInRuntime(context, 'courts[0].next.length === 4 && courts[0].next.every(player => [5, 6, 7, 8].includes(player.id))', '게임 수가 더 적은 게임 중 선수가 자동 예약에 포함되었습니다.');
 }
 
 {
@@ -360,4 +365,222 @@ function assertInRuntime(context, assertion, message) {
     assertInRuntime(context, '!courts[0].next.some(player => player.id === 1)', '이미 다른 다음 경기에 예약된 게임 중 선수가 중복 배정되었습니다.');
 }
 
-console.log('선수 교체·수동 매칭·자동 예약·승계 상태 테스트 통과');
+{
+    const players = createPlayers();
+    players.forEach(player => { player.status = 'waiting'; player.games = player.id; });
+    const courts = [
+        { id: 1, type: 'A', active: courtPlayers(players, [1, 2, 3, 4]), next: [], startTime: Date.now() },
+        { id: 2, type: 'A', active: courtPlayers(players, [5, 6, 7, 8]), next: [], startTime: Date.now() },
+        { id: 3, type: 'A', active: [], next: courtPlayers(players, [9]), startTime: null }
+    ];
+    const context = createRuntime(players, courts);
+    vm.runInContext('matchCourt(1)', context);
+    assertInRuntime(context, 'courts[0].next.map(player => player.id).sort((a, b) => a - b).join(",") === "10,11,12,13"', '선수 상태가 대기로 남아 있어도 다른 코트의 진행·예약 배정은 자동 예약에서 제외해야 합니다.');
+}
+
+{
+    const players = createPlayers().slice(0, 4);
+    players.forEach((player, index) => { player.gender = 'M'; player.tier = 5 - index; player.status = 'waiting'; });
+    const context = createRuntime(players, [{ id: 1, type: 'M', active: [], next: [], startTime: null }]);
+
+    vm.runInContext('applyMatch(1, [...players], "next")', context);
+    assertInRuntime(context, 'courts[0].next.map(player => player.id).join(",") === "1,4,2,3"', '이력이 없으면 정석 밸런스 조합을 선택해야 합니다.');
+
+    vm.runInContext('history = [{ pIds: [1, 4, 2, 3] }]; applyMatch(1, [...players], "next")', context);
+    assertInRuntime(context, 'courts[0].next.map(player => player.id).join(",") === "1,3,2,4"', '파트너 중복이 적은 차선 조합을 선택하지 못했습니다.');
+
+    vm.runInContext(`
+        history = [
+            ...Array.from({ length: 5 }, () => ({ pIds: [1, 4, 90, 91] })),
+            ...Array.from({ length: 5 }, () => ({ pIds: [1, 3, 90, 91] }))
+        ];
+        applyMatch(1, [...players], 'next');
+    `, context);
+    assertInRuntime(context, 'courts[0].next.map(player => player.id).join(",") === "1,4,2,3"', '페널티 5를 포함한 비용이 같으면 정석 조합을 우선해야 합니다.');
+
+    vm.runInContext('history.push({ pIds: [1, 4, 2, 3] }, { pIds: [1, 3, 2, 4] }); applyMatch(1, [...players], "next")', context);
+    assertInRuntime(context, 'courts[0].next.map(player => player.id).join(",") === "1,2,3,4"', '페널티를 더해도 중복 비용이 가장 낮은 세 번째 조합을 선택하지 못했습니다.');
+
+    vm.runInContext(`
+        history = [
+            ...Array.from({ length: 99 }, () => ({ pIds: [90, 91, 92, 93] })),
+            { pIds: [1, 4, 2, 3] },
+            ...Array.from({ length: 100 }, () => ({ pIds: [1, 3, 2, 4] }))
+        ];
+        applyMatch(1, [...players], 'next');
+    `, context);
+    assertInRuntime(context, 'getScore(1, 4) === 1 && getScore(1, 3) === 0', '100번째 경기는 포함하고 101번째부터는 파트너 계산에서 제외해야 합니다.');
+    assertInRuntime(context, 'courts[0].next.map(player => player.id).join(",") === "1,3,2,4"', '100경기 이전의 기록이 팀 편성에 영향을 주었습니다.');
+    assertInRuntime(context, 'history.length === 200 && JSON.parse(localStorage.getItem("bm_state_v14")).current.history.length === 200', '매칭 이력 범위를 제한하면서 보관 기록을 삭제했습니다.');
+}
+
+{
+    const players = createPlayers().slice(0, 10);
+    players.forEach((player, index) => {
+        player.status = index === 0 || index === 9 ? 'resting' : index < 5 ? 'waiting' : 'playing';
+        player.games = index === 0 ? 1 : index === 9 ? 100 : index < 5 ? 5 : 6;
+        player.gender = 'M';
+    });
+    const courts = [
+        { id: 1, type: 'M', active: courtPlayers(players, [6, 7, 8, 9]), next: [], startTime: Date.now() },
+        { id: 2, type: 'M', active: [], next: [], startTime: null }
+    ];
+    const context = createRuntime(players, courts);
+    assertInRuntime(context, 'getMatchingGameCount(players[0]) === 1', '보정값 없는 기존 데이터는 실제 경기 수로 매칭해야 합니다.');
+    vm.runInContext('toggleRestStatus(1)', context);
+    assertInRuntime(context, 'players[0].games === 1 && players[0].matchingOffset === 4 && getMatchingGameCount(players[0]) === 5', '휴식 복귀 시 실제 경기 수를 보존하고 활동 선수 평균 5.5를 버림한 5까지 보정해야 합니다.');
+    assertInRuntime(context, 'history.length === 0 && players[9].games === 100', '휴식 보정이 경기 기록이나 다른 휴식 선수에게 영향을 주었습니다.');
+
+    vm.runInContext('completeGame(1); openManualMatch(2); [1, 6, 7, 8].forEach(toggleManualSelect); confirmManualMatch(); completeGame(2)', context);
+    assertInRuntime(context, 'players[0].games === 2 && getMatchingGameCount(players[0]) === 6', '복귀 후 한 경기를 마치면 실제 2경기·매칭용 6경기가 되어야 합니다.');
+    assertInRuntime(context, 'getPlayerStatistics(1).recordedGames === 1', '통계에 휴식 보정값이 경기 기록으로 포함되었습니다.');
+    vm.runInContext('matchCourt(2)', context);
+    assertInRuntime(context, 'courts[1].next.map(player => player.id).sort((a, b) => a - b).join(",") === "2,3,4,5"', '복귀 후 경기를 마친 선수가 실제 경기 수가 적다는 이유로 연속 자동 선발되었습니다.');
+
+    const savedPlayers = vm.runInContext('JSON.parse(localStorage.getItem("bm_state_v14")).current.players', context);
+    const savedCourts = vm.runInContext('JSON.parse(localStorage.getItem("bm_state_v14")).current.courts', context);
+    const reloaded = createRuntime([], [], Object.fromEntries(context.__storage));
+    assertInRuntime(reloaded, 'players[0].games === 2 && getMatchingGameCount(players[0]) === 6', '재접속 후 휴식 보정값이 손실되었습니다.');
+
+    // Import the same JSON shape used by exportData, without browser file access.
+    reloaded.__backup = JSON.stringify({ players: savedPlayers, courts: savedCourts, history: [] });
+    vm.runInContext(`
+        FileReader = class { readAsText() { this.onload({ target: { result: __backup } }); } };
+        players[0].matchingOffset = 0;
+        importData({ files: [{}], value: 'backup.json' });
+    `, reloaded);
+    assertInRuntime(reloaded, 'players[0].games === 2 && getMatchingGameCount(players[0]) === 6', 'JSON 복구 후 휴식 보정값이 손실되었습니다.');
+
+    vm.runInContext('resetGamesOnly(); executeConfirm()', reloaded);
+    assertInRuntime(reloaded, 'players.every(player => player.games === 0 && getMatchingGameCount(player) === 0 && player.status === "waiting")', '새 모임 시작 시 실제 경기 수와 휴식 보정값이 함께 초기화되지 않았습니다.');
+}
+
+{
+    const players = createPlayers().slice(0, 5);
+    players.forEach(player => { player.status = 'waiting'; player.games = 5; });
+    players[0].status = 'resting';
+    players[0].games = 1;
+    players[1].games = 1;
+    players[1].matchingOffset = 4;
+    const context = createRuntime(players, [{ id: 1, type: 'X', active: [], next: [], startTime: null }]);
+    vm.runInContext('openPModal(1); document.getElementById("pStatus").value = "waiting"; savePlayer()', context);
+    assertInRuntime(context, 'players[0].games === 1 && getMatchingGameCount(players[0]) === 5', '선수 정보 수정으로 복귀할 때도 다른 선수의 보정값을 포함한 기준을 적용해야 합니다.');
+    vm.runInContext('toggleRestStatus(1); toggleRestStatus(1)', context);
+    assertInRuntime(context, 'players[0].matchingOffset === 4', '경기 없이 휴식·복귀를 반복하면 보정값이 중복 가산되지 않아야 합니다.');
+    vm.runInContext('toggleRestStatus(1); players.slice(1).forEach(player => { player.games = 9; player.matchingOffset = 0; }); toggleRestStatus(1)', context);
+    assertInRuntime(context, 'players[0].games === 1 && players[0].matchingOffset === 8 && getMatchingGameCount(players[0]) === 9', '두 번째 긴 휴식 후에는 기존 보정값에 부족분만 추가해야 합니다.');
+
+    vm.runInContext('players[0].games = 10; toggleRestStatus(1); toggleRestStatus(1)', context);
+    assertInRuntime(context, 'getMatchingGameCount(players[0]) === 18', '이미 기준보다 많이 경기한 선수의 매칭용 경기 수를 낮추면 안 됩니다.');
+
+    vm.runInContext('players.forEach(player => player.status = "resting"); toggleRestStatus(1)', context);
+    assertInRuntime(context, 'getMatchingGameCount(players[0]) === 18', '다른 활동 선수가 없으면 기존 보정값을 유지해야 합니다.');
+}
+
+{
+    const players = createPlayers().slice(0, 6);
+    players.forEach(player => { player.status = 'waiting'; player.games = 5; });
+    players[0].games = 1;
+    players[0].matchingOffset = 5;
+    const context = createRuntime(players, [{ id: 1, type: 'X', active: [], next: [], startTime: null }]);
+    vm.runInContext('matchCourt(1)', context);
+    assertInRuntime(context, 'courts[0].next.length === 4 && !courts[0].next.some(player => player.id === 1) && courts[0].next.filter(player => player.gender === "M").length === 2', '혼복의 성별별 선발에도 휴식 보정을 적용해야 합니다.');
+}
+
+{
+    const roster = createPlayers().slice(0, 8);
+    const courts = [{id:1, type:'A', active:courtPlayers(roster, [1,2,3,4]), next:courtPlayers(roster, [5,6,7,8]), startTime:1000}];
+    const context = createRuntime(roster, courts);
+    vm.runInContext('openPModal(1); document.getElementById("pName").value = "수정된 이름"; document.getElementById("pTier").value = "5"; savePlayer()', context);
+    assertInRuntime(context, 'courts[0].active[0] === players[0] && courts[0].active[0].name === "수정된 이름" && courts[0].active[0].tier === 5', '재접속으로 분리된 코트의 선수 정보가 명단 수정에 따라 갱신되지 않았습니다.');
+    vm.runInContext('openPModal(1); deletePlayer(); executeConfirm()', context);
+    assertInRuntime(context, 'players.length === 8 && courts[0].active.length === 4', '진행 중인 선수를 삭제할 수 없어야 합니다.');
+    vm.runInContext('openPModal(5); deletePlayer(); executeConfirm()', context);
+    assertInRuntime(context, 'players.length === 8 && courts[0].next.length === 4', '예약된 선수를 삭제할 수 없어야 합니다.');
+
+    vm.runInContext('completeGame(1)', context);
+    assertInRuntime(context, 'history.length === 1 && courts[0].active[0].id === 5 && players[0].games === 1', '되돌리기 전 종료와 승계가 실행되지 않았습니다.');
+    const reloaded = createRuntime([], [], Object.fromEntries(context.__storage));
+    vm.runInContext('undoLastAction(); executeConfirm()', reloaded);
+    assertInRuntime(reloaded, 'history.length === 0 && players[0].games === 0 && courts[0].startTime === 1000 && courts[0].active.map(p=>p.id).join(",") === "1,2,3,4" && courts[0].next.map(p=>p.id).join(",") === "5,6,7,8"', '새로고침 후 되돌리기가 경기 수·기록·진행·예약·시작 시각을 모두 복원하지 못했습니다.');
+    assertInRuntime(reloaded, 'courts[0].active[0] === players[0] && undoState === null', '되돌린 후 선수 참조나 한 단계 제한이 올바르지 않습니다.');
+    vm.runInContext('cancelNext(1); openPModal(5); deletePlayer(); executeConfirm()', reloaded);
+    assertInRuntime(reloaded, '!players.some(p=>p.id===5)', '예약 해제 후 선수 삭제에 실패했습니다.');
+    vm.runInContext('undoLastAction(); executeConfirm()', reloaded);
+    assertInRuntime(reloaded, 'players.some(p=>p.id===5) && courts[0].next.length===0', '선수 삭제를 한 단계 되돌리지 못했습니다.');
+}
+
+{
+    const roster = [{id:1,name:'기존',gender:'M',tier:3,games:6,matchingOffset:0,status:'waiting',lastTime:0,shuttlecock:false}];
+    const context = createRuntime(roster, []);
+    vm.runInContext('openPModal(); document.getElementById("pName").value = "신규"; savePlayer()', context);
+    assertInRuntime(context, 'players[1].games === 0 && getMatchingGameCount(players[1]) === 5 && getPlayerStatistics(players[1].id).recordedGames === 0', '신규 선수의 실제 경기 수와 초기 매칭 보정이 분리되지 않았습니다.');
+    vm.runInContext('openPModal(players[1].id)', context);
+    if(!context.__elements.get('playerMatchingInfo').innerText.includes('실제 0경기 · 매칭 기준 5경기')) throw new Error('선수 상세에 실제 경기 수와 매칭 기준이 표시되지 않았습니다.');
+    vm.runInContext('document.getElementById("pGames").value = "-1"; savePlayer()', context);
+    assertInRuntime(context, 'players[1].games === 0', '음수 경기 수 입력이 허용되었습니다.');
+
+    const bulk = createRuntime(roster, []);
+    vm.runInContext('document.getElementById("bulkNames").value = "일괄1\\n일괄2"; document.getElementById("bulkGen").value = "F"; document.getElementById("bulkTier").value = "3"; saveBulkPlayers()', bulk);
+    assertInRuntime(bulk, 'players.length === 3 && players.slice(1).every(p=>p.games===0 && getMatchingGameCount(p)===5)', '일괄 등록의 초기 보정은 같은 기준을 사용하고 실제 경기는 0이어야 합니다.');
+}
+
+{
+    const roster = createPlayers().slice(0,4);
+    const context = createRuntime(roster, [{id:1,type:'A',active:courtPlayers(roster,[1,2,3,4]),next:[],startTime:1000}]);
+    vm.runInContext('toggleShuttlecock(1)', context);
+    const saved = context.__storage.get('bm_state_v14');
+    const originalWrite = context.localStorage.setItem;
+    context.localStorage.setItem = () => { throw new Error('QuotaExceededError'); };
+    vm.runInContext('completeGame(1)', context);
+    assertInRuntime(context, 'history.length===0 && courts[0].active.length===4 && players[0].games===0', '저장 실패 시 종료 작업이 메모리에서 취소되지 않았습니다.');
+    if(context.__storage.get('bm_state_v14') !== saved || context.__elements.get('storageError').hidden) throw new Error('저장 실패 시 저장 데이터가 변경되거나 지속 오류 안내가 없습니다.');
+    if(!context.__elements.get('toast').innerText.includes('저장 실패')) throw new Error('저장 실패 후 성공으로 안내했습니다.');
+    context.localStorage.setItem = originalWrite;
+    vm.runInContext('completeGame(1)', context);
+    assertInRuntime(context, 'history.length===1 && courts[0].active.length===0 && players[0].games===1', '저장 공간 복구 후 작업 재시도에 실패했습니다.');
+}
+
+{
+    const roster = [{id:1,name:'원본',gender:'M',tier:3,games:6,status:'waiting',lastTime:0}];
+    const context = createRuntime(roster, []);
+    const malformed = [
+        {players:{},courts:[]},
+        {players:[{...roster[0],name:8}],courts:[]},
+        {players:[{...roster[0],games:-1}],courts:[]},
+        {players:[roster[0],roster[0]],courts:[]},
+        {players:roster,courts:[{id:1,type:'A',active:[{id:99}],next:[],startTime:null}]},
+        {players:roster,courts:[],history:[{pIds:[1,2,3,4],scores:[21,-1]}]},
+        {players:roster,courts:[],history:[null]}
+    ];
+    for(const data of malformed) {
+        context.__import = data;
+        vm.runInContext('importValidatedData(__import)', context);
+        assertInRuntime(context, 'players.length===1 && players[0].name==="원본" && history.length===0', '잘못된 백업이 현재 데이터를 덮어썼습니다.');
+        if(context.__storage.has('bm_state_v14') || context.__storage.has('bm_before_import_v14')) throw new Error('검증 실패 후 저장소가 변경되었습니다.');
+    }
+    const valid = {players:[{...roster[0],name:'복구본',matchingOffset:2}],courts:[],history:[]};
+    context.__import = valid;
+    const originalWrite = context.localStorage.setItem;
+    context.localStorage.setItem = () => { throw new Error('QuotaExceededError'); };
+    vm.runInContext('importValidatedData(__import)', context);
+    assertInRuntime(context, 'players[0].name === "원본"', '복구 전 안전 백업 실패 후에도 파일 복구가 실행되었습니다.');
+    context.localStorage.setItem = originalWrite;
+    vm.runInContext('importValidatedData(__import); toggleShuttlecock(1)', context);
+    const reloaded = createRuntime([], [], Object.fromEntries(context.__storage));
+    assertInRuntime(reloaded, 'players[0].name === "복구본" && getMatchingGameCount(players[0])===8', '새 저장 형식이나 백업 보정값을 읽지 못했습니다.');
+    vm.runInContext('restoreBeforeImport(); executeConfirm()', reloaded);
+    assertInRuntime(reloaded, 'players[0].name === "원본" && players[0].games===6', '복구 뒤 다른 작업과 재접속을 해도 복구 전 원본으로 돌아갈 수 있어야 합니다.');
+}
+
+{
+    const context = createRuntime([], [], {'bm_state_v14':'{broken json'});
+    if(context.__elements.get('storageError').hidden) throw new Error('손상된 저장 데이터 안내가 없습니다.');
+    vm.runInContext('addCourt()', context);
+    assertInRuntime(context, 'courts.length===0 && storageBlocked', '손상된 원본을 빈 상태로 덮어쓰면 안 됩니다.');
+    if(context.__storage.get('bm_state_v14') !== '{broken json') throw new Error('손상된 저장 원본이 사라졌습니다.');
+    vm.runInContext('importValidatedData({players:[],courts:[],history:[]})', context);
+    assertInRuntime(context, '!storageBlocked && storageError === ""', '정상 백업으로 손상 상태를 복구하지 못했습니다.');
+}
+
+console.log('매칭·휴식 보정·선수 일관성·신규 등록·되돌리기·저장 실패·백업 복구 테스트 통과');
