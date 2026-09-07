@@ -4,7 +4,7 @@ const vm = require('vm');
 const html = fs.readFileSync('index.html', 'utf8');
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
 if (html.includes('>F조</option>') || html.includes('const tiers = ["F조"') || !html.includes('<option value="1" selected>E조</option>')) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
-if (!serviceWorker.includes('app-v12') || !serviceWorker.includes('runtime-v12') || !html.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
+if (!serviceWorker.includes('app-v13') || !serviceWorker.includes('runtime-v13') || !html.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
 const inlineScript = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 
 if (!inlineScript) throw new Error('index.html의 인라인 스크립트를 찾을 수 없습니다.');
@@ -219,8 +219,8 @@ function assertInRuntime(context, assertion, message) {
     const nextSectionStart = courtHtml.indexOf('<div class="next-section">', gameSectionStart);
     const headerHtml = courtHtml.slice(headerStart, gameSectionStart);
     const gameSectionHtml = courtHtml.slice(gameSectionStart, nextSectionStart);
-    if (!headerHtml.includes('코트 1') || !headerHtml.includes('진행 중') || !headerHtml.includes('timer-1')) throw new Error('진행 상태와 경과 시간이 코트 제목 줄에 표시되지 않았습니다.');
-    if (gameSectionHtml.includes('진행 중') || gameSectionHtml.includes('timer-1')) throw new Error('진행 상태 줄이 경기 영역의 공간을 계속 차지하고 있습니다.');
+    if (!headerHtml.includes('코트 1') || !headerHtml.includes('경기 중') || !headerHtml.includes('timer-1')) throw new Error('진행 상태와 경과 시간이 코트 제목 줄에 표시되지 않았습니다.');
+    if (gameSectionHtml.includes('경기 중') || gameSectionHtml.includes('timer-1')) throw new Error('진행 상태 줄이 경기 영역의 공간을 계속 차지하고 있습니다.');
     if (/class="type-select"[^>]*disabled/.test(courtHtml)) throw new Error('진행 중인 코트의 경기 유형 선택이 잠겨 있습니다.');
     vm.runInContext('setType(1, "X")', context);
     assertInRuntime(context, 'courts.find(court => court.id === 1).type === "X"', '진행 중인 코트의 경기 유형 변경에 실패했습니다.');
@@ -431,7 +431,7 @@ function assertInRuntime(context, assertion, message) {
     assertInRuntime(context, 'players[0].games === 1 && players[0].matchingOffset === 4 && getMatchingGameCount(players[0]) === 5', '휴식 복귀 시 실제 경기 수를 보존하고 활동 선수 평균 5.5를 버림한 5까지 보정해야 합니다.');
     assertInRuntime(context, 'history.length === 0 && players[9].games === 100', '휴식 보정이 경기 기록이나 다른 휴식 선수에게 영향을 주었습니다.');
 
-    vm.runInContext('completeGame(1); openManualMatch(2); [1, 6, 7, 8].forEach(toggleManualSelect); confirmManualMatch(); completeGame(2)', context);
+    vm.runInContext('completeGame(1); openManualMatch(2); [1, 6, 7, 8].forEach(toggleManualSelect); confirmManualMatch(); completeGame(2); completeGame(2)', context);
     assertInRuntime(context, 'players[0].games === 2 && getMatchingGameCount(players[0]) === 6', '복귀 후 한 경기를 마치면 실제 2경기·매칭용 6경기가 되어야 합니다.');
     assertInRuntime(context, 'getPlayerStatistics(1).recordedGames === 1', '통계에 휴식 보정값이 경기 기록으로 포함되었습니다.');
     vm.runInContext('matchCourt(2)', context);
@@ -583,4 +583,92 @@ function assertInRuntime(context, assertion, message) {
     assertInRuntime(context, '!storageBlocked && storageError === ""', '정상 백업으로 손상 상태를 복구하지 못했습니다.');
 }
 
-console.log('매칭·휴식 보정·선수 일관성·신규 등록·되돌리기·저장 실패·백업 복구 테스트 통과');
+{
+    const roster = createPlayers();
+    const context = createRuntime(roster, [
+        {id:1,type:'A',active:courtPlayers(roster,[1,2,3,4]),next:[],startTime:1000},
+        {id:2,type:'A',active:courtPlayers(roster,[9,10,11,12]),next:courtPlayers(roster,[5,6,7,8]),startTime:1000},
+        {id:3,type:'A',active:[],next:[],startTime:null}
+    ]);
+    vm.runInContext('openManualMatch(1)', context);
+    let list = context.__elements.get('manualList').innerHTML;
+    if(!list.includes('toggleManualSelect(9)') || !list.includes('toggleManualSelect(13)') || !list.includes('현재 2번 코트')) throw new Error('수동 매칭에 대기·게임 중 선수가 함께 표시되지 않았습니다.');
+    vm.runInContext('toggleManualSelect(9)', context);
+    vm.runInContext('[1,2,3].forEach(toggleManualSelect)', context);
+    if(context.__elements.get('manualConfirmButton').disabled) throw new Error('선택한 네 명으로 배정할 수 없습니다.');
+    vm.runInContext('toggleManualSelect(9)', context);
+    if(!context.__elements.get('manualConfirmButton').disabled) throw new Error('선택 해제 후 3명으로 확정할 수 있습니다.');
+
+    vm.runInContext('closeManualModal(); openSwap(2,"next",0)', context);
+    list = context.__elements.get('swapList').innerHTML;
+    if(!list.includes('doSwap(1)') || !list.includes('doSwap(13)') || !list.includes('현재 1번 코트')) throw new Error('다음 예약 교체에 대기·게임 중 선수가 함께 표시되지 않았습니다.');
+    vm.runInContext('openSwap(1,"active",0)', context);
+    list = context.__elements.get('swapList').innerHTML;
+    if(list.includes('doSwap(1)') || !list.includes('doSwap(13)')) throw new Error('진행 중 경기의 교체에는 대기 선수만 표시해야 합니다.');
+
+    vm.runInContext('closeSwapModal(); courts[1].next[0] = players[0]; render()', context);
+    let courtHtml = context.__elements.get('courtGrid').innerHTML;
+    if(!courtHtml.includes('비어 있음') || !courtHtml.includes('경기 종료 · 다음 경기 대기') || !courtHtml.includes('선수01 (현재 1번 코트) 경기 종료 후 시작할 수 있습니다.')) throw new Error('코트 상태 또는 다음 경기 대기 사유가 표시되지 않았습니다.');
+    vm.runInContext('completeGame(2)', context);
+    courtHtml = context.__elements.get('courtGrid').innerHTML;
+    if(!/onclick="endGame\(2\)" disabled>다른 코트 종료 대기/.test(courtHtml)) throw new Error('다른 코트의 종료를 기다리는 시작 버튼이 비활성화되지 않았습니다.');
+    const reloaded = createRuntime([], [], Object.fromEntries(context.__storage));
+    if(!reloaded.__elements.get('undoButton').title.includes('2번 코트 경기 종료')) throw new Error('재접속 후 되돌리기 버튼의 작업 설명이 유지되지 않았습니다.');
+    vm.runInContext('undoLastAction()', reloaded);
+    if(!reloaded.__elements.get('confirmMsg').innerText.includes('2번 코트 경기 종료')) throw new Error('되돌리기 확인에 작업 대상이 없습니다.');
+    vm.runInContext('completeGame(1)', context);
+    courtHtml = context.__elements.get('courtGrid').innerHTML;
+    if(!courtHtml.includes('시작 가능') || /onclick="endGame\(2\)" disabled/.test(courtHtml)) throw new Error('다른 코트 경기 종료 후 시작 상태가 갱신되지 않았습니다.');
+
+    vm.runInContext('players[0].matchingOffset=4; toggleRosterActionSheet(1)', context);
+    if(!context.__elements.get('rosterActionSheet').innerHTML.includes('실제 1경기 · 매칭 기준 5경기')) throw new Error('선수 선택 영역에 매칭 기준이 표시되지 않았습니다.');
+}
+
+{
+    const roster = createPlayers().slice(0,12);
+    const context = createRuntime(roster, [
+        {id:1,type:'A',active:courtPlayers(roster,[1,2,3,4]),next:courtPlayers(roster,[5,6,7,8]),startTime:1000},
+        {id:2,type:'A',active:courtPlayers(roster,[9,10,11,12]),next:[],startTime:1000}
+    ]);
+    vm.runInContext('let testNow = 2000; Date.now = () => testNow; endGame(1); endGame(1)', context);
+    assertInRuntime(context, 'history.length===1 && courts[0].active[0].id===5 && players[4].games===4', '종료 연속 입력으로 새로 승계한 경기까지 종료되었습니다.');
+    if(!/onclick="endGame\(1\)" disabled/.test(context.__elements.get('courtGrid').innerHTML)) throw new Error('승계 직후 종료 버튼이 잠기지 않았습니다.');
+    vm.runInContext('endGame(2)', context);
+    assertInRuntime(context, 'history.length===2 && courts[1].active.length===0', '한 코트의 연속 입력 방지가 다른 코트 조작까지 차단했습니다.');
+    vm.runInContext('testNow=2999; endGame(1)', context);
+    assertInRuntime(context, 'history.length===2 && courts[0].active.length===4', '1초가 지나기 전에 종료가 허용되었습니다.');
+    vm.runInContext('testNow=3000; endGame(1)', context);
+    assertInRuntime(context, 'history.length===3 && courts[0].active.length===0 && players[4].games===5', '잠금 해제 후 정상 종료가 차단되었습니다.');
+}
+
+{
+    const roster = createPlayers().slice(0,4);
+    roster.forEach(player=>{player.status='waiting';player.games=0;});
+    const context = createRuntime(roster, [{id:1,type:'A',active:[],next:[],startTime:null}]);
+    vm.runInContext('let testNow=10000; Date.now=()=>testNow; openManualMatch(1); [1,2,3,4].forEach(toggleManualSelect); confirmManualMatch()', context);
+    assertInRuntime(context, 'courts[0].active.length===0 && courts[0].next.length===4 && courts[0].startTime===null && history.length===0 && players.every(p=>p.games===0 && p.status==="reserved")', '수동 배정만으로 경기나 타이머가 시작되었습니다.');
+    const write = context.localStorage.setItem;
+    context.localStorage.setItem=()=>{throw new Error('QuotaExceededError');};
+    vm.runInContext('endGame(1)', context);
+    assertInRuntime(context, '!isCourtActionLocked(1) && courts[0].active.length===0 && courts[0].next.length===4', '저장 실패 후 시작을 바로 재시도할 수 없습니다.');
+    context.localStorage.setItem=write;
+    vm.runInContext('endGame(1); endGame(1)', context);
+    assertInRuntime(context, 'courts[0].active.length===4 && courts[0].startTime===10000 && history.length===0', '시작 버튼 연속 입력으로 방금 시작한 경기가 종료되었습니다.');
+    vm.runInContext('testNow=11000; endGame(1)', context);
+    assertInRuntime(context, 'history.length===1 && players.every(p=>p.games===1)', '별도 시작 후 정상 종료가 잘못 처리되었습니다.');
+}
+
+{
+    const roster=createPlayers().slice(0,8);
+    roster.slice(4).forEach(p=>p.status='waiting');
+    const context=createRuntime(roster,[
+        {id:1,type:'A',active:courtPlayers(roster,[1,2,3,4]),next:[],startTime:1000},
+        {id:2,type:'A',active:[],next:[],startTime:null}
+    ]);
+    vm.runInContext('openManualMatch(2); [1,2,5,6].forEach(toggleManualSelect); confirmManualMatch(); endGame(2)',context);
+    assertInRuntime(context,'courts[1].active.length===0 && courts[1].next.length===4 && history.length===0','빈 코트에 수동 예약한 다른 코트 경기 중 선수가 즉시 시작되었습니다.');
+    vm.runInContext('endGame(1); endGame(2)',context);
+    assertInRuntime(context,'courts[1].active.length===4 && courts[1].next.length===0 && history.length===1','다른 코트 종료 후 수동 예약의 시작이 차단되었습니다.');
+}
+
+console.log('매칭·데이터 보호·코트 상태·연속 입력 방지·수동 배정 후 시작 테스트 통과');
