@@ -4,7 +4,7 @@ const vm = require('vm');
 const html = fs.readFileSync('index.html', 'utf8');
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
 if (html.includes('>F조</option>') || html.includes('const tiers = ["F조"') || !html.includes('<option value="1" selected>E조</option>')) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
-if (!serviceWorker.includes('app-v13') || !serviceWorker.includes('runtime-v13') || !html.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
+if (!serviceWorker.includes('app-v14') || !serviceWorker.includes('runtime-v14') || !html.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
 const inlineScript = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 
 if (!inlineScript) throw new Error('index.html의 인라인 스크립트를 찾을 수 없습니다.');
@@ -451,8 +451,11 @@ function assertInRuntime(context, assertion, message) {
     `, reloaded);
     assertInRuntime(reloaded, 'players[0].games === 2 && getMatchingGameCount(players[0]) === 6', 'JSON 복구 후 휴식 보정값이 손실되었습니다.');
 
-    vm.runInContext('resetGamesOnly(); executeConfirm()', reloaded);
-    assertInRuntime(reloaded, 'players.every(player => player.games === 0 && getMatchingGameCount(player) === 0 && player.status === "waiting")', '새 모임 시작 시 실제 경기 수와 휴식 보정값이 함께 초기화되지 않았습니다.');
+    vm.runInContext('saveRosterAsMembers(); startNewMeeting(); executeConfirm()', reloaded);
+    assertInRuntime(reloaded, 'players.length === 0 && history.length === 0 && courts.every(court => court.active.length === 0 && court.next.length === 0 && court.startTime === null)', '새 모임 시작 시 당일 선수·경기 기록·코트 배정을 비워야 합니다.');
+    assertInRuntime(reloaded, 'members.length > 0 && document.getElementById("membersModal").style.display === "flex"', '새 모임 시작 시 저장된 회원에서 참석자를 다시 선택해야 합니다.');
+    vm.runInContext('selectVisibleMembers(); loadSelectedMembers()', reloaded);
+    assertInRuntime(reloaded, 'players.length === members.length && players.every(player => player.games === 0 && getMatchingGameCount(player) === 0 && player.status === "waiting")', '새 모임 참석자의 실제 경기 수와 휴식 보정값이 함께 초기화되지 않았습니다.');
 }
 
 {

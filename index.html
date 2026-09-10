@@ -96,6 +96,16 @@
         .wc-title { white-space:nowrap; font-size:0.9rem; }
         .wc-actions { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
         .wc-actions .btn-text { white-space:nowrap; padding:7px 8px; border-radius:6px; background:#eff6ff; }
+        .wc-actions .member-open { grid-column: 1 / -1; }
+        .member-toolbar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+        .member-list { overflow-y:auto; min-height:100px; flex:1; margin-bottom:12px; }
+        .member-row { display:flex; align-items:center; gap:8px; padding:10px 0; border-bottom:1px solid var(--border); }
+        .member-choice { display:flex; align-items:center; gap:10px; flex:1; min-width:0; cursor:pointer; }
+        .member-choice input { width:20px; height:20px; margin:0; flex-shrink:0; }
+        .member-choice span { overflow-wrap:anywhere; }
+        .member-choice small { display:block; color:#64748b; margin-top:3px; }
+        .member-row .btn { padding:8px; min-height:44px; }
+        #membersModal .modal-box { width:600px; height: min(740px, 90dvh); overflow:hidden; }
         .search-input { width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem; background: #fff; outline: none; }
         .wc-list { flex: 1; overflow-y: auto; padding: 10px; display: grid; grid-auto-rows: max-content; gap: 8px; align-content: start; }
         #waitList { grid-template-columns: minmax(0, 1fr); }
@@ -545,6 +555,12 @@
         }
 
         #toast.roster-sheet-open, #toast.roster-sheet-open.show { bottom: max(150px, calc(env(safe-area-inset-bottom) + 142px)); }
+        #toast.members-open, #toast.members-open.show { bottom: max(86px, calc(env(safe-area-inset-bottom) + 78px)); }
+
+        @media (max-height: 600px) {
+            #membersModal .modal-box { overflow-y:auto; }
+            #membersModal .member-list { flex:0 0 auto; max-height:40dvh; }
+        }
 
         @media (max-width: 360px) {
             .manual-player-list .manual-player-info { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 3px; }
@@ -617,6 +633,7 @@
                     </div>
                 </div>
                 <div class="wc-actions">
+                    <button class="btn-text member-open" onclick="openMembersModal()">회원 불러오기 / 관리</button>
                     <button class="btn-text" onclick="openBulkPModal()">+ 일괄</button>
                     <button class="btn-text" onclick="openPModal()">+ 개별</button>
                 </div>
@@ -682,6 +699,39 @@
     </div>
 </div></div>
 
+<!-- 저장된 회원 -->
+<div id="membersModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="membersTitle"><div class="modal-box">
+    <h3 id="membersTitle" style="margin-top:0;">회원 명단</h3>
+    <p style="margin:0 0 12px; color:#64748b; font-size:0.85rem;">회원은 한 번만 등록하세요. 모임마다 참석할 회원을 선택해 대기실로 불러올 수 있습니다.</p>
+    <div class="member-toolbar">
+        <button class="btn btn-outline" onclick="openMemberEditor()">+ 회원 등록</button>
+        <button class="btn btn-outline" onclick="saveRosterAsMembers()">현재 선수 명단 저장</button>
+    </div>
+    <input id="memberSearch" type="search" placeholder="회원 이름 검색" aria-label="회원 이름 검색" oninput="renderMembers()">
+    <div class="member-toolbar">
+        <button class="btn-text" onclick="selectVisibleMembers()">검색 결과 전체 선택</button>
+        <button class="btn-text" onclick="selectedMemberIds.clear(); renderMembers()">선택 해제</button>
+    </div>
+    <div id="memberList" class="member-list"></div>
+    <div class="member-toolbar" style="margin-bottom:0;">
+        <button id="loadMembersButton" class="btn btn-primary" style="flex:1;" onclick="loadSelectedMembers()">선택 회원 불러오기</button>
+        <button class="btn btn-outline" onclick="closeMembersModal()">닫기</button>
+    </div>
+</div></div>
+<div id="memberEditorModal" class="modal" style="z-index:1100;" role="dialog" aria-modal="true" aria-labelledby="memberEditorTitle"><div class="modal-box">
+    <h3 id="memberEditorTitle" style="margin-top:0;">회원 등록</h3>
+    <label for="memberNames">이름 (여러 명은 줄바꿈으로 구분)</label>
+    <textarea id="memberNames" rows="4" style="width:100%; padding:12px; font:inherit; border:1px solid var(--border); border-radius:8px; margin-bottom:15px;"></textarea>
+    <label for="memberGender">성별</label>
+    <select id="memberGender"><option value="M">남성</option><option value="F">여성</option></select>
+    <label for="memberTier">급수</label>
+    <select id="memberTier"><option value="5">A조</option><option value="4">B조</option><option value="3">C조</option><option value="2">D조</option><option value="1" selected>E조</option></select>
+    <div class="member-toolbar">
+        <button class="btn btn-primary" style="flex:1;" onclick="saveMember()">저장</button>
+        <button class="btn btn-outline" onclick="closeMemberEditor()">취소</button>
+    </div>
+</div></div>
+
 <!-- 설정 모달 -->
 <div id="settingsModal" class="modal"><div class="modal-box">
     <h3 class="modal-title" style="margin-top:0;"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><span>설정 및 관리</span></h3>
@@ -689,7 +739,7 @@
         <button class="btn btn-outline" onclick="closeSettings(); openInfoModal()"><svg class="ui-icon" aria-hidden="true"><use href="#icon-help"></use></svg><span>사용 방법 및 도움말</span></button>
         <button id="installAppButton" class="btn btn-primary" onclick="installApp()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-phone"></use></svg><span>앱으로 설치</span></button>
         <div style="height:1px; background:#eee; margin:5px 0;"></div>
-        <button class="btn btn-success" onclick="resetGamesOnly()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-calendar"></use></svg><span>새 모임 시작 (선수 유지/기록 초기화)</span></button>
+        <button class="btn btn-success" onclick="startNewMeeting()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-calendar"></use></svg><span>새 모임 시작 (회원에서 참석자 다시 선택)</span></button>
         <div style="height:1px; background:#eee; margin:5px 0;"></div>
         <button class="btn btn-outline" onclick="exportData()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-backup"></use></svg><span>데이터 백업 (다운로드)</span></button>
         <button class="btn btn-outline" onclick="triggerImport()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-restore"></use></svg><span>데이터 복구 (파일열기)</span></button>
@@ -720,6 +770,7 @@
     <div class="info-content">
         <ul style="padding-left: 20px; margin: 0; list-style-type: disc;">
             <li><strong>선수 등록:</strong> '+ 개별' 또는 '+ 일괄' 사용.</li>
+            <li><strong>회원 불러오기:</strong> 대기실의 '회원 불러오기 / 관리'에서 회원을 저장하고 참석자를 선택하세요. 기존 선수는 '현재 선수 명단 저장'으로 보관할 수 있습니다. 다음 모임에는 설정의 '회원에서 참석자 다시 선택'을 사용하세요.</li>
             <li><strong>경기 통계:</strong> 상단 <strong>[통계]</strong>에서 전체 현황과 선수별 같은 팀·상대 팀 횟수를 확인할 수 있습니다.</li>
             <li><strong>성별 구분:</strong> 파란색 선수 카드는 남성, 분홍색 선수 카드는 여성을 뜻합니다.</li>
             <li><strong>대기실 빠른 조작:</strong> 선수 카드를 누르면 해당 선수의 휴식·복귀, 콕 냄, 정보 수정 버튼이 펼쳐집니다. 콕을 낸 선수는 카드 오른쪽 보라색 선으로 표시됩니다.</li>
@@ -850,6 +901,7 @@
     let players = initialEnvelope.current.players;
     let courts = initialEnvelope.current.courts;
     let history = initialEnvelope.current.history;
+    let members = initialEnvelope.current.members || [];
     const tiers = ["E조", "E조", "D조", "C조", "B조", "A조"];
     players.forEach(player => {
         const savedTier = Number(player.tier);
@@ -874,6 +926,8 @@
     let waitingRoomCollapsed = false;
     let transferSourceCourtId = null;
     let deferredInstallPrompt = null;
+    let editMemberId = null;
+    const selectedMemberIds = new Set();
 
     // --- Mobile View Navigation ---
     function setMobileView(view) {
@@ -1008,11 +1062,12 @@
         }));
     }
 
-    function serializeState() { return JSON.stringify({players, courts, history}); }
+    function serializeState() { return JSON.stringify({players, courts, history, members}); }
 
     function applyState(serialized) {
         const state = JSON.parse(serialized);
         players = state.players; courts = state.courts; history = state.history;
+        members = state.members || [];
         linkCourtPlayers();
     }
 
@@ -1045,7 +1100,7 @@
         showConfirmModal(`${undoLabel} 작업을 되돌리시겠습니까?\n해당 작업 전의 선수·코트·경기 기록으로 복원합니다.`, () => {
             applyState(undoState);
             if(!save(false)) return;
-            closePModal(); closeManualModal(); closeSwapModal(); closeScoreModal(); closeHModal(); closeStatsModal(); closeTransferModal(); closeSettings();
+            closePModal(); closeManualModal(); closeSwapModal(); closeScoreModal(); closeHModal(); closeStatsModal(); closeTransferModal(); closeSettings(); closeMembersModal();
             selectedRosterPlayerId = null;
             render(); showToast('최근 작업을 되돌렸습니다.');
         });
@@ -1063,7 +1118,8 @@
     }
 
     function showToast(msg) {
-        const t = document.getElementById("toast"); t.innerText = msg; t.className = "show";
+        const t = document.getElementById("toast"); t.innerText = msg;
+        t.className = document.getElementById('membersModal').style.display === 'flex' ? 'show members-open' : 'show';
         setTimeout(() => { t.className = t.className.replace("show", ""); }, 3000);
     }
 
@@ -1071,16 +1127,18 @@
     
     // 1. 전체 초기화
     function resetAll() {
-        showConfirmModal("현재 선수·코트·기록을 초기화하시겠습니까?\n최근 작업 되돌리기로 한 단계 복원할 수 있습니다.", () => {
+        showConfirmModal("저장된 회원과 현재 선수·코트·기록을 모두 초기화하시겠습니까?\n최근 작업 되돌리기로 한 단계 복원할 수 있습니다.", () => {
             players = []; courts = [{id:1, type:'A', active:[], next:[], startTime:null}]; history = [];
+            members = [];
             if(!saveAction('전체 데이터 초기화')) return;
             closeSettings(); render(); showToast('전체 데이터를 초기화했습니다. 최근 작업 되돌리기로 복원할 수 있습니다.');
         });
     }
 
     // 2. 새 모임 시작
-    function resetGamesOnly() {
-        showConfirmModal("선수 명단은 유지하고,\n게임 수와 경기 기록만 초기화 하시겠습니까?\n(새로운 모임 시작 시 권장)", () => {
+    function startNewMeeting() {
+        const message = '저장된 회원은 유지하고 현재 선수·경기 기록·코트 배정을 비운 뒤 참석자를 다시 선택하시겠습니까?\n회원으로 저장하지 않은 선수는 먼저 회원 명단에 저장하세요.';
+        showConfirmModal(message, () => {
             // 코트 상태 비우기
             courts.forEach(c => { 
                 c.active = []; 
@@ -1088,20 +1146,14 @@
                 c.startTime = null; 
             });
             
-            // 선수 상태 초기화
-            players.forEach(p => {
-                p.games = 0;
-                p.matchingOffset = 0;
-                p.status = 'waiting';
-                p.lastTime = 0; 
-            });
-            
             // 기록 배열 비우기 (메모리 주소 유지)
             history.length = 0;
+            players = [];
             
             if(!saveAction('새 모임 시작')) return;
             render(); 
-            closeSettings(); 
+            closeSettings();
+            openMembersModal();
             showToast("새 모임이 시작되었습니다.");
         });
     }
@@ -1598,7 +1650,7 @@
     function closeInfoModal() { document.getElementById('infoModal').style.display='none'; }
 
     function exportData() {
-        const data = { players, courts, history, version: 'v14' };
+        const data = { players, courts, history, members, version: 'v15' };
         const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url;
@@ -1607,11 +1659,19 @@
     }
     function triggerImport() { document.getElementById('fileInput').click(); }
     function validateImportData(data, allowLegacyAssignments = false) {
-        const fail = () => { throw new Error('선수·코트·경기 기록의 형식이나 배정 관계가 올바르지 않습니다.'); };
+        const fail = () => { throw new Error('회원·선수·코트·경기 기록의 형식이나 배정 관계가 올바르지 않습니다.'); };
         const idOK = value => Number.isSafeInteger(value) && value >= 0;
         const countOK = value => Number.isSafeInteger(value) && value >= 0;
         const timeOK = value => value == null || (Number.isFinite(value) && value >= 0);
         if(!data || !Array.isArray(data.players) || !Array.isArray(data.courts) || (data.history !== undefined && !Array.isArray(data.history))) fail();
+        if(data.members !== undefined && !Array.isArray(data.members)) fail();
+        const memberIds = new Set();
+        (data.members || []).forEach(member => {
+            if(!member || !idOK(member.id) || memberIds.has(member.id) || typeof member.name !== 'string' || !member.name.trim() ||
+                !['M','F'].includes(member.gender) || !Number.isInteger(member.tier) || member.tier < 1 || member.tier > 5) fail();
+            memberIds.add(member.id);
+        });
+        const attendingMembers = new Set();
         const ids = new Set();
         data.players.forEach(p => {
             if(!p || !idOK(p.id) || ids.has(p.id) || typeof p.name !== 'string' || !p.name.trim() ||
@@ -1620,6 +1680,10 @@
                 (p.matchingOffset !== undefined && !countOK(p.matchingOffset)) || !timeOK(p.lastTime) ||
                 (p.shuttlecock !== undefined && typeof p.shuttlecock !== 'boolean')) fail();
             ids.add(p.id);
+            if(p.memberId !== undefined) {
+                if(!memberIds.has(p.memberId) || attendingMembers.has(p.memberId)) fail();
+                attendingMembers.add(p.memberId);
+            }
         });
         const courtIds = new Set();
         const assignments = {active:new Set(), next:new Set()};
@@ -1661,7 +1725,7 @@
         }
         const wasBlocked = storageBlocked;
         storageBlocked = false;
-        applyState(JSON.stringify({players:data.players, courts:data.courts, history:data.history || []}));
+        applyState(JSON.stringify({players:data.players, courts:data.courts, history:data.history || [], members:data.members === undefined ? members : data.members}));
         players.forEach(p => { p.tier = Math.max(1, p.tier); });
         syncPlayerAssignmentStatuses(players.map(p => p.id));
         if(!save(!wasBlocked, true, '파일에서 데이터 복구')) { storageBlocked = wasBlocked; return false; }
@@ -1748,6 +1812,7 @@
 
     // --- Render Logic ---
     function render() {
+        if(document.getElementById('membersModal').style.display === 'flex') renderMembers();
         document.getElementById('storageError').innerText = storageError;
         document.getElementById('storageError').hidden = !storageError;
         updateUndoButton();
@@ -1929,7 +1994,155 @@
         if(window.matchMedia('(max-width: 600px), (max-height: 500px) and (max-width: 950px)').matches) setMobileView('courts');
     }
     
-    function openPModal(id=null) { 
+    // --- Reusable member directory ---
+    function nextPersonId() {
+        const used = new Set([...players.map(p => p.id), ...members.map(m => m.id), ...history.flatMap(h => h.pIds || [])]);
+        let id = Date.now();
+        while(used.has(id)) id++;
+        return id;
+    }
+
+    function sameMemberProfile(a, b) {
+        return a.name.trim() === b.name.trim() && a.gender === b.gender && a.tier === b.tier;
+    }
+
+    function isMemberAttending(member) {
+        return players.some(p => p.memberId === member.id || (p.memberId === undefined && sameMemberProfile(p, member)));
+    }
+
+    function openMembersModal() {
+        selectedMemberIds.clear();
+        document.getElementById('memberSearch').value = '';
+        document.getElementById('membersModal').style.display = 'flex';
+        document.getElementById('toast').classList.add('members-open');
+        renderMembers();
+    }
+
+    function closeMemberEditor() { document.getElementById('memberEditorModal').style.display = 'none'; }
+    function closeMembersModal() {
+        closeMemberEditor();
+        document.getElementById('membersModal').style.display = 'none';
+        document.getElementById('toast').classList.remove('members-open');
+        selectedMemberIds.clear();
+    }
+
+    function visibleMembers() {
+        const query = document.getElementById('memberSearch').value.trim().toLocaleLowerCase();
+        return members.filter(m => m.name.toLocaleLowerCase().includes(query)).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    }
+
+    function renderMembers() {
+        for(const id of selectedMemberIds) {
+            const member = members.find(m => m.id === id);
+            if(!member || isMemberAttending(member)) selectedMemberIds.delete(id);
+        }
+        const visible = visibleMembers();
+        document.getElementById('memberList').innerHTML = visible.length ? visible.map(member => {
+            const attending = isMemberAttending(member);
+            return `<div class="member-row">
+                <label class="member-choice"><input type="checkbox" ${attending ? 'disabled' : ''} ${selectedMemberIds.has(member.id) ? 'checked' : ''} onchange="toggleMemberSelection(${member.id}, this.checked)">
+                    <span>${escapeHTML(member.name)}<small>${member.gender === 'M' ? '남성' : '여성'} · ${tiers[member.tier]}${attending ? ' · 이미 참가 중' : ''}</small></span>
+                </label>
+                <button class="btn btn-outline" onclick="openMemberEditor(${member.id})" aria-label="${escapeHTML(member.name)} 회원 수정">수정</button>
+                <button class="btn btn-outline" onclick="deleteMember(${member.id})" aria-label="${escapeHTML(member.name)} 회원 삭제">삭제</button>
+            </div>`;
+        }).join('') : `<p style="color:#64748b; text-align:center;">${members.length ? '검색 결과가 없습니다.' : '저장된 회원이 없습니다. 회원을 등록하거나 현재 선수 명단을 저장하세요.'}</p>`;
+        const button = document.getElementById('loadMembersButton');
+        button.innerText = `선택 ${selectedMemberIds.size}명 불러오기`;
+        button.disabled = selectedMemberIds.size === 0;
+    }
+
+    function toggleMemberSelection(id, checked) {
+        if(checked) selectedMemberIds.add(id); else selectedMemberIds.delete(id);
+        renderMembers();
+    }
+
+    function selectVisibleMembers() {
+        visibleMembers().filter(m => !isMemberAttending(m)).forEach(m => selectedMemberIds.add(m.id));
+        renderMembers();
+    }
+
+    function openMemberEditor(id = null) {
+        editMemberId = id;
+        const member = members.find(m => m.id === id);
+        document.getElementById('memberEditorTitle').innerText = member ? '회원 정보 수정' : '회원 등록';
+        document.getElementById('memberNames').value = member ? member.name : '';
+        document.getElementById('memberGender').value = member ? member.gender : 'M';
+        document.getElementById('memberTier').value = member ? member.tier : '1';
+        document.getElementById('memberEditorModal').style.display = 'flex';
+        document.getElementById('memberNames').focus();
+    }
+
+    function saveMember() {
+        const names = document.getElementById('memberNames').value.split('\n').map(name => name.trim()).filter(Boolean);
+        const gender = document.getElementById('memberGender').value;
+        const tier = Number(document.getElementById('memberTier').value);
+        if(!names.length) return showToast('회원 이름을 입력하세요.');
+        if(!['M', 'F'].includes(gender) || !Number.isInteger(tier) || tier < 1 || tier > 5) return showToast('성별과 급수를 확인하세요.');
+        if(editMemberId !== null) {
+            if(names.length !== 1) return showToast('수정할 회원의 이름 하나만 입력하세요.');
+            const member = members.find(m => m.id === editMemberId);
+            if(!member) return showToast('회원을 찾을 수 없습니다.');
+            const profile = {name:names[0], gender, tier};
+            if(members.some(m => m.id !== editMemberId && sameMemberProfile(m, profile))) return showToast('같은 이름·성별·급수의 회원이 이미 있습니다. 동명이인은 이름에 구분을 추가하세요.');
+            Object.assign(member, profile);
+            players.filter(p => p.memberId === member.id).forEach(p => Object.assign(p, profile));
+            if(!saveAction(`${member.name} 회원 정보 수정`)) return;
+            showToast('회원 정보를 수정했습니다.');
+        } else {
+            let count = 0;
+            names.forEach(name => {
+                const profile = {name, gender, tier};
+                if(members.some(m => sameMemberProfile(m, profile))) return;
+                members.push({id:nextPersonId(), ...profile});
+                count++;
+            });
+            if(!saveAction(`회원 ${count}명 등록`)) return;
+            showToast(`회원 ${count}명 저장${names.length > count ? ` · 중복 ${names.length - count}명 제외` : ''}`);
+        }
+        closeMemberEditor(); render(); renderMembers();
+    }
+
+    function saveRosterAsMembers() {
+        if(!players.length) return showToast('현재 등록된 선수가 없습니다.');
+        let count = 0;
+        players.forEach(player => {
+            let member = members.find(m => m.id === player.memberId) || members.find(m => sameMemberProfile(m, player));
+            if(!member) {
+                member = {id:nextPersonId(), name:player.name, gender:player.gender, tier:player.tier};
+                members.push(member);
+                count++;
+            }
+            if(!players.some(p => p.id !== player.id && p.memberId === member.id)) player.memberId = member.id;
+        });
+        if(!saveAction('현재 선수 명단을 회원으로 저장')) return;
+        renderMembers(); showToast(`회원 ${count}명 추가 저장 · 기존 회원은 중복 저장하지 않았습니다.`);
+    }
+
+    function deleteMember(id) {
+        const member = members.find(m => m.id === id);
+        if(!member) return;
+        showConfirmModal(`${member.name} 회원을 저장 명단에서 삭제하시겠습니까?\n현재 모임의 선수와 경기 기록은 유지됩니다.`, () => {
+            members = members.filter(m => m.id !== id);
+            players.filter(p => p.memberId === id).forEach(p => { delete p.memberId; });
+            if(!saveAction(`${member.name} 회원 삭제`)) return;
+            renderMembers(); showToast('회원 명단에서 삭제했습니다.');
+        });
+    }
+
+    function loadSelectedMembers() {
+        const selected = members.filter(m => selectedMemberIds.has(m.id) && !isMemberAttending(m));
+        if(!selected.length) return showToast('불러올 회원을 선택하세요.');
+        const matchingOffset = getInitialMatchingGames();
+        selected.forEach(member => players.push({
+            id:nextPersonId(), memberId:member.id, name:member.name, gender:member.gender, tier:member.tier,
+            games:0, matchingOffset, lastTime:0, status:'waiting', shuttlecock:false
+        }));
+        if(!saveAction(`회원 ${selected.length}명 불러오기`)) return;
+        closeMembersModal(); render(); setMobileView('waiting'); showToast(`${selected.length}명을 대기실로 불러왔습니다.`);
+    }
+
+    function openPModal(id=null) {
         editPId = id; const p = players.find(x=>x.id===id);
         document.getElementById('pModalTitle').innerText = id ? "선수 정보 수정" : "선수 등록";
         document.getElementById('pName').value = id ? p.name : "";
@@ -1970,7 +2183,7 @@
         let count = 0;
         lines.forEach((name, idx) => {
             players.push({
-                id: Date.now() + idx,
+                id: nextPersonId(),
                 name: name,
                 gender: gen,
                 tier: tier,
@@ -1997,9 +2210,11 @@
         if(editPId) {
             const p=players.find(x=>x.id===editPId);
             p.name=name; p.tier=tier; p.gender=gen; p.games=games;
+            const member = members.find(m => m.id === p.memberId);
+            if(member) Object.assign(member, {name, gender:gen, tier});
             if(p.status === 'waiting' || p.status === 'resting') setPlayerAvailability(p, status);
         }
-        else { players.push({id:Date.now(), name, gender:gen, tier, games, matchingOffset:Math.max(0, getInitialMatchingGames() - games), lastTime:0, status, shuttlecock:false}); }
+        else { players.push({id:nextPersonId(), name, gender:gen, tier, games, matchingOffset:Math.max(0, getInitialMatchingGames() - games), lastTime:0, status, shuttlecock:false}); }
         if(!saveAction(`${name} 선수 ${editPId ? '정보 수정' : '등록'}`)) return;
         closePModal(); render(); showToast("저장됨");
     }
