@@ -41,15 +41,19 @@
             display: flex; justify-content: space-between; align-items: center; height: calc(60px + env(safe-area-inset-top)); flex-shrink: 0; z-index: 10;
         }
         .logo { font-size: 1.2rem; font-weight: 900; color: var(--primary); display: flex; align-items: center; gap: 6px; }
-        .h-btn-group { display: flex; gap: 4px; align-items: center; min-width: 0; }
+        .h-btn-group { display:grid; grid-template-columns:repeat(6, minmax(0, 1fr)); flex:1; max-width:660px; gap:2px; padding:3px; margin-left:12px; border:1px solid var(--border); border-radius:12px; background:#f8fafc; align-items:center; min-width:0; }
         
         .h-btn {
-            height: 36px; padding: 0 12px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;
-            border: 1px solid #cbd5e1; background: #fff; color: var(--dark); cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; min-width: 0;
+            height:46px; padding:4px 2px; border-radius:8px; font-weight:700; font-size:0.74rem;
+            border:0; background:transparent; color:#475569; cursor:pointer;
+            display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; white-space:nowrap; min-width:0;
         }
         .h-btn.primary { background: var(--primary); color: #fff; border: none; }
-        .h-label-short { display:none; }
+        .h-btn .h-label { display:block; line-height:1.1; }
+        .h-btn:focus-visible { outline:2px solid var(--primary); outline-offset:1px; }
+        @media (hover: hover) {
+            .h-btn:not(.primary):not(:disabled):hover { background:#e2e8f0; color:var(--dark); }
+        }
         .h-btn:active { transform: scale(0.96); }
         .h-btn:disabled { opacity: 0.4; cursor: default; }
         .h-btn .ui-icon { width: 17px; height: 17px; }
@@ -169,11 +173,9 @@
                 padding-bottom: 0;
             }
             .logo { font-size: 1.05rem; }
-            .h-btn-group { display:grid; grid-template-columns:repeat(6, minmax(44px, 1fr)); flex:1; max-width:420px; gap:4px; margin-left:8px; }
-            .h-btn { height:48px; padding:4px 0; border-radius:8px; flex-direction:column; gap:4px; }
+            .h-btn-group { grid-template-columns:repeat(6, minmax(44px, 1fr)); max-width:420px; padding:2px; margin-left:8px; }
+            .h-btn { height:46px; padding:4px 0; }
             .h-btn .h-label { display:block; font-size:0.65rem; line-height:1.1; }
-            .h-btn .h-label-long { display:none; }
-            .h-btn .h-label-short { display:inline; }
         }
 
         @media (max-width: 360px) {
@@ -625,6 +627,7 @@
     <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 9h16M8 13h2M14 13h2M8 17h2"/></symbol>
     <symbol id="icon-backup" viewBox="0 0 24 24"><path d="M5 3h14v18H5V3Z"/><path d="M9 7h6M12 10v7m-3-3 3 3 3-3"/></symbol>
     <symbol id="icon-restore" viewBox="0 0 24 24"><path d="M3 7h7l2 2h9v10H3V7Z"/><path d="M12 17v-6m-3 3 3-3 3 3"/></symbol>
+    <symbol id="icon-undo" viewBox="0 0 24 24"><path d="m9 5-5 5 5 5M4 10h9a6 6 0 0 1 6 6v3"/></symbol>
     <symbol id="icon-warning" viewBox="0 0 24 24"><path d="M10.3 4.2 2.8 18a2 2 0 0 0 1.8 3h14.8a2 2 0 0 0 1.8-3L13.7 4.2a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
     <symbol id="icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></symbol>
     <symbol id="icon-bolt" viewBox="0 0 24 24"><path d="m13 2-8 12h7l-1 8 8-12h-7l1-8Z"/></symbol>
@@ -644,11 +647,11 @@
 <div class="header">
     <div class="logo">BM</div>
     <div class="h-btn-group">
-        <button class="h-btn" onclick="openMembersModal()" aria-label="회원·참가자" title="회원·참가자" aria-haspopup="dialog" aria-controls="membersModal"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-users"></use></svg><span class="h-label"><span class="h-label-long">회원·참가자</span><span class="h-label-short">참가자</span></span></button>
+        <button class="h-btn" onclick="openMembersModal()" aria-label="선수 등록" title="선수 등록" aria-haspopup="dialog" aria-controls="membersModal"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-users"></use></svg><span class="h-label">선수 등록</span></button>
         <button class="h-btn primary" onclick="addCourt()" aria-label="코트 추가" title="코트 추가"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-add"></use></svg><span class="h-label">코트</span></button>
         <button class="h-btn" onclick="openHistory()" aria-label="경기 기록" title="경기 기록"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-history"></use></svg><span class="h-label">기록</span></button>
         <button class="h-btn" onclick="openStatsModal()" aria-label="경기 통계" title="경기 통계"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-chart"></use></svg><span class="h-label">통계</span></button>
-        <button id="undoButton" class="h-btn" onclick="undoLastAction()" aria-label="최근 작업 되돌리기" title="최근 작업 되돌리기" disabled><svg class="ui-icon" aria-hidden="true"><use href="#icon-restore"></use></svg><span class="h-label">되돌리기</span></button>
+        <button id="undoButton" class="h-btn" onclick="undoLastAction()" aria-label="최근 작업 되돌리기" title="최근 작업 되돌리기" disabled><svg class="ui-icon" aria-hidden="true"><use href="#icon-undo"></use></svg><span class="h-label">되돌리기</span></button>
         <button class="h-btn" onclick="openSettings()" aria-label="설정" title="설정"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><span class="h-label">설정</span></button>
     </div>
 </div>
@@ -739,8 +742,8 @@
 
 <!-- 저장된 회원 -->
 <div id="membersModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="membersTitle"><div class="modal-box">
-    <h3 id="membersTitle" class="modal-title" style="margin-top:0;"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg><span>회원·참가자</span></h3>
-    <div class="member-tabs" role="tablist" aria-label="회원·참가자 메뉴" onkeydown="handleMemberTabKey(event)">
+    <h3 id="membersTitle" class="modal-title" style="margin-top:0;"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg><span>선수 등록</span></h3>
+    <div class="member-tabs" role="tablist" aria-label="선수 등록 메뉴" onkeydown="handleMemberTabKey(event)">
         <button id="memberSelectTab" class="member-tab" role="tab" aria-selected="true" aria-controls="memberSelectPanel" onclick="setMemberView('select')">참석자 선택</button>
         <button id="memberRegisterTab" class="member-tab" role="tab" aria-selected="false" aria-controls="memberRegisterPanel" tabindex="-1" onclick="setMemberView('register')">등록·관리</button>
     </div>
@@ -830,8 +833,8 @@
     <h3 class="modal-title" style="margin-top:0;"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-info"></use></svg><span>도움말</span></h3>
     <div class="info-content">
         <ul style="padding-left: 20px; margin: 0; list-style-type: disc;">
-            <li><strong>선수 등록:</strong> 상단 '회원·참가자 → 등록·관리'에서 '+ 개별' 또는 '+ 일괄'을 사용하세요.</li>
-            <li><strong>회원 불러오기:</strong> 상단 '회원·참가자 → 참석자 선택'에서 회원을 검색하고 선택하세요. 회원 등록과 '현재 선수 명단 저장'은 '등록·관리' 탭에서 할 수 있습니다. 회원 수정·삭제는 명단의 '수정'에서, 다음 모임은 설정의 '회원에서 참석자 다시 선택'을 사용하세요.</li>
+            <li><strong>선수 등록:</strong> 상단 '선수 등록 → 등록·관리'에서 '+ 개별' 또는 '+ 일괄'을 사용하세요.</li>
+            <li><strong>회원 불러오기:</strong> 상단 '선수 등록 → 참석자 선택'에서 회원을 검색하고 선택하세요. 회원 등록과 '현재 선수 명단 저장'은 '등록·관리' 탭에서 할 수 있습니다. 회원 수정·삭제는 명단의 '수정'에서, 다음 모임은 설정의 '회원에서 참석자 다시 선택'을 사용하세요.</li>
             <li><strong>경기 통계:</strong> 상단 <strong>[통계]</strong>에서 전체 현황과 선수별 같은 팀·상대 팀 횟수를 확인할 수 있습니다.</li>
             <li><strong>성별 구분:</strong> 파란색 선수 카드는 남성, 분홍색 선수 카드는 여성을 뜻합니다.</li>
             <li><strong>대기실 빠른 조작:</strong> 선수 카드를 누르면 해당 선수의 휴식·복귀, 콕 냄, 정보 수정 버튼이 펼쳐집니다. 콕을 낸 선수는 카드 오른쪽 보라색 선으로 표시됩니다.</li>
