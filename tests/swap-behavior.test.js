@@ -4,7 +4,7 @@ const vm = require('vm');
 const html = fs.readFileSync('index.html', 'utf8');
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
 if (html.includes('>F조</option>') || html.includes('const tiers = ["F조"') || !html.includes('<option value="1" selected>E조</option>')) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
-if (!serviceWorker.includes('app-v14') || !serviceWorker.includes('runtime-v14') || !html.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
+if (!serviceWorker.includes('app-v15') || !serviceWorker.includes('runtime-v15') || !html.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
 const inlineScript = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 
 if (!inlineScript) throw new Error('index.html의 인라인 스크립트를 찾을 수 없습니다.');
@@ -105,7 +105,7 @@ function assertInRuntime(context, assertion, message) {
     vm.runInContext('openSwap(2, "next", 0)', context);
     const swapHtml = context.__elements.get('swapList').innerHTML;
     if (!swapHtml.includes('onclick="doSwap(1)"')) throw new Error('게임 중 선수가 다음 대기 교체 후보에 없습니다.');
-    if (!swapHtml.includes('게임중')) throw new Error('게임 중 교체 후보에 상태 표시가 없습니다.');
+    if (!swapHtml.includes('게임중') || !swapHtml.includes('현재 1번 코트') || !swapHtml.includes('현재 2번 코트') || !swapHtml.includes('picker-player-status')) throw new Error('선수 교체 카드에 게임 중 상태와 현재 코트를 표시해야 합니다.');
     if (!swapHtml.includes('gender-card gender-m') || !swapHtml.includes('gender-card gender-f')) throw new Error('교체 후보 카드의 성별 색상 표시가 없습니다.');
     if (!html.includes('id="swapList" class="wc-list manual-player-list"') || !html.includes('.manual-player-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }') || !swapHtml.includes('manual-chip swap-chip gender-card') || !swapHtml.includes('manual-player-info') || !swapHtml.includes('manual-player-name') || !swapHtml.includes('manual-player-detail') || !html.includes('.player-chip.manual-chip.swap-chip { opacity: 1; }')) throw new Error('선수 교체 후보가 이름·급수·경기 수 한 줄의 2열 압축형 카드로 표시되지 않았습니다.');
     if (swapHtml.includes('gender-marker')) throw new Error('교체 후보에 불필요한 성별 동그라미가 남아 있습니다.');
@@ -547,6 +547,7 @@ function assertInRuntime(context, assertion, message) {
 {
     const roster = [{id:1,name:'원본',gender:'M',tier:3,games:6,status:'waiting',lastTime:0}];
     const context = createRuntime(roster, []);
+    const savedBeforeInvalidImport = context.__storage.get('bm_state_v14');
     const malformed = [
         {players:{},courts:[]},
         {players:[{...roster[0],name:8}],courts:[]},
@@ -560,7 +561,7 @@ function assertInRuntime(context, assertion, message) {
         context.__import = data;
         vm.runInContext('importValidatedData(__import)', context);
         assertInRuntime(context, 'players.length===1 && players[0].name==="원본" && history.length===0', '잘못된 백업이 현재 데이터를 덮어썼습니다.');
-        if(context.__storage.has('bm_state_v14') || context.__storage.has('bm_before_import_v14')) throw new Error('검증 실패 후 저장소가 변경되었습니다.');
+        if(context.__storage.get('bm_state_v14') !== savedBeforeInvalidImport || context.__storage.has('bm_before_import_v14')) throw new Error('검증 실패 후 저장소가 변경되었습니다.');
     }
     const valid = {players:[{...roster[0],name:'복구본',matchingOffset:2}],courts:[],history:[]};
     context.__import = valid;
