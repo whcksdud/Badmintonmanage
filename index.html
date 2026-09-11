@@ -60,7 +60,6 @@
         .court-wait-note { margin: 0; padding: 8px 10px; border-radius: 8px; background: #fffbeb; color: #92400e; font-size: 0.8rem; line-height: 1.5; overflow-wrap: anywhere; }
         .btn:disabled { opacity: 0.55; cursor: default; }
         .roster-matching-summary { margin: 5px 0 0; color: #475569; font-size: 0.78rem; }
-        .picker-location { color: #64748b; font-size: 0.6rem; white-space: nowrap; }
         #manualModal .modal-box, #swapModal .modal-box { overflow: hidden; }
         #manualList, #swapList { min-height: 0; overflow-y: auto; flex: 1 1 auto; }
         .picker-footer { flex-shrink: 0; }
@@ -70,7 +69,7 @@
         /* --- Main Layout --- */
         .main-container {
             display: grid;
-            grid-template-columns: 280px 1fr;
+            grid-template-columns: 340px minmax(0, 1fr);
             gap: 20px;
             padding: 20px;
             flex: 1;
@@ -93,12 +92,22 @@
         .wc-title-row { display: flex; flex-direction:column; align-items:stretch; gap:8px; font-weight: 700; }
         .wc-heading-line { display:flex; align-items:center; justify-content:space-between; gap:8px; }
         .wc-heading-actions { display: inline-flex; align-items: center; gap: 5px; }
-        .waiting-search-toggle { flex: 0 0 auto; width: 30px; height: 30px; border: 1px solid #cbd5e1; border-radius: 7px; background: #fff; color: #475569; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
-        .waiting-search-toggle.active { border-color: #93c5fd; background: #eff6ff; color: #1d4ed8; }
-        .waiting-search-toggle .ui-icon { width: 16px; height: 16px; }
-        .waiting-toggle { flex:0 0 auto; width:30px; height:30px; border:1px solid #cbd5e1; border-radius:7px; background:#fff; color:#475569; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
-        .waiting-toggle .ui-icon { width:16px; height:16px; }
-        .wc-title { white-space:nowrap; font-size:0.9rem; }
+        .waiting-search-toggle, .waiting-toggle { flex:0 0 auto; width:30px; height:30px; padding:0; border:1px solid #cbd5e1; border-radius:7px; background:#fff; color:#475569; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+        .waiting-search-toggle[aria-expanded="true"] { border-color:#93c5fd; background:#eff6ff; color:#1d4ed8; }
+        .waiting-search-toggle .ui-icon, .waiting-toggle .ui-icon { width:16px; height:16px; }
+        .wc-title { white-space:nowrap; font-size:1.05rem; }
+        .roster-search { position:relative; display:flex; align-items:center; }
+        .roster-search[hidden] { display:none; }
+        .roster-search > .ui-icon { position:absolute; left:12px; color:#94a3b8; pointer-events:none; }
+        .roster-search .search-input { min-height:44px; margin:0; padding-left:38px; border-radius:10px; }
+        .roster-search .search-input:focus { border-color:var(--primary); box-shadow:0 0 0 2px #2563eb18; }
+        .roster-filters { display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:4px; }
+        .roster-filter { min-width:0; min-height:52px; padding:6px 2px; border:1px solid transparent; border-radius:9px; background:transparent; color:#64748b; cursor:pointer; font-size:0.73rem; display:flex; flex-direction:column; gap:3px; align-items:center; }
+        .roster-filter strong { font-size:1rem; font-variant-numeric:tabular-nums; }
+        .roster-filter[aria-pressed="true"] { background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8; font-weight:800; }
+        .roster-empty { padding:32px 12px; display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; color:#64748b; font-size:0.82rem; line-height:1.6; }
+        .roster-empty strong { color:var(--dark); font-size:0.95rem; }
+        .roster-filter:focus-visible, .roster-chip:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
         .member-tabs { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:4px; margin-bottom:14px; border-radius:10px; background:#f1f5f9; flex-shrink:0; }
         .member-tab { min-height:44px; border:0; border-radius:7px; background:transparent; color:#64748b; font-size:0.9rem; font-weight:700; cursor:pointer; }
         .member-tab[aria-selected="true"] { background:#fff; color:var(--primary); box-shadow:0 1px 4px #00000014; }
@@ -132,9 +141,9 @@
         .main-container.waiting-collapsed { grid-template-columns:54px 1fr; }
         .main-container.waiting-collapsed .wc-header { padding:10px; }
         .main-container.waiting-collapsed .wc-title,
-        .main-container.waiting-collapsed .search-input, .main-container.waiting-collapsed .waiting-search-toggle, .main-container.waiting-collapsed .wc-header > div:last-child,
+        .main-container.waiting-collapsed .waiting-search-toggle,
+        .main-container.waiting-collapsed .roster-search, .main-container.waiting-collapsed .roster-filters,
         .main-container.waiting-collapsed .wc-list { display:none !important; }
-        .main-container.waiting-collapsed .wc-header > div:last-child { display:none !important; }
 
         /* --- Court Area --- */
         .court-area {
@@ -187,7 +196,7 @@
             #waitList { grid-template-columns:minmax(0, 1fr); }
         }
 
-        @media (max-width: 600px), (max-height: 500px) and (max-width: 950px) {
+        @media (max-width: 768px), (max-height: 500px) and (max-width: 950px) {
             .mobile-view-tabs {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
@@ -304,20 +313,27 @@
         .roster-chip.gender-card.roster-status-resting { background: var(--rest-bg); }
         .roster-chip.gender-card.roster-status-reserved { background: var(--reserved-bg); }
         .roster-chip.gender-card.roster-status-playing { background: var(--playing-bg); }
-        .roster-chip.action-selected { border-color: #93c5fd; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12); }
-        .roster-chip.gender-card { border-right: 5px solid transparent; }
-        .roster-chip.gender-card::after { content: ''; position: absolute; top: -1px; right: -5px; bottom: -1px; width: 1px; background: #e2e8f0; pointer-events: none; }
-        .roster-chip.gender-card.gender-m.has-shuttlecock { border-right-color: #38bdf8; }
-        .roster-chip.gender-card.gender-f.has-shuttlecock { border-right-color: #f472b6; }
-        .roster-chip.gender-card.has-shuttlecock::after { display: none; }
-        .roster-summary { min-width: 0; min-height: 58px; padding: 9px 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-        .roster-identity { flex: 1 1 auto; width: 100%; min-width: 0; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1.8fr) repeat(2, minmax(0, 0.7fr)); align-items: center; }
-        .roster-chip .p-name { width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; font-size: 0.94rem; line-height: 1.15; }
-        .roster-meta-line { min-width: 0; overflow: hidden; text-overflow: ellipsis; padding-left: 3px; border-left: 1px solid rgba(100, 116, 139, 0.28); color: #64748b; font-size: 0.62rem; font-weight: 700; line-height: 1.15; white-space: nowrap; text-align: center; }
-        .roster-identity.has-wait-time { grid-template-columns:minmax(0, 1fr) 30px 42px max-content; }
-        .roster-wait-time { padding-left:6px; font-variant-numeric:tabular-nums; }
-        .roster-action-sheet { position: fixed; z-index: 900; left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); bottom: max(8px, env(safe-area-inset-bottom)); width: auto; max-width: 720px; margin-inline: auto; display: grid; gap: 8px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 14px; background: #fff; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.24); }
+        .roster-chip.action-selected, .roster-chip.selected { border-color: #93c5fd; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12); }
+        .roster-summary { min-width:0; min-height:76px; padding:12px; display:flex; align-items:center; gap:10px; }
+        .roster-identity { flex:1; min-width:0; display:grid; gap:7px; }
+        .roster-chip .p-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left; font-size:1rem; line-height:1.25; }
+        .roster-details { display:flex; align-items:center; flex-wrap:wrap; gap:5px 8px; color:#64748b; font-size:0.75rem; }
+        .roster-shuttle { color:#7e22ce; font-size:0.68rem; font-weight:700; display:inline-flex; align-items:center; gap:3px; }
+        .roster-shuttle .ui-icon { width:13px; height:13px; }
+        .roster-metrics { flex:0 0 auto; max-width:45%; display:grid; justify-items:end; gap:7px; font-size:0.75rem; text-align:right; }
+        .roster-wait-time { color:#1d4ed8; font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap; }
+        .roster-location { color:#64748b; font-size:0.7rem; line-height:1.4; }
+        .roster-status-label { color:#64748b; font-weight:700; }
+        .roster-status-reserved .roster-status-label { color:#92400e; }
+        .roster-status-playing .roster-status-label { color:#047857; }
+        .roster-action-sheet { flex-shrink:0; display:grid; gap:6px; padding:10px 12px; border-top:1px solid #bfdbfe; background:#f8fbff; box-shadow:0 -4px 14px #0f172a08; }
         .roster-action-sheet[hidden] { display: none; }
+        @media (max-height: 500px) {
+            .waiting-court { overflow-y:auto; }
+            .waiting-court .wc-header { position:static; }
+            .waiting-court .wc-list { flex:none; overflow:visible; }
+            .waiting-court .roster-action-sheet { position:sticky; bottom:0; z-index:6; }
+        }
         .roster-sheet-heading { min-width: 0; display: flex; align-items: center; gap: 6px; color: #64748b; font-size: 0.68rem; font-weight: 800; }
         .roster-sheet-heading strong { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1e293b; font-size: 0.86rem; }
         .roster-sheet-heading span { flex: 0 0 auto; white-space: nowrap; }
@@ -326,7 +342,6 @@
         .roster-action-sheet .roster-action-icon { width: 16px; height: 16px; }
         .roster-sheet-close { flex: 0 0 auto; width: 44px; height: 44px; padding: 0; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; color: #64748b; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
         .roster-sheet-close .ui-icon { width: 15px; height: 15px; }
-        .waiting-court.has-roster-selection .wc-list { padding-bottom: max(140px, calc(env(safe-area-inset-bottom) + 132px)); }
         .roster-action { flex: 1 1 0; min-width: 0; min-height: 35px; padding: 7px 5px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #475569; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.68rem; font-weight: 800; white-space: nowrap; cursor: pointer; }
         .roster-action-icon { flex: 0 0 auto; width: 15px; height: 15px; display: block; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
         .roster-action.rest { background: #f1f5f9; color: #475569; }
@@ -347,30 +362,10 @@
         .gender-card.gender-f { background: #fce7f3; border-color: #f472b6; }
         .match-player-chip.gender-card.gender-m { background: #fff; border-color: #cbd5e1; border-left: 5px solid #38bdf8; }
         .match-player-chip.gender-card.gender-f { background: #fff; border-color: #cbd5e1; border-left: 5px solid #f472b6; }
-        .manual-player-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        .manual-player-list { grid-template-columns: minmax(0, 1fr); gap: 8px; }
         .manual-player-list .empty-state { grid-column: 1 / -1; }
-        .player-chip.manual-chip { min-height: 64px; aspect-ratio: auto; padding: 6px 8px; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-align: center; opacity: 0.8; transition: all 0.2s; }
-        .manual-chip.gender-card.gender-m { background: #fff; border: 1px solid #e2e8f0; border-left: 5px solid #38bdf8; }
-        .manual-chip.gender-card.gender-f { background: #fff; border: 1px solid #e2e8f0; border-left: 5px solid #f472b6; }
-        .manual-chip.selected {
-            opacity: 1;
-            box-shadow: 0 0 0 2px var(--primary);
-        }
-        .player-chip.manual-chip.swap-chip { opacity: 1; }
-        .manual-player-info { width: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1.8fr) repeat(2, minmax(0, 0.7fr)); align-items: center; }
-        .manual-player-info > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
-        .manual-player-name { color: var(--dark); font-size: 0.94rem; font-weight: 900; text-align: center !important; }
-        .manual-player-detail { padding-left: 3px; border-left: 1px solid rgba(100, 116, 139, 0.28); color: #64748b; font-size: 0.62rem; font-weight: 800; }
-        .manual-playing-badge { position: static; background: var(--primary); font-size: 0.56rem; padding: 2px 3px; white-space: nowrap; flex-shrink: 0; }
-        .picker-player-status { display: flex; align-items: center; justify-content: center; gap: 4px; }
-        .manual-player-list .manual-player-info { grid-template-columns: minmax(0, 1fr) 26px 34px; }
-        #manualList, #swapList { grid-template-columns:repeat(2, minmax(0, 1fr)); }
-        :is(#manualList, #swapList) .manual-chip { min-height:72px; padding:20px 8px; }
-        :is(#manualList, #swapList) .picker-player-status { position:absolute; top:4px; left:6px; right:6px; justify-content:flex-start; }
-        :is(#manualList, #swapList) .manual-player-info { grid-template-columns:minmax(0, 1fr) 22px 30px; }
-        :is(#manualList, #swapList) .manual-player-info.has-wait-time { grid-template-columns:minmax(0, 1fr) 22px 30px max-content; }
-        :is(#manualList, #swapList) .manual-player-name { grid-column:auto; text-align:center !important; }
-        :is(#manualList, #swapList) .manual-player-detail { padding-left:3px; border-left:1px solid rgba(100, 116, 139, 0.28); font-variant-numeric:tabular-nums; }
+        .manual-chip { width:100%; font:inherit; text-align:left; }
+        .manual-chip.selected { outline:2px solid var(--primary); outline-offset:-2px; }
         .p-name { font-size: 1rem; font-weight: 800; color: var(--dark); }
         .p-info { font-size: 0.8rem; color: #64748b; font-weight: 600; }
 
@@ -534,8 +529,7 @@
             .player-chip { min-width: 0; padding: 10px 6px; }
             .waiting-chip { padding: 10px; }
             .waiting-chip.roster-chip { gap: 0; padding: 0; }
-            .roster-summary { min-height: 60px; padding: 9px 10px; }
-            .roster-meta-line { font-size:0.7rem; }
+            .roster-summary { min-height: 76px; padding: 11px 12px; }
             .roster-action { min-height: 42px; padding: 8px; }
             .court-delete { width: 36px; height: 40px; }
             .btn { min-width: 0; min-height: 44px; padding: 9px 10px; }
@@ -603,14 +597,6 @@
             #membersModal .member-tabs { margin-bottom:8px; }
         }
 
-        @media (max-width: 360px) {
-            .manual-player-list .manual-player-info { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 3px; }
-            .manual-player-info .manual-player-name { grid-column: 1 / -1; text-align: center !important; }
-            .manual-player-info .manual-player-detail { border-left: 0; padding-left: 0; }
-            :is(#manualList, #swapList) .manual-player-info { grid-template-columns:repeat(2, minmax(0, 1fr)); row-gap:3px; }
-            :is(#manualList, #swapList) .manual-player-info.has-wait-time { grid-template-columns:22px 30px minmax(0, 1fr); }
-            :is(#manualList, #swapList) .manual-player-name { grid-column:1 / -1; text-align:center !important; }
-        }
     </style>
 </head>
 <body>
@@ -672,16 +658,27 @@
         <div class="wc-header">
             <div class="wc-title-row">
                 <div class="wc-heading-line">
-                    <span class="wc-title">대기실 (총원 <span id="totalRosterCount">0</span>명)</span>
+                    <span class="wc-title">대기실</span>
                     <div class="wc-heading-actions">
-                        <button id="waitingSearchToggle" class="waiting-search-toggle" type="button" onclick="toggleRosterSearch()" aria-label="선수 검색 열기" aria-expanded="false" aria-controls="searchInput" title="선수 검색 열기"><svg class="ui-icon" aria-hidden="true" focusable="false"><use id="waitingSearchIcon" href="#icon-search"></use></svg></button>
+                        <button id="waitingSearchToggle" class="waiting-search-toggle" type="button" onclick="toggleRosterSearch()" aria-label="선수 검색 열기" aria-expanded="false" aria-controls="rosterSearch" title="선수 검색 열기"><svg class="ui-icon" aria-hidden="true" focusable="false"><use id="waitingSearchIcon" href="#icon-search"></use></svg></button>
                         <button id="waitingToggle" class="waiting-toggle" onclick="toggleWaitingRoom()" aria-label="대기실 접기" title="대기실 접기"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron-left"></use></svg></button>
                     </div>
                 </div>
             </div>
-            <input type="search" id="searchInput" class="search-input" placeholder="이름 검색..." oninput="render()" onkeydown="handleRosterSearchKey(event)" hidden>
+            <div id="rosterSearch" class="roster-search" hidden>
+                <svg class="ui-icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+                <input type="search" id="searchInput" class="search-input" placeholder="선수 이름 검색" aria-label="대기실 선수 이름 검색" oninput="renderRoster()" onkeydown="handleRosterSearchKey(event)">
+            </div>
+            <div class="roster-filters" role="group" aria-label="선수 상태 필터">
+                <button id="rosterFilter-all" type="button" class="roster-filter" aria-pressed="true" onclick="setRosterFilter('all')">전체<strong id="rosterCount-all">0</strong></button>
+                <button id="rosterFilter-waiting" type="button" class="roster-filter" aria-pressed="false" onclick="setRosterFilter('waiting')">대기<strong id="rosterCount-waiting">0</strong></button>
+                <button id="rosterFilter-reserved" type="button" class="roster-filter" aria-pressed="false" onclick="setRosterFilter('reserved')">예약<strong id="rosterCount-reserved">0</strong></button>
+                <button id="rosterFilter-playing" type="button" class="roster-filter" aria-pressed="false" onclick="setRosterFilter('playing')">경기<strong id="rosterCount-playing">0</strong></button>
+                <button id="rosterFilter-resting" type="button" class="roster-filter" aria-pressed="false" onclick="setRosterFilter('resting')">휴식<strong id="rosterCount-resting">0</strong></button>
+            </div>
         </div>
         <div id="waitList" class="wc-list"></div>
+        <section id="rosterActionSheet" class="roster-action-sheet" aria-label="선수 관리" onkeydown="if(event.key === 'Escape') closeRosterActionSheet(true)" onclick="event.stopPropagation()" hidden></section>
     </div>
 
     <!-- 코트 영역 -->
@@ -690,7 +687,6 @@
     </div>
 </div>
 
-<section id="rosterActionSheet" class="roster-action-sheet" aria-label="선수 관리" onclick="event.stopPropagation()" hidden></section>
 
 <div id="toast">알림 메시지</div>
 <input type="file" id="fileInput" style="display:none" onchange="importData(this)">
@@ -706,11 +702,13 @@
     <label>실제 경기 수</label>
     <input type="number" id="pGames" min="0" step="1" value="0">
     <p id="playerMatchingInfo" style="color:#64748b; font-size:0.85rem;"></p>
-    <label>선수 상태</label>
-    <select id="pStatus">
-        <option value="waiting">대기</option>
-        <option value="resting">휴식 (자동 매칭 제외)</option>
-    </select>
+    <div id="pStatusField">
+        <label for="pStatus">선수 상태</label>
+        <select id="pStatus">
+            <option value="waiting">대기</option>
+            <option value="resting">휴식 (자동 매칭 제외)</option>
+        </select>
+    </div>
     <div style="display:flex; gap:10px; margin-top:10px;">
         <button class="btn btn-primary" style="flex:1" onclick="savePlayer()">저장</button>
         <button class="btn btn-outline" style="flex:1" onclick="closePModal()">취소</button>
@@ -837,7 +835,7 @@
             <li><strong>회원 불러오기:</strong> 상단 '선수 등록 → 참석자 선택'에서 회원을 검색하고 선택하세요. 회원 등록과 '현재 선수 명단 저장'은 '등록·관리' 탭에서 할 수 있습니다. 회원 수정·삭제는 명단의 '수정'에서, 다음 모임은 설정의 '회원에서 참석자 다시 선택'을 사용하세요.</li>
             <li><strong>경기 통계:</strong> 상단 <strong>[통계]</strong>에서 전체 현황과 선수별 같은 팀·상대 팀 횟수를 확인할 수 있습니다.</li>
             <li><strong>성별 구분:</strong> 파란색 선수 카드는 남성, 분홍색 선수 카드는 여성을 뜻합니다.</li>
-            <li><strong>대기실 빠른 조작:</strong> 선수 카드를 누르면 해당 선수의 휴식·복귀, 콕 냄, 정보 수정 버튼이 펼쳐집니다. 콕을 낸 선수는 카드 오른쪽 보라색 선으로 표시됩니다.</li>
+            <li><strong>대기실 빠른 조작:</strong> 상태별 인원을 눌러 목록을 좁히고, 검색 아이콘을 눌러 이름으로 선수를 찾으세요. 선수 카드를 누르면 대기실 아래에 휴식·복귀, 콕 냄, 정보 수정 버튼이 표시됩니다. 콕을 낸 선수는 이름 아래 ‘콕 냄’으로 표시됩니다.</li>
             <li><strong>자동 매칭:</strong> 대기 중인 선수 4명을 배정합니다. 게임 중인 선수는 자동 매칭에 포함하지 않습니다.</li>
             <li><strong>팀 구분:</strong> 네 선수를 코트 모양 테두리 안에 배치하고 중앙 구분선 양쪽으로 두 팀을 표시합니다.</li>
             <li><strong>경기 유형:</strong> 코트가 진행 중이어도 자율·남복·여복·혼복 유형을 변경할 수 있습니다.</li>
@@ -983,6 +981,7 @@
     let manualSelected = new Set();
     const courtActionLocks = new Map();
     const collapsedStatuses = new Set();
+    let rosterFilter = 'all';
     let pendingHistoryIndex = null;
     let statsPlayerId = null;
     let statsView = 'overall';
@@ -1408,18 +1407,11 @@
         candidates.forEach(p => {
             const isSel = manualSelected.has(p.id);
             const isPlaying = isPlayerInCourtArea(p.id, 'active');
-            const safePlayerName = escapeHTML(p.name);
+            const status = isPlaying ? 'playing' : p.status;
             list.innerHTML += `
-            <div class="player-chip waiting-chip manual-chip gender-card ${getGenderCardClass(p.gender)} ${isSel?'selected':''}" onclick="toggleManualSelect(${p.id})">
-                ${renderGenderAccessibility(p.gender)}
-                <div class="manual-player-info ${!isPlaying && isWaitingForGame(p) ? 'has-wait-time' : ''}">
-                    <span class="manual-player-name" title="${safePlayerName}">${safePlayerName}</span>
-                    <span class="manual-player-detail">${tiers[p.tier]}</span>
-                    <span class="manual-player-detail">${p.games}경기</span>
-                    ${!isPlaying && isWaitingForGame(p) ? `<span id="manual-waiting-time-${p.id}" class="manual-player-detail">${formatWaitingTime(p)}</span>` : ''}
-                </div>
-                ${isPlaying ? `<div class="picker-player-status"><span class="badge manual-playing-badge">게임중</span><span class="picker-location">${getPlayingCourtLabel(p.id)}</span></div>` : ''}
-            </div>`;
+            <button id="manual-player-${p.id}" type="button" class="player-chip waiting-chip roster-chip manual-chip gender-card ${getGenderCardClass(p.gender)} roster-status-${status} ${isSel?'selected':''}" aria-pressed="${isSel}" onclick="toggleManualSelect(${p.id})">
+                ${renderRosterSummary(p, 'manual-', status)}
+            </button>`;
         });
     }
 
@@ -1435,6 +1427,7 @@
             manualSelected.add(pId);
         }
         renderManualList();
+        document.getElementById(`manual-player-${pId}`)?.focus({preventScroll:true});
     }
 
     function confirmManualMatch() {
@@ -1651,28 +1644,41 @@
         if(waitingRoomCollapsed && selectedRosterPlayerId !== null) closeRosterActionSheet();
     }
 
+    function setRosterFilter(status) {
+        rosterFilter = status;
+        selectedRosterPlayerId = null;
+        collapsedStatuses.delete(status);
+        renderRoster();
+        document.getElementById('waitList').scrollTop = 0;
+    }
+
+    function resetRosterFilters() {
+        document.getElementById('searchInput').value = '';
+        collapsedStatuses.clear();
+        setRosterFilter('all');
+    }
+
     function toggleRosterSearch(forceOpen = null) {
-        const input = document.getElementById('searchInput');
+        const search = document.getElementById('rosterSearch');
         const button = document.getElementById('waitingSearchToggle');
-        const icon = document.getElementById('waitingSearchIcon');
-        const shouldOpen = forceOpen === null ? input.hidden : forceOpen;
-        input.hidden = !shouldOpen;
-        button.classList.toggle('active', shouldOpen);
+        const input = document.getElementById('searchInput');
+        const shouldOpen = forceOpen === null ? search.hidden : forceOpen;
+        search.hidden = !shouldOpen;
         button.setAttribute('aria-expanded', String(shouldOpen));
-        button.setAttribute('aria-label', shouldOpen ? '선수 검색 닫기' : '선수 검색 열기');
         button.title = shouldOpen ? '선수 검색 닫기' : '선수 검색 열기';
-        icon.setAttribute('href', shouldOpen ? '#icon-close' : '#icon-search');
-        if(shouldOpen) setTimeout(() => input.focus(), 0);
+        button.setAttribute('aria-label', button.title);
+        document.getElementById('waitingSearchIcon').setAttribute('href', shouldOpen ? '#icon-close' : '#icon-search');
+        if(shouldOpen) input.focus();
         else {
             input.value = '';
-            render();
+            renderRoster();
+            button.focus();
         }
     }
 
     function handleRosterSearchKey(event) {
         if(event.key !== 'Escape') return;
         toggleRosterSearch(false);
-        document.getElementById('waitingSearchToggle').focus();
     }
 
     function updateWaitingToggleButton() {
@@ -1912,7 +1918,7 @@
                 <span>선택</span>
                 <strong id="rosterActionSheetTitle" title="${safePlayerName}">${safePlayerName}</strong>
                 <span>${tiers[player.tier]} · ${player.games}경기</span>
-                <button type="button" class="roster-sheet-close" onclick="closeRosterActionSheet()" aria-label="선수 관리 닫기" title="선수 관리 닫기">${renderUIIcon('close')}</button>
+                <button type="button" class="roster-sheet-close" onclick="closeRosterActionSheet(true)" aria-label="선수 관리 닫기" title="선수 관리 닫기">${renderUIIcon('close')}</button>
             </div>
             <p class="roster-matching-summary">실제 ${player.games}경기 · 매칭 기준 ${getMatchingGameCount(player)}경기</p>
             <div class="roster-sheet-action-buttons" role="group" aria-label="${safePlayerName} 선수 관리 동작">
@@ -1925,26 +1931,50 @@
         document.getElementById('toast').classList.add('roster-sheet-open');
     }
 
-    // --- Render Logic ---
-    function render() {
-        if(document.getElementById('membersModal').style.display === 'flex') renderMembers();
-        document.getElementById('storageError').innerText = storageError;
-        document.getElementById('storageError').hidden = !storageError;
-        updateUndoButton();
-        const keyword = document.getElementById('searchInput').value.toLowerCase();
-        document.getElementById('mobileCourtCount').innerText = courts.length;
-        document.getElementById('mobileRosterCount').innerText = players.length;
-        document.getElementById('totalRosterCount').innerText = players.length;
-        
-        const renderWaitList = (containerId) => {
-            const container = document.getElementById(containerId);
+    function renderRosterSummary(player, timerPrefix = '', status = player.status) {
+        const safePlayerName = escapeHTML(player.name);
+        const statusLabels = {waiting:'대기 중', reserved:'예약됨', playing:'게임 중', resting:'휴식 중'};
+        const locations = courts.flatMap(court => [
+            court.active.some(p => p.id === player.id) ? `${courtLabel(court.id)} 경기 중` : '',
+            court.next.some(p => p.id === player.id) ? `${courtLabel(court.id)} 예약` : ''
+        ]).filter(Boolean).join(' · ');
+        return `<span class="roster-summary">
+            <span class="roster-identity">
+                <span class="p-name" title="${safePlayerName}">${safePlayerName}</span>
+                <span class="roster-details"><span>${player.gender === 'M' ? '남' : '여'} · ${tiers[player.tier]}</span><span>${player.games}경기</span>${player.shuttlecock ? `<span class="roster-shuttle">${renderUIIcon('shuttle')}콕 냄</span>` : ''}</span>
+            </span>
+            <span class="roster-metrics">
+                ${status === 'waiting' || status === 'reserved' ? `<span id="${timerPrefix}waiting-time-${player.id}" class="roster-wait-time">${formatWaitingTime(player)}</span>` : `<span class="roster-status-label">${statusLabels[status]}</span>`}
+                ${locations ? `<span class="roster-location">${locations}</span>` : ''}
+            </span>
+        </span>`;
+    }
+
+    function renderRoster() {
+        const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+        const counts = {all:players.length, waiting:0, reserved:0, playing:0, resting:0};
+        players.forEach(p => counts[p.status]++);
+        Object.keys(counts).forEach(status => {
+            document.getElementById(`rosterCount-${status}`).innerText = counts[status];
+            document.getElementById(`rosterFilter-${status}`).setAttribute('aria-pressed', String(rosterFilter === status));
+        });
+
+        const renderWaitList = () => {
+            const container = document.getElementById('waitList');
             if(!container) return;
             container.innerHTML = '';
-            
-            let list = players.filter(p => p.name.toLowerCase().includes(keyword));
-            
+
+            let list = players.filter(p => p.name.toLowerCase().includes(keyword) && (rosterFilter === 'all' || p.status === rosterFilter));
+            if(!list.some(p => String(p.id) === String(selectedRosterPlayerId) && !collapsedStatuses.has(p.status))) selectedRosterPlayerId = null;
+            if(!list.length) {
+                container.innerHTML = players.length
+                    ? `<div class="empty-state roster-empty"><strong>${keyword ? '검색 결과가 없습니다' : '해당 상태의 선수가 없습니다'}</strong><span>다른 상태를 선택하거나 검색어를 바꿔보세요.</span><button type="button" class="btn btn-outline" onclick="resetRosterFilters()">전체 선수 보기</button></div>`
+                    : `<div class="empty-state roster-empty"><strong>오늘 함께할 선수를 불러오세요</strong><span>회원 명단에서 참석자를 선택하면<br>이곳에서 대기와 경기 현황을 볼 수 있어요.</span><button type="button" class="btn btn-primary" onclick="openMembersModal()">참석자 선택</button></div>`;
+                return;
+            }
+
             list.sort((a,b) => {
-                const statusScore = { 'waiting': 0, 'resting': 1, 'reserved': 2, 'playing': 3 };
+                const statusScore = { 'waiting': 0, 'reserved': 1, 'playing': 2, 'resting': 3 };
                 if(statusScore[a.status] !== statusScore[b.status]) return statusScore[a.status] - statusScore[b.status];
                 if(a.games !== b.games) return a.games - b.games;
                 return a.lastTime - b.lastTime;
@@ -1966,7 +1996,7 @@
                 if(p.status !== previousStatus) {
                     const isCollapsed = collapsedStatuses.has(p.status);
                     const statusLabel = statusLabels[p.status] || p.status;
-                    container.innerHTML += `<div class="list-section list-section-${p.status}"><span>${statusLabel} (${statusCounts[p.status]}명)</span><button class="btn-text" onclick="toggleStatusList('${p.status}')" aria-expanded="${!isCollapsed}" title="${statusLabel} 목록 ${isCollapsed ? '펼치기' : '접기'}">${isCollapsed ? '펼치기' : '접기'}</button></div>`;
+                    container.innerHTML += `<div class="list-section list-section-${p.status}"><span>${statusLabel} (${statusCounts[p.status]}명)</span><button type="button" class="btn-text" onclick="toggleStatusList('${p.status}')" aria-expanded="${!isCollapsed}" aria-label="${statusLabel} 목록 ${isCollapsed ? '펼치기' : '접기'}">${isCollapsed ? '펼치기' : '접기'}</button></div>`;
                 }
                 previousStatus = p.status;
                 if(collapsedStatuses.has(p.status)) return;
@@ -1974,22 +2004,24 @@
                 const isSelected = String(selectedRosterPlayerId) === String(p.id);
 
                 container.innerHTML += `
-                <div class="player-chip waiting-chip roster-chip gender-card ${getGenderCardClass(p.gender)} roster-status-${p.status} ${p.shuttlecock ? 'has-shuttlecock' : ''} ${isSelected ? 'action-selected' : ''}" role="button" tabindex="0" aria-expanded="${isSelected}" aria-controls="rosterActionSheet" aria-label="${safePlayerName}${p.shuttlecock ? ' · 콕 냄' : ''} 선수 관리 ${isSelected ? '닫기' : '열기'}" onclick="toggleRosterActionSheet(${p.id})" onkeydown="handleRosterCardKey(event, ${p.id})">
-                    ${renderGenderAccessibility(p.gender)}
-                    ${p.shuttlecock ? '<span class="sr-only">콕 냄</span>' : ''}
-                    <div class="roster-summary">
-                        <div class="roster-identity ${isWaitingForGame(p) ? 'has-wait-time' : ''}">
-                            <span class="p-name" title="${safePlayerName}">${safePlayerName}</span>
-                            <span class="roster-meta-line">${tiers[p.tier]}</span>
-                            <span class="roster-meta-line">${p.games}경기</span>
-                            ${isWaitingForGame(p) ? `<span id="waiting-time-${p.id}" class="roster-meta-line roster-wait-time">${formatWaitingTime(p)}</span>` : ''}
-                        </div>
-                    </div>
+                <div id="roster-player-${p.id}" class="player-chip waiting-chip roster-chip gender-card ${getGenderCardClass(p.gender)} roster-status-${p.status} ${p.shuttlecock ? 'has-shuttlecock' : ''} ${isSelected ? 'action-selected' : ''}" role="button" tabindex="0" aria-expanded="${isSelected}" aria-controls="rosterActionSheet" aria-label="${safePlayerName} · ${p.gender === 'M' ? '남' : '여'} · ${tiers[p.tier]} · ${p.games}경기 · ${statusLabels[p.status]}${p.shuttlecock ? ' · 콕 냄' : ''} 선수 관리 ${isSelected ? '닫기' : '열기'}" onclick="toggleRosterActionSheet(${p.id})" onkeydown="handleRosterCardKey(event, ${p.id})">
+                    ${renderRosterSummary(p)}
                 </div>`;
             });
         };
-        renderWaitList('waitList');
+        renderWaitList();
         renderRosterActionSheet();
+    }
+
+    // --- Render Logic ---
+    function render() {
+        if(document.getElementById('membersModal').style.display === 'flex') renderMembers();
+        document.getElementById('storageError').innerText = storageError;
+        document.getElementById('storageError').hidden = !storageError;
+        updateUndoButton();
+        document.getElementById('mobileCourtCount').innerText = courts.length;
+        document.getElementById('mobileRosterCount').innerText = players.length;
+        renderRoster();
 
         const cg = document.getElementById('courtGrid'); cg.innerHTML = '';
         courts.forEach((c, idx) => {
@@ -2296,11 +2328,8 @@
         document.getElementById('playerMatchingInfo').innerText = id
             ? `실제 ${p.games}경기 · 매칭 기준 ${getMatchingGameCount(p)}경기 (보정 +${getMatchingGameCount(p) - p.games})`
             : `신규 선수는 실제 0경기로 시작합니다. 현재 매칭 기준은 ${getInitialMatchingGames()}경기입니다.`;
-        const statusSelect = document.getElementById('pStatus');
-        const isAssigned = id && (p.status === 'playing' || p.status === 'reserved');
-        statusSelect.value = id && p.status === 'resting' ? 'resting' : 'waiting';
-        statusSelect.disabled = isAssigned;
-        statusSelect.title = isAssigned ? '게임 중이거나 예약된 선수는 상태를 변경할 수 없습니다.' : '';
+        document.getElementById('pStatusField').hidden = id !== null;
+        document.getElementById('pStatus').value = 'waiting';
         document.getElementById('deletePlayerButton').hidden = !id;
         document.getElementById('pModal').style.display = 'flex';
         document.getElementById('pName').focus();
@@ -2356,7 +2385,6 @@
             p.name=name; p.tier=tier; p.gender=gen; p.games=games;
             const member = members.find(m => m.id === p.memberId);
             if(member) Object.assign(member, {name, gender:gen, tier});
-            if(p.status === 'waiting' || p.status === 'resting') setPlayerAvailability(p, status);
         }
         else { players.push({id:nextPersonId(), name, gender:gen, tier, games, matchingOffset:Math.max(0, getInitialMatchingGames() - games), lastTime:0, status, shuttlecock:false}); }
         if(!saveAction(`${name} 선수 ${editPId ? '정보 수정' : '등록'}`)) return;
@@ -2370,11 +2398,14 @@
     }
     function toggleRosterActionSheet(id) {
         selectedRosterPlayerId = String(selectedRosterPlayerId) === String(id) ? null : id;
-        render();
+        renderRoster();
+        document.getElementById(`roster-player-${id}`)?.focus({preventScroll:true});
     }
-    function closeRosterActionSheet() {
+    function closeRosterActionSheet(returnFocus = false) {
+        const playerId = selectedRosterPlayerId;
         selectedRosterPlayerId = null;
-        render();
+        renderRoster();
+        if(returnFocus) document.getElementById(`roster-player-${playerId}`)?.focus({preventScroll:true});
     }
     function handleRosterActionSheetOutsideClick(event) {
         if(selectedRosterPlayerId === null) return;
@@ -2398,7 +2429,7 @@
     function toggleStatusList(status) {
         if(collapsedStatuses.has(status)) collapsedStatuses.delete(status);
         else collapsedStatuses.add(status);
-        render();
+        renderRoster();
     }
 
     function getHistoryTeams(record) {
@@ -2857,19 +2888,10 @@
         }
 
         candidates.forEach(p => {
-            const playingCourt = courts.find(court => court.active.some(player => player.id === p.id));
-            const isPlaying = Boolean(playingCourt);
-            const safePlayerName = escapeHTML(p.name);
-            list.innerHTML += `<div class="player-chip waiting-chip manual-chip swap-chip gender-card ${getGenderCardClass(p.gender)}" onclick="doSwap(${p.id})">
-                ${renderGenderAccessibility(p.gender)}
-                <div class="manual-player-info ${!isPlaying && isWaitingForGame(p) ? 'has-wait-time' : ''}">
-                    <span class="manual-player-name" title="${safePlayerName}">${safePlayerName}</span>
-                    <span class="manual-player-detail">${tiers[p.tier]}</span>
-                    <span class="manual-player-detail">${p.games}경기</span>
-                    ${!isPlaying && isWaitingForGame(p) ? `<span id="swap-waiting-time-${p.id}" class="manual-player-detail">${formatWaitingTime(p)}</span>` : ''}
-                </div>
-                ${isPlaying ? `<div class="picker-player-status"><span class="badge manual-playing-badge">게임중</span><span class="picker-location">${getPlayingCourtLabel(p.id)}</span></div>` : ''}
-            </div>`;
+            const status = isPlayerInCourtArea(p.id, 'active') ? 'playing' : p.status;
+            list.innerHTML += `<button type="button" class="player-chip waiting-chip roster-chip manual-chip swap-chip gender-card ${getGenderCardClass(p.gender)} roster-status-${status}" onclick="doSwap(${p.id})">
+                ${renderRosterSummary(p, 'swap-', status)}
+            </button>`;
         });
         document.getElementById('swapModal').style.display='flex';
     }

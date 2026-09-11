@@ -114,6 +114,6 @@ manualApp.run('[2,3,4].forEach(toggleManualSelect); confirmManualMatch()');
 assert.equal(manualApp.run('players.every(p => p.status === "reserved" && p.waitingSince === 100000)'), true);
 manualApp.run('completeGame(1); openManualMatch(1)');
 assert.equal(manualApp.elements.get('manualList').innerHTML.includes('manual-waiting-time-'), false, '게임 중인 수동 매칭 후보는 대기 시간을 표시하지 않습니다.');
-assert.equal(manualApp.elements.get('manualList').innerHTML.includes('현재 1번 코트'), true);
+assert.equal(manualApp.elements.get('manualList').innerHTML.includes('1번 코트 경기 중'), true);
 
 console.log('분 단위 대기 시간·예약 유지·재접속·휴식·경기 종료·되돌리기·백업·저장 실패·새 모임·선수 교체·수동 매칭 테스트 통과');
