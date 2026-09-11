@@ -781,7 +781,7 @@
 </div></div>
 <div id="memberEditorModal" class="modal" style="z-index:1100;" role="dialog" aria-modal="true" aria-labelledby="memberEditorTitle"><div class="modal-box">
     <h3 id="memberEditorTitle" style="margin-top:0;">회원 등록</h3>
-    <label for="memberNames">이름 (여러 명은 줄바꿈으로 구분)</label>
+    <label id="memberNamesLabel" for="memberNames">이름 (여러 명은 줄바꿈으로 구분)</label>
     <textarea id="memberNames" rows="4" style="width:100%; padding:12px; font:inherit; border:1px solid var(--border); border-radius:8px; margin-bottom:15px;"></textarea>
     <label for="memberGender">성별</label>
     <select id="memberGender"><option value="M">남성</option><option value="F">여성</option></select>
@@ -2207,6 +2207,8 @@
         editMemberId = id;
         const member = members.find(m => m.id === id);
         document.getElementById('memberEditorTitle').innerText = member ? '회원 정보 수정' : '회원 등록';
+        document.getElementById('memberNamesLabel').textContent = member ? '이름' : '이름 (여러 명은 줄바꿈으로 구분)';
+        document.getElementById('memberNames').rows = member ? 1 : 4;
         document.getElementById('memberNames').value = member ? member.name : '';
         document.getElementById('memberGender').value = member ? member.gender : 'M';
         document.getElementById('memberTier').value = member ? member.tier : '1';
