@@ -274,7 +274,7 @@ function render() {
             nextHTML = `${renderMatchTeams(c, 'next', 'next-chip')}
                         ${blockers.length ? `<p class="court-wait-note">${blockers.map(player => `${escapeHTML(player.name)} (${getPlayingCourtLabel(player.id)})`).join(', ')} 경기 종료 후 시작할 수 있습니다.</p>` : ''}
                         <div style="display:flex; gap:6px; margin-top:8px;">
-                            <button class="btn btn-outline" style="flex:1; font-size:0.8rem;" onclick="openTransferNext(${c.id})">다른 코트로 이동</button>
+                            <button class="btn btn-outline" style="flex:1; font-size:0.8rem;" onclick="openTransferNext(${c.id})">코트 변경</button>
                             <button class="btn btn-outline" style="flex:1; font-size:0.8rem;" onclick="cancelNext(${c.id})">예약 취소</button>
                         </div>`;
         } else {

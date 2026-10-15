@@ -1,10 +1,12 @@
 const fs = require('fs');
 const vm = require('vm');
+const test = require('node:test');
+const assert = require('node:assert/strict');
 
 const { html, styles, appSource, runApp } = require('./helpers/app-runtime');
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
 if (html.includes('>F조</option>') || appSource.includes('const tiers = ["F조"') || !html.includes('<option value="1" selected>E조</option>')) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
-if (!serviceWorker.includes('app-v21') || !serviceWorker.includes('runtime-v21') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
+if (!serviceWorker.includes('app-v23') || !serviceWorker.includes('runtime-v23') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
 
 function createPlayers() {
     return Array.from({ length: 13 }, (_, index) => ({
@@ -681,5 +683,83 @@ function assertInRuntime(context, assertion, message) {
     vm.runInContext('endGame(1); endGame(2)',context);
     assertInRuntime(context,'courts[1].active.length===4 && courts[1].next.length===0 && history.length===1','다른 코트 종료 후 수동 예약의 시작이 차단되었습니다.');
 }
+
+function transferRuntime(withReservation = true) {
+    const roster = Array.from({length:16}, (_, i) => ({
+        ...createPlayers()[i % 13], id:i+1, name:`선수${i+1}`,
+        waitingSince:i*100, status:i<4 || (i>=8 && i<12) ? 'playing' : 'reserved'
+    }));
+    if(!withReservation) roster.slice(12).forEach(p => p.status='waiting');
+    return createRuntime(roster, [
+        {id:1,type:'A',active:courtPlayers(roster,[1,2,3,4]),next:courtPlayers(roster,[5,6,7,8]),startTime:1000},
+        {id:2,type:'A',active:courtPlayers(roster,[9,10,11,12]),next:withReservation?courtPlayers(roster,[13,14,15,16]):[],startTime:2000}
+    ]);
+}
+
+test('두 예약의 코트 변경은 팀 순서와 진행 경기·타이머·선수 상태를 유지하고 재접속·되돌리기를 지원한다', () => {
+    const context = transferRuntime();
+    const run = code => vm.runInContext(code,context);
+    const before = run('serializeState()');
+    const untouched = run('JSON.stringify({players,history,active:courts.map(c=>[c.active,c.startTime,c.type])})');
+    run('openTransferNext(1)');
+    assert.ok(context.__elements.get('transferCourtSelect').innerHTML.includes('예약 있음'));
+    assert.match(html, /id="transferConfirmButton"[^>]*>코트 변경<\/button>/);
+    run('confirmTransferNext(); confirmTransferNext()');
+    assert.equal(run('courts[0].next.map(p=>p.id).join(",")'),'13,14,15,16');
+    assert.equal(run('courts[1].next.map(p=>p.id).join(",")'),'5,6,7,8');
+    assert.equal(run('JSON.stringify({players,history,active:courts.map(c=>[c.active,c.startTime,c.type])})'),untouched);
+    assert.ok(context.__elements.get('toast').innerText.includes('예약 코트를 변경했습니다'));
+    const reloaded = createRuntime([],[],Object.fromEntries(context.__storage));
+    assert.equal(vm.runInContext('serializeState()',reloaded),run('serializeState()'));
+    vm.runInContext('undoLastAction(); onConfirmAction()',reloaded);
+    assert.equal(vm.runInContext('serializeState()',reloaded),before);
+});
+
+test('대상에 예약이 없으면 기존 이동 동작을 유지한다', () => {
+    const context = transferRuntime(false);
+    vm.runInContext('openTransferNext(1); confirmTransferNext()',context);
+    assertInRuntime(context,'courts[0].next.length===0 && courts[1].next.map(p=>p.id).join(",")==="5,6,7,8"','빈 다음 대기로 이동하지 못했습니다.');
+    assert.ok(context.__elements.get('transferHelp').innerText.includes('2번 코트로 옮깁니다'));
+});
+
+test('대상 코트 선택에 따라 예약을 옮길 코트 안내가 바뀐다', () => {
+    const context = transferRuntime();
+    vm.runInContext('courts.push({id:3,type:"A",active:[],next:[],startTime:null}); openTransferNext(1)',context);
+    context.__elements.get('transferCourtSelect').value='3';
+    vm.runInContext('updateTransferNextPreview()',context);
+    assert.ok(context.__elements.get('transferHelp').innerText.includes('3번 코트로 옮깁니다'));
+    context.__elements.get('transferCourtSelect').value='2';
+    vm.runInContext('updateTransferNextPreview()',context);
+    assert.ok(context.__elements.get('transferHelp').innerText.includes('2번 코트의 예약은 1번 코트로'));
+});
+
+test('코트 변경 저장 실패는 양쪽 예약을 모두 복구한다', () => {
+    const context = transferRuntime();
+    const before = vm.runInContext('serializeState()',context);
+    vm.runInContext('openTransferNext(1)',context);
+    context.localStorage.setItem=()=>{throw new Error('QuotaExceededError');};
+    vm.runInContext('confirmTransferNext()',context);
+    assert.equal(vm.runInContext('serializeState()',context),before);
+    assert.ok(context.__elements.get('toast').innerText.includes('저장 실패'));
+});
+
+test('출발 예약·대상 코트가 사라지거나 자기 코트를 선택하면 배정을 변경하지 않는다', () => {
+    for(const change of ['courts[0].next=[]','courts.pop()','document.getElementById("transferCourtSelect").value="1"']) {
+        const context=transferRuntime();
+        vm.runInContext('openTransferNext(1); '+change,context);
+        const before=vm.runInContext('serializeState()',context);
+        vm.runInContext('confirmTransferNext()',context);
+        assert.equal(vm.runInContext('serializeState()',context),before);
+    }
+});
+
+test('코트를 변경한 예약에 다른 코트 경기 중 선수가 있으면 시작을 보류한다', () => {
+    const context=transferRuntime();
+    vm.runInContext('courts[1].next[0]=players[8]; syncPlayerAssignmentStatuses(players.map(p=>p.id)); saveAction("테스트 배정"); openTransferNext(1); confirmTransferNext(); completeGame(1)',context);
+    assertInRuntime(context,'courts[0].active.length===0 && courts[0].next[0].id===9 && courts[1].active[0].id===9','코트 변경 후 다른 코트 경기 중 선수의 중복 출전을 허용했습니다.');
+    assert.ok(context.__elements.get('toast').innerText.includes('승계 불가'));
+    vm.runInContext('completeGame(2); completeGame(1)',context);
+    assertInRuntime(context,'courts[0].active.map(p=>p.id).join(",")==="9,14,15,16" && courts[0].next.length===0','다른 코트 경기 종료 후 코트를 변경한 예약을 시작하지 못했습니다.');
+});
 
 console.log('매칭·데이터 보호·코트 상태·연속 입력 방지·수동 배정 후 시작 테스트 통과');

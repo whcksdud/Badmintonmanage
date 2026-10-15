@@ -142,11 +142,24 @@ function cancelNext(cId) {
 function openTransferNext(cId) {
     const source = courts.find(c => c.id === cId);
     if(!source || source.next.length === 0) return showToast("이동할 다음 대기 선수가 없습니다.");
-    const targets = courts.filter(c => c.id !== cId && c.next.length === 0);
-    if(targets.length === 0) return showToast("다음 대기가 비어 있는 다른 코트가 없습니다.");
+    const targets = courts.filter(c => c.id !== cId);
+    if(targets.length === 0) return showToast("변경할 다른 코트가 없습니다.");
     transferSourceCourtId = cId;
-    document.getElementById('transferCourtSelect').innerHTML = targets.map(c => `<option value="${c.id}">${courts.indexOf(c) + 1}번 코트${c.active.length ? ' (게임 중)' : ' (비어 있음)'}</option>`).join('');
+    const select = document.getElementById('transferCourtSelect');
+    select.innerHTML = targets.map(c => `<option value="${c.id}">${courtLabel(c.id)} · ${c.active.length ? '경기 중' : '경기 없음'} · ${c.next.length ? '예약 있음' : '예약 없음'}</option>`).join('');
+    select.value = String(targets[0].id);
+    updateTransferNextPreview();
     document.getElementById('transferModal').style.display = 'flex';
+}
+
+function updateTransferNextPreview() {
+    const source = courts.find(c => c.id === transferSourceCourtId);
+    const target = courts.find(c => c.id === Number(document.getElementById('transferCourtSelect').value));
+    const swap = Boolean(target && target.next.length);
+    document.getElementById('transferHelp').innerText = source && target
+        ? swap ? `${courtLabel(source.id)}의 예약은 ${courtLabel(target.id)}로, ${courtLabel(target.id)}의 예약은 ${courtLabel(source.id)}로 옮깁니다. 선수와 팀 구성은 그대로 유지됩니다.`
+               : `${courtLabel(source.id)}의 다음 대기를 ${courtLabel(target.id)}로 옮깁니다. 선수와 팀 구성은 그대로 유지됩니다.`
+        : '대상 코트를 선택하세요.';
 }
 
 function closeTransferModal() {
@@ -157,13 +170,14 @@ function closeTransferModal() {
 function confirmTransferNext() {
     const source = courts.find(c => c.id === transferSourceCourtId);
     const target = courts.find(c => c.id === Number(document.getElementById('transferCourtSelect').value));
-    if(!source || !target || source.next.length === 0) return closeTransferModal();
-    if(target.next.length > 0) return showToast("대상 코트에 이미 다음 대기가 있습니다.");
-    target.next = source.next;
-    source.next = [];
-    if(!saveAction(`${courtLabel(source.id)} → ${courtLabel(target.id)} 예약 이동`)) return;
+    if(!source || !target || source.id === target.id || source.next.length === 0) return closeTransferModal();
+    const swap = target.next.length > 0;
+    [source.next, target.next] = [target.next, source.next];
+    const action = `${courtLabel(source.id)} ${swap ? '↔' : '→'} ${courtLabel(target.id)} 예약 코트 변경`;
+    if(!saveAction(action)) return;
     closeTransferModal(); render();
-    showToast(`${courts.indexOf(target) + 1}번 코트로 다음 대기를 이동했습니다.`);
+    showToast(swap ? `${courtLabel(source.id)}와 ${courtLabel(target.id)}의 예약 코트를 변경했습니다.`
+                   : `${courtLabel(target.id)}로 다음 대기를 이동했습니다.`);
 }
 
 function isPlayerInCourtArea(playerId, area) {

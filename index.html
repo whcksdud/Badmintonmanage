@@ -353,11 +353,11 @@
 
 <!-- 다음 대기 코트 이동 모달 -->
 <div id="transferModal" class="modal"><div class="modal-box" style="width:380px;">
-    <h3 style="margin-top:0;">다음 대기 이동</h3>
-    <p style="margin-top:0; color:#64748b; font-size:0.9rem;">선택한 4명을 이동할 코트를 고르세요.</p>
-    <select id="transferCourtSelect"></select>
+    <h3 style="margin-top:0;">코트 변경</h3>
+    <p id="transferHelp" style="margin-top:0; color:#64748b; font-size:0.9rem;">대상 코트를 선택하세요.</p>
+    <select id="transferCourtSelect" aria-label="대상 코트" onchange="updateTransferNextPreview()"></select>
     <div style="display:flex; gap:10px; margin-top:5px;">
-        <button class="btn btn-primary" style="flex:1;" onclick="confirmTransferNext()">이동</button>
+        <button id="transferConfirmButton" class="btn btn-primary" style="flex:1;" onclick="confirmTransferNext()">코트 변경</button>
         <button class="btn btn-outline" style="flex:1;" onclick="closeTransferModal()">취소</button>
     </div>
 </div></div>
