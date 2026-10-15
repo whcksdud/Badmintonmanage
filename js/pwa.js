@@ -8,15 +8,11 @@ function updateInstallButton() {
     const button = document.getElementById('installAppButton');
     if (!button) return;
 
-    if (isRunningStandalone()) {
-        button.innerHTML = `${renderUIIcon('check')}<span>앱으로 실행 중</span>`;
-        button.disabled = true;
-        button.style.opacity = '0.65';
-    } else {
-        button.innerHTML = `${renderUIIcon('phone')}<span>앱으로 설치</span>`;
-        button.disabled = false;
-        button.style.opacity = '1';
-    }
+    const standalone = isRunningStandalone();
+    button.innerHTML = `<span class="settings-icon">${renderUIIcon(standalone ? 'check' : 'phone')}</span>
+        <span class="settings-copy"><strong>${standalone ? '앱으로 실행 중' : '앱으로 설치'}</strong><small>${standalone ? '홈 화면의 앱을 사용하고 있습니다.' : '홈 화면에서 바로 실행할 수 있습니다.'}</small></span>
+        ${standalone ? '' : renderUIIcon('chevron-right', 'settings-chevron')}`;
+    button.disabled = standalone;
 }
 
 async function installApp() {

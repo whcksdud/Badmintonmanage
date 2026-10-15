@@ -221,21 +221,66 @@
 </div></div>
 
 <!-- 설정 모달 -->
-<div id="settingsModal" class="modal"><div class="modal-box">
-    <h3 class="modal-title" style="margin-top:0;"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><span>설정 및 관리</span></h3>
-    <div style="display:grid; gap:10px;">
-        <button class="btn btn-outline" onclick="closeSettings(); openInfoModal()"><svg class="ui-icon" aria-hidden="true"><use href="#icon-help"></use></svg><span>사용 방법 및 도움말</span></button>
-        <button id="installAppButton" class="btn btn-primary" onclick="installApp()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-phone"></use></svg><span>앱으로 설치</span></button>
-        <div style="height:1px; background:#eee; margin:5px 0;"></div>
-        <button class="btn btn-success" onclick="startNewMeeting()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-calendar"></use></svg><span>새 모임 시작 (회원에서 참석자 다시 선택)</span></button>
-        <div style="height:1px; background:#eee; margin:5px 0;"></div>
-        <button class="btn btn-outline" onclick="exportData()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-backup"></use></svg><span>데이터 백업 (다운로드)</span></button>
-        <button class="btn btn-outline" onclick="triggerImport()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-restore"></use></svg><span>데이터 복구 (파일열기)</span></button>
-        <button class="btn btn-outline" onclick="restoreBeforeImport()">파일 복구 전 데이터로 되돌리기</button>
-        <div style="height:1px; background:#eee; margin:5px 0;"></div>
-        <button class="btn btn-danger" onclick="resetAll()"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-warning"></use></svg><span>데이터 전체 초기화 (공장초기화)</span></button>
+<div id="settingsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle"><div class="modal-box settings-modal-box">
+    <div class="settings-heading"><h3 id="settingsTitle" class="modal-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-settings"></use></svg><span>설정 및 관리</span></h3></div>
+    <div class="settings-content">
+        <section class="settings-section" aria-labelledby="settingsMeetingTitle">
+            <h4 id="settingsMeetingTitle">모임 운영</h4>
+            <div class="settings-menu">
+                <button type="button" class="settings-item" onclick="startNewMeeting()">
+                    <span class="settings-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg></span>
+                    <span class="settings-copy"><strong>새 모임 시작</strong><small>회원은 유지하고 현재 경기와 기록을 비웁니다.</small></span>
+                    <svg class="ui-icon settings-chevron" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+                </button>
+            </div>
+        </section>
+        <section class="settings-section" aria-labelledby="settingsDataTitle">
+            <h4 id="settingsDataTitle">백업 및 복구</h4>
+            <div class="settings-menu">
+                <button type="button" class="settings-item" onclick="exportData()">
+                    <span class="settings-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-backup"></use></svg></span>
+                    <span class="settings-copy"><strong>백업 파일 저장</strong><small>현재 회원·선수·경기 기록을 파일로 저장합니다.</small></span>
+                    <svg class="ui-icon settings-chevron" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+                </button>
+                <button type="button" class="settings-item" onclick="triggerImport()">
+                    <span class="settings-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-restore"></use></svg></span>
+                    <span class="settings-copy"><strong>백업 파일 불러오기</strong><small>저장한 파일의 데이터로 현재 상태를 복구합니다.</small></span>
+                    <svg class="ui-icon settings-chevron" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+                </button>
+                <button type="button" class="settings-item" onclick="restoreBeforeImport()">
+                    <span class="settings-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-undo"></use></svg></span>
+                    <span class="settings-copy"><strong>복구 전 상태로 되돌리기</strong><small>마지막 파일 불러오기 직전 상태로 돌아갑니다.</small></span>
+                    <svg class="ui-icon settings-chevron" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+                </button>
+            </div>
+        </section>
+        <section class="settings-section" aria-labelledby="settingsAppTitle">
+            <h4 id="settingsAppTitle">앱 및 도움말</h4>
+            <div class="settings-menu">
+                <button id="installAppButton" type="button" class="settings-item" onclick="installApp()">
+                    <span class="settings-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-phone"></use></svg></span>
+                    <span class="settings-copy"><strong>앱으로 설치</strong><small>홈 화면에서 바로 실행할 수 있습니다.</small></span>
+                    <svg class="ui-icon settings-chevron" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+                </button>
+                <button type="button" class="settings-item" onclick="closeSettings(); openInfoModal()">
+                    <span class="settings-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-help"></use></svg></span>
+                    <span class="settings-copy"><strong>사용 방법</strong><small>선수 등록부터 경기 운영까지 확인하세요.</small></span>
+                    <svg class="ui-icon settings-chevron" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+                </button>
+            </div>
+        </section>
+        <section class="settings-section" aria-labelledby="settingsResetTitle">
+            <h4 id="settingsResetTitle">데이터 초기화</h4>
+            <div class="settings-menu">
+                <button type="button" class="settings-item settings-danger" onclick="resetAll()">
+                    <span class="settings-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-warning"></use></svg></span>
+                    <span class="settings-copy"><strong>전체 데이터 초기화</strong><small>저장 회원·선수·모든 경기 기록을 비웁니다.</small></span>
+                    <svg class="ui-icon settings-chevron" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+                </button>
+            </div>
+        </section>
     </div>
-    <button class="btn btn-outline" style="margin-top:20px;" onclick="closeSettings()">닫기</button>
+    <div class="settings-footer"><button class="btn btn-outline" style="width:100%;" onclick="closeSettings()">닫기</button></div>
 </div></div>
 
 <!-- 앱 설치 안내 모달 -->
@@ -253,35 +298,63 @@
 </div></div>
 
 <!-- 도움말 모달 -->
-<div id="infoModal" class="modal"><div class="modal-box">
-    <h3 class="modal-title" style="margin-top:0;"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-info"></use></svg><span>도움말</span></h3>
+<div id="infoModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="modal-box help-modal-box">
+    <div class="settings-heading"><h3 id="helpTitle" class="modal-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-help"></use></svg><span>도움말</span></h3><p>필요한 항목을 눌러 펼쳐보세요.</p></div>
     <div class="info-content">
-        <ul style="padding-left: 20px; margin: 0; list-style-type: disc;">
-            <li><strong>선수 등록:</strong> 상단 '선수 등록 → 등록·관리'에서 '+ 개별' 또는 '+ 일괄'을 사용하세요.</li>
-            <li><strong>회원 불러오기:</strong> 상단 '선수 등록 → 참석자 선택'에서 회원을 검색하고 선택하세요. 회원 등록과 '현재 선수 명단 저장'은 '등록·관리' 탭에서 할 수 있습니다. 회원 수정·삭제는 명단의 '수정'에서, 다음 모임은 설정의 '회원에서 참석자 다시 선택'을 사용하세요.</li>
-            <li><strong>경기 통계:</strong> 상단 <strong>[통계]</strong>에서 전체 현황과 선수별 같은 팀·상대 팀 횟수를 확인할 수 있습니다.</li>
-            <li><strong>성별 구분:</strong> 파란색 선수 카드는 남성, 분홍색 선수 카드는 여성을 뜻합니다.</li>
-            <li><strong>대기실 빠른 조작:</strong> 상태별 인원을 눌러 목록을 좁히고, 검색 아이콘을 눌러 이름으로 선수를 찾으세요. 선수 카드를 누르면 대기실 아래에 휴식·복귀, 콕 냄, 정보 수정 버튼이 표시됩니다. 콕을 낸 선수는 이름 아래 ‘콕 냄’으로 표시됩니다.</li>
-            <li><strong>자동 매칭:</strong> 대기 중인 선수 4명을 배정합니다. 게임 중인 선수는 자동 매칭에 포함하지 않습니다.</li>
-            <li><strong>팀 구분:</strong> 네 선수를 코트 모양 테두리 안에 배치하고 중앙 구분선 양쪽으로 두 팀을 표시합니다.</li>
-            <li><strong>경기 유형:</strong> 코트가 진행 중이어도 자율·남복·여복·혼복 유형을 변경할 수 있습니다.</li>
-            <li><strong>수동 매칭:</strong> <strong>[수동]</strong> 버튼으로 4명을 선택해 배정합니다. 게임 중인 선수도 예약할 수 있으며, 빈 코트는 배정 후 <strong>[경기 시작]</strong>을 눌러 시작합니다.</li>
-            <li><strong>선수 교체:</strong> 배치된 선수 클릭 시 교체. 다음 대기에서는 게임 중인 선수도 선택할 수 있습니다.</li>
-            <li><strong>승계 기능:</strong> 다음 예약 선수가 다른 코트에서 게임 중이면 현재 경기만 종료하고 승계는 보류합니다.</li>
-        </ul>
-        <div style="margin-top:15px;">
-            <strong>알고리즘 우선순위</strong>
-            <div class="algo-box" style="margin-top:5px;">
-                1. 매칭 기준(실제 경기 수 + 보정값)이 적은 순<br>
-                2. 동률이면 최장 대기자를 보호하고 비슷하게 기다린 후보 중 반복 4인 조합·동반 출전을 줄임<br>
-                3. 신규 참가자는 활동 선수 평균을 버림한 매칭 기준으로 시작<br>
-                4. 혼복은 팀 급수 합 차이 최소화, 동률이면 최근 100경기의 파트너 중복 최소화<br>
-                5. 일반 조합은 파트너 중복 최소화와 상위 두 명이 같은 팀인 경우 페널티 5 적용<br>
-                조합을 섞기 위해 일부 선수는 한 차례 더 기다릴 수 있으며, 비교 비용이 같으면 오래 대기한 조합 우선
+        <section class="help-start" aria-labelledby="helpStartTitle">
+            <h4 id="helpStartTitle">처음 시작할 때</h4>
+            <ol class="help-steps">
+                <li><strong>선수 등록</strong><p><span class="help-action">참석자 선택</span>에서 회원을 불러오세요. 처음 오는 선수는 <span class="help-action">등록·관리</span>에서 개별·일괄 등록합니다.</p></li>
+                <li><strong>경기 배정</strong><p>코트의 <span class="help-action">자동 매칭</span> 또는 <span class="help-action">수동</span>으로 선수 4명을 배정합니다.</p></li>
+                <li><strong>경기 시작·종료</strong><p>배정 후 <span class="help-action">경기 시작</span>을 누르세요. 경기 종료 시 다음 예약이 있으면 이어서 시작합니다.</p></li>
+            </ol>
+        </section>
+        <details class="help-section">
+            <summary><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg><span>선수 등록과 관리</span><svg class="ui-icon help-chevron" aria-hidden="true"><use href="#icon-chevron-right"></use></svg></summary>
+            <dl class="help-topics">
+                <div><dt>회원 선택</dt><dd>참석자를 검색해 체크한 뒤 <strong>선택 N명 불러오기</strong>를 누릅니다. 검색이나 탭을 바꿔도 선택은 유지되며, 이미 참가 중인 회원은 중복 선택되지 않습니다.</dd></div>
+                <div><dt>회원 명단</dt><dd><strong>등록·관리</strong>에서 회원을 저장합니다. 이름 옆 연필 버튼에서 수정·삭제할 수 있습니다.</dd></div>
+                <div><dt>휴식·복귀·콕 냄</dt><dd>대기실에서 선수 카드를 누르면 관리 버튼이 표시됩니다. 휴식 중인 선수는 자동 매칭에서 제외됩니다.</dd></div>
+                <div><dt>선수 찾기</dt><dd>대기실의 상태별 인원이나 검색 아이콘을 사용하세요. 남성 카드는 파란색, 여성 카드는 분홍색으로 구분합니다.</dd></div>
+            </dl>
+        </details>
+        <details class="help-section">
+            <summary><svg class="ui-icon" aria-hidden="true"><use href="#icon-shuttle"></use></svg><span>코트 운영</span><svg class="ui-icon help-chevron" aria-hidden="true"><use href="#icon-chevron-right"></use></svg></summary>
+            <dl class="help-topics">
+                <div><dt>자동·수동 배정</dt><dd>자동 매칭은 대기 중인 선수만 선택합니다. 수동으로는 게임 중인 선수도 다음 대기에 예약할 수 있습니다. 중앙 구분선 양쪽이 각각 한 팀입니다.</dd></div>
+                <div><dt>선수 교체</dt><dd>코트에 배치된 선수를 누르면 교체할 수 있습니다. 다음 대기의 교체 후보에는 게임 중인 선수도 포함됩니다.</dd></div>
+                <div><dt>코트 변경</dt><dd>다음 대기의 <strong>코트 변경</strong>에서 대상 코트를 고릅니다. 대상에도 예약이 있으면 두 예약을 서로 옮깁니다. 팀 구성은 유지됩니다.</dd></div>
+                <div><dt>다음 경기 시작</dt><dd>예약 선수 중 다른 코트에서 게임 중인 사람이 있으면 시작을 보류합니다. 해당 선수가 경기를 마친 뒤 시작할 수 있습니다.</dd></div>
+                <div><dt>경기 유형</dt><dd>코트 상단에서 자율·남복·여복·혼복을 선택합니다. 경기 중에도 바꿀 수 있으며, 이후 자동 매칭에 적용됩니다.</dd></div>
+            </dl>
+        </details>
+        <details class="help-section">
+            <summary><svg class="ui-icon" aria-hidden="true"><use href="#icon-bolt"></use></svg><span>자동 매칭 기준</span><svg class="ui-icon help-chevron" aria-hidden="true"><use href="#icon-chevron-right"></use></svg></summary>
+            <div class="help-matching">
+                <ol>
+                    <li><strong>매칭 기준이 적은 선수부터</strong><p>실제 경기 수에 보정값을 더해 비교합니다. 보정값은 실제 경기 기록을 바꾸지 않습니다.</p></li>
+                    <li><strong>동률이면 대기 시간과 조합을 비교</strong><p>최장 대기자를 보호하면서, 비슷하게 기다린 후보 중 같은 네 명과 동반 출전의 반복을 줄입니다.</p></li>
+                    <li><strong>선발 후 두 팀의 균형을 비교</strong><p>혼복은 팀 급수 합 차이를 먼저 줄이고, 차이가 같으면 파트너 중복을 비교합니다. 일반 경기는 급수와 파트너 이력을 함께 비교합니다.</p></li>
+                </ol>
+                <p class="help-note">조합을 섞기 위해 일부 선수는 한 차례 더 기다릴 수 있습니다. 비교 비용이 같으면 더 오래 기다린 조합을 우선하며, 조건상 네 명이 강제되면 같은 조가 다시 나올 수 있습니다.</p>
+                <dl class="help-topics">
+                    <div><dt>신규·휴식 복귀</dt><dd>활동 선수의 매칭 기준 평균을 소수점 버림해 보정합니다. 휴식 복귀 시 기존 매칭 기준보다 낮추지는 않습니다.</dd></div>
+                    <div><dt>팀 편성 이력</dt><dd>최근 100경기를 참고합니다. 일반 경기에서 상위 두 명이 같은 팀인 조합에는 페널티 5를 적용합니다.</dd></div>
+                </dl>
             </div>
-        </div>
+        </details>
+        <details class="help-section">
+            <summary><svg class="ui-icon" aria-hidden="true"><use href="#icon-history"></use></svg><span>기록과 데이터 관리</span><svg class="ui-icon help-chevron" aria-hidden="true"><use href="#icon-chevron-right"></use></svg></summary>
+            <dl class="help-topics">
+                <div><dt>기록·통계</dt><dd><strong>기록</strong>에서 경기별 점수를 입력·수정합니다. <strong>통계</strong>에서는 전체 현황과 선수별 같은 팀·상대 팀 횟수를 확인합니다.</dd></div>
+                <div><dt>최근 작업 되돌리기</dt><dd>상단 <strong>되돌리기</strong>로 가장 최근의 데이터 변경을 한 단계 복원합니다.</dd></div>
+                <div><dt>백업·복구</dt><dd>설정의 <strong>백업 파일 저장</strong>으로 현재 데이터를 보관하고, <strong>백업 파일 불러오기</strong>로 복구합니다. 마지막 파일 복구 직전 상태로 돌아갈 수도 있습니다.</dd></div>
+                <div><dt>새 모임 시작</dt><dd>저장 회원은 유지하고 현재 선수·코트 배정·경기 기록을 비운 뒤 참석자를 다시 선택합니다.</dd></div>
+                <div><dt>전체 데이터 초기화</dt><dd>저장 회원까지 포함해 선수와 경기 기록을 모두 비웁니다. 새 모임 시작과 적용 범위가 다릅니다.</dd></div>
+            </dl>
+        </details>
     </div>
-    <button class="btn btn-outline" style="width:100%; margin-top:15px;" onclick="closeInfoModal()">닫기</button>
+    <div class="settings-footer"><button class="btn btn-outline" style="width:100%;" onclick="closeInfoModal()">닫기</button></div>
 </div></div>
 
 <!-- 수동 매칭 모달 -->
