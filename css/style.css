@@ -305,8 +305,8 @@ input[type="checkbox"] { accent-color:var(--primary); }
 }
 
 .player-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.match-teams { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: stretch; min-width: 0; padding: 8px; border: 2px solid #cbd5e1; border-radius: 12px; background: #fff; }
-.match-teams::after { content:''; position:absolute; top:8px; bottom:8px; left:50%; width:3px; border-radius:999px; background:#475569; transform:translateX(-50%); }
+.match-teams { position:relative; display:grid; grid-template-columns:minmax(0, 1fr) 26px minmax(0, 1fr); gap:8px; align-items:stretch; min-width:0; padding:8px; border:2px solid #cbd5e1; border-radius:12px; background:#fff; }
+.match-versus { display:flex; align-items:center; justify-content:center; align-self:center; color:#64748b; font-size:0.78rem; font-weight:850; letter-spacing:0.03em; }
 .match-team { position: relative; z-index: 1; min-width: 0; }
 .match-team-players { display: grid; gap: 6px; }
 .match-team .player-chip { min-width: 0; height: 64px; min-height: 64px; padding: 6px 7px; box-shadow: none; overflow: hidden; }
@@ -632,8 +632,7 @@ label { display: block; font-size: 0.85rem; font-weight: 700; color: #64748b; ma
     .game-section { min-height: 140px; padding: 12px; }
     .next-section { padding: 10px 12px; }
     .player-grid { gap: 6px; min-width: 0; }
-    .match-teams { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; padding: 6px; border-radius: 10px; }
-    .match-teams::after { top: 6px; bottom: 6px; }
+    .match-teams { grid-template-columns:minmax(0, 1fr) 24px minmax(0, 1fr); gap:6px; padding:6px; border-radius:10px; }
     .match-team-players { gap: 5px; }
     .match-team .player-chip { height: 60px; min-height: 60px; padding: 5px 6px; }
     .next-playing-badge { top: 3px; right: 3px; min-height: 12px; padding: 1px 3px; font-size: 0.5rem; }

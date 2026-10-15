@@ -328,6 +328,7 @@ function renderMatchTeams(court, area, chipClass = '') {
         <div class="match-team team-a" role="group" aria-label="A팀">
             <div class="match-team-players">${renderTeamPlayers([0, 1])}</div>
         </div>
+        <span class="match-versus" aria-hidden="true">VS</span>
         <div class="match-team team-b" role="group" aria-label="B팀">
             <div class="match-team-players">${renderTeamPlayers([2, 3])}</div>
         </div>

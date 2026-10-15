@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const { html, styles, appSource, runApp } = require('./helpers/app-runtime');
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
 if (html.includes('>F조</option>') || appSource.includes('const tiers = ["F조"') || !html.includes('<option value="1" selected>E조</option>')) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
-if (!serviceWorker.includes('app-v32') || !serviceWorker.includes('runtime-v32') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
+if (!serviceWorker.includes('app-v33') || !serviceWorker.includes('runtime-v33') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
 
 function createPlayers() {
     return Array.from({ length: 13 }, (_, index) => ({
@@ -119,10 +119,10 @@ function assertInRuntime(context, assertion, message) {
     const teamHtml = vm.runInContext('renderMatchTeams(courts.find(court => court.id === 2), "next", "next-chip")', context);
     const teamAStart = teamHtml.indexOf('aria-label="A팀"');
     const teamBStart = teamHtml.indexOf('aria-label="B팀"');
-    if (!(teamAStart >= 0 && teamBStart > teamAStart)) throw new Error('중앙선 양쪽의 두 팀이 올바른 순서로 표시되지 않았습니다.');
+    if (!(teamAStart >= 0 && teamBStart > teamAStart)) throw new Error('VS 양쪽의 두 팀이 올바른 순서로 표시되지 않았습니다.');
     if (teamHtml.includes('같은 팀')) throw new Error('팀 영역에 불필요한 같은 팀 문구가 표시됩니다.');
-    if (teamHtml.includes('match-vs') || teamHtml.includes('>VS<')) throw new Error('팀 영역 사이에 불필요한 VS 표시가 남아 있습니다.');
-    if (!styles.includes('.match-teams::after')) throw new Error('팀 사이의 코트형 중앙 구분선 스타일이 없습니다.');
+    if ((teamHtml.match(/class="match-versus"/g) || []).length !== 1) throw new Error('두 팀 사이에는 VS를 한 번 표시해야 합니다.');
+    if (!styles.includes('.match-versus') || styles.includes('.match-teams::after')) throw new Error('팀 사이에 중앙선 대신 VS를 표시해야 합니다.');
     if (styles.includes('.match-team.team-a {') || styles.includes('.match-team.team-b {')) throw new Error('이전 팀 배경색 스타일이 남아 있습니다.');
     if ((teamHtml.match(/class="match-player-content"/g) || []).length !== 4) throw new Error('다음 대기 네 카드의 이름·급수 중앙 정렬 영역이 누락되었습니다.');
     if (teamHtml.includes('match-status-slot')) throw new Error('이름·급수를 아래로 밀어내는 이전 상태 영역이 남아 있습니다.');
@@ -135,6 +135,7 @@ function assertInRuntime(context, assertion, message) {
     if (!teamBHtml.includes('선수07') || !teamBHtml.includes('선수08') || teamBHtml.includes('선수06')) throw new Error('뒤의 두 선수가 B팀으로 묶이지 않았습니다.');
     const courtHtml = context.__elements.get('courtGrid').innerHTML;
     if (!courtHtml.includes('match-teams')) throw new Error('코트 화면에 팀 구분 레이아웃이 렌더링되지 않았습니다.');
+    if (!courtHtml.includes('class="match-versus" aria-hidden="true">VS</span>')) throw new Error('코트 화면에 VS 표시가 없습니다.');
     if (!teamHtml.includes('gender-card gender-m') || !teamHtml.includes('gender-card gender-f')) throw new Error('코트 선수 카드의 성별 색상 표시가 없습니다.');
     if (!styles.includes('.match-player-chip.gender-card.gender-m { background: #fff;') || !styles.includes('.match-player-chip.gender-card.gender-f { background: #fff;') || !styles.includes('border-left: 5px solid #38bdf8') || !styles.includes('border-left: 5px solid #f472b6')) throw new Error('코트 선수 카드의 성별 왼쪽 구분선 스타일이 없습니다.');
     if (teamHtml.includes('gender-marker')) throw new Error('코트 선수에 불필요한 성별 동그라미가 남아 있습니다.');
