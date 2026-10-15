@@ -1,5 +1,6 @@
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
+const test = require('node:test');
 const { runApp } = require('./helpers/app-runtime');
 const player = { id:1, name:'기존회원', gender:'M', tier:3, games:5, matchingOffset:2, lastTime:20, status:'waiting', shuttlecock:true };
 const court = { id:1, type:'A', active:[], next:[], startTime:null };
@@ -97,5 +98,40 @@ const beforeFailure = app.run('serializeState()');
 app.context.localStorage.setItem = () => { throw new Error('quota'); };
 app.run('saveMember()');
 assert.equal(app.run('serializeState()'), beforeFailure, '저장 실패 시 회원 변경을 취소해야 합니다.');
+
+test('참석자 선택은 참가 중 회원을 구분하고 검색·탭 전환 중 선택을 보존한다', () => {
+    const ui=runtime();
+    ui.run('members=[{id:101,name:"기존회원",gender:"M",tier:3},{id:102,name:"새회원",gender:"F",tier:2},{id:103,name:"다른회원",gender:"M",tier:1}]; openMembersModal(); toggleMemberSelection(102,true)');
+    let content=ui.run('document.getElementById("memberList").innerHTML');
+    assert.ok(content.includes('aria-label="참석자 선택"') && content.includes('aria-label="참가 중"'));
+    assert.ok(content.includes('member-choice-101" type="checkbox" disabled'));
+    assert.ok(content.includes('is-selected') && content.includes('member-choice-102" type="checkbox"  checked'));
+    ui.set('memberSearch','다른');
+    ui.run('renderMembers(); setMemberView("register"); setMemberView("select")');
+    assert.equal(ui.run('selectedMemberIds.has(102)'),true);
+    assert.equal(ui.run('document.getElementById("memberSearchSummary").innerText'),'검색 결과 1명');
+    assert.equal(ui.run('document.getElementById("loadMembersButton").innerText'),'선택 1명 불러오기');
+    ui.run('selectVisibleMembers(); loadSelectedMembers()');
+    assert.equal(ui.run('players.length'),3);
+    assert.equal(ui.run('players.filter(p=>p.name==="기존회원").length'),1);
+});
+
+test('전체 선택·선택 해제 버튼은 선택 가능한 회원 수에 맞춰 활성화된다', () => {
+    const ui=runtime();
+    ui.run('members=[{id:101,name:"기존회원",gender:"M",tier:3}]; openMembersModal()');
+    assert.equal(ui.run('document.getElementById("memberSelectAll").disabled'),true);
+    assert.equal(ui.run('document.getElementById("memberClearSelection").disabled'),true);
+    ui.run('members.push({id:102,name:"신규",gender:"F",tier:1}); renderMembers()');
+    assert.equal(ui.run('document.getElementById("memberSelectAll").disabled'),false);
+    ui.run('selectVisibleMembers()');
+    assert.equal(ui.run('document.getElementById("memberSelectAll").disabled'),true);
+    assert.equal(ui.run('document.getElementById("memberClearSelection").disabled'),false);
+    ui.set('memberSearch','없는이름');
+    ui.run('renderMembers()');
+    assert.ok(ui.run('document.getElementById("memberList").innerHTML').includes('검색 결과가 없습니다.'));
+    assert.equal(ui.run('selectedMemberIds.size'),1);
+    ui.run('selectedMemberIds.clear(); renderMembers()');
+    assert.equal(ui.run('document.getElementById("loadMembersButton").disabled'),true);
+});
 
 console.log('회원 등록·중복 방지·출석·재접속·새 모임·수정·삭제·백업·되돌리기·저장 실패 테스트 통과');

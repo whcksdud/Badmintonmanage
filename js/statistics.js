@@ -356,59 +356,59 @@ function editHistoryScore(historyIndex) {
 function openHistory() {
     const hList = document.getElementById('historyList'); hList.innerHTML='';
     const courtMap = {}; courts.forEach((c, i) => courtMap[c.id] = i + 1);
+    document.getElementById('historySummary').innerText = `총 ${history.length}경기 · 최신순`;
 
     if(history.length === 0) {
-        hList.innerHTML = '<div class="empty-state">기록된 경기가 없습니다.</div>';
+        hList.innerHTML = `<div class="history-empty">${renderUIIcon('history')}<strong>아직 완료된 경기가 없어요</strong><span>경기를 종료하면 이곳에 기록됩니다.</span></div>`;
     }
 
     history.forEach((h, historyIndex) => {
-        const startStr = formatTime(h.startTime);
-        const endStr = formatTime(h.endTime);
-        const durationMin = Math.floor((h.endTime - h.startTime) / 60000);
+        const validTime = Number.isFinite(h.startTime) && Number.isFinite(h.endTime) && h.endTime >= h.startTime;
+        const endDate = validTime ? new Date(h.endTime) : null;
+        const timeLabel = validTime ? `${endDate.getMonth() + 1}.${endDate.getDate()} · ${formatTime(h.startTime)}–${formatTime(h.endTime)}` : '시간 미기록';
+        const durationMin = validTime ? Math.floor((h.endTime - h.startTime) / 60000) : null;
+        const durationLabel = durationMin === null ? '' : durationMin === 0 ? '1분 미만' : `${durationMin}분`;
         const courtNum = courtMap[h.cId] ? `코트 ${courtMap[h.cId]}` : '삭제된 코트';
         const teams = getHistoryTeams(h);
         const scores = Array.isArray(h.scores) ? h.scores.map(Number) : [];
-        const hasScore = scores.length === 2 && scores.every(score => Number.isInteger(score) && score >= 0);
+        const hasScore = Boolean(teams) && scores.length === 2 && scores.every(score => Number.isInteger(score) && score >= 0);
         let resultHTML = '';
+        const isDraw = hasScore && scores[0] === scores[1];
+        const winnerIndex = !hasScore || isDraw ? -1 : scores[0] > scores[1] ? 0 : 1;
+        const resultLabel = hasScore ? isDraw ? '무승부' : `${Math.abs(scores[0] - scores[1])}점 차` : '점수 미입력';
 
-        if(hasScore && teams) {
-            const isDraw = scores[0] === scores[1];
-            const winnerIndex = isDraw ? -1 : (scores[0] > scores[1] ? 0 : 1);
-            const scoreDiff = Math.abs(scores[0] - scores[1]);
-            const renderTeamResult = teamIndex => {
-                const won = winnerIndex === teamIndex;
-                const resultLabel = isDraw ? '무' : (won ? '승' : '패');
-                const resultClass = isDraw ? 'draw' : (won ? 'win' : 'loss');
-                return `<div class="history-team ${won ? 'winner' : ''}">
-                    <span class="history-result-badge ${resultClass}">${resultLabel}</span>
-                    <span class="history-team-names">${teams[teamIndex].join(' · ')}</span>
-                    <strong class="history-score">${scores[teamIndex]}</strong>
+        if(teams) {
+            const renderTeam = teamIndex => {
+                const won = teamIndex === winnerIndex;
+                return `<div class="history-team ${won ? 'winner' : ''}" role="group" aria-label="${teamIndex === 0 ? 'A' : 'B'}팀">
+                    <div class="history-team-label">${teamIndex === 0 ? 'A' : 'B'}팀${hasScore ? `<span class="history-result-badge ${isDraw ? 'draw' : won ? 'win' : 'loss'}">${isDraw ? '무' : won ? '승' : '패'}</span>` : ''}</div>
+                    <div class="history-team-names">${teams[teamIndex].map(name => `<span>${escapeHTML(name)}</span>`).join('')}</div>
                 </div>`;
             };
             resultHTML = `<div class="history-result">
-                ${renderTeamResult(0)}
-                ${renderTeamResult(1)}
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                    <button class="btn-text" style="padding:3px 0; font-size:0.72rem;" onclick="editHistoryScore(${historyIndex})">점수 수정</button>
-                    <div class="history-score-diff">${isDraw ? '무승부' : `점수 차 ${scoreDiff}점`}</div>
+                ${renderTeam(0)}
+                <div class="history-scoreboard" aria-label="${hasScore ? `${scores[0]} 대 ${scores[1]}, ${resultLabel}` : '점수 미입력'}">
+                    <div class="history-scores">${hasScore ? `<strong class="${winnerIndex === 0 ? 'winning-score' : ''}">${scores[0]}</strong><span>:</span><strong class="${winnerIndex === 1 ? 'winning-score' : ''}">${scores[1]}</strong>` : '<span class="history-versus">VS</span>'}</div>
+                    <span class="history-score-diff">${resultLabel}</span>
                 </div>
+                ${renderTeam(1)}
             </div>`;
         } else {
-            const playerNames = h.names || (teams ? teams.flat().join(', ') : '선수 정보 없음');
-            resultHTML = `<div style="font-weight:600; font-size:0.95rem;">${playerNames}</div>
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                    <div class="history-no-score">승패 · 점수 미기록</div>
-                    ${teams ? `<button class="btn-text" style="padding:3px 0; font-size:0.72rem;" onclick="editHistoryScore(${historyIndex})">점수 입력</button>` : ''}
-                </div>`;
+            resultHTML = `<div class="history-legacy-names">${escapeHTML(h.names || '선수 정보 없음')}</div>`;
         }
 
-        hList.innerHTML += `<div class="history-item">
-            <div style="font-size:0.75rem; color:#64748b; font-weight:700; margin-bottom:4px; display:flex; justify-content:space-between;">
-                <span><span style="color:#2563eb;">${courtNum}</span> | ${startStr} ~ ${endStr}</span>
-                <span style="background:#f1f5f9; padding:2px 6px; border-radius:4px;">${durationMin}분</span>
+        hList.innerHTML += `<article class="history-item" aria-label="${courtNum} 경기 기록">
+            <div class="history-item-heading">
+                <span class="history-court">${courtNum}</span>
+                <span class="history-time">${timeLabel}</span>
+                ${durationLabel ? `<span class="history-duration">${durationLabel}</span>` : ''}
             </div>
             ${resultHTML}
-        </div>`;
+            <div class="history-item-footer">
+                <span>${teams ? hasScore ? '경기 결과' : '점수를 입력하면 승패가 표시됩니다.' : '팀 정보 미기록'}</span>
+                ${teams ? `<button type="button" class="history-score-button ${hasScore ? '' : 'needs-score'}" onclick="editHistoryScore(${historyIndex})">${renderUIIcon(hasScore ? 'edit' : 'add')}<span>${hasScore ? '점수 수정' : '점수 입력'}</span></button>` : ''}
+            </div>
+        </article>`;
     });
     document.getElementById('hModal').style.display='flex';
 }

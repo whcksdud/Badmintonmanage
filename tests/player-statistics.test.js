@@ -1,4 +1,6 @@
 const vm = require('vm');
+const test = require('node:test');
+const assert = require('node:assert/strict');
 const { html, styles, runApp } = require('./helpers/app-runtime');
 
 function createElement() {
@@ -162,5 +164,45 @@ assertInRuntime(context, 'statsView === "player"', '키보드로 선수별 통�
 const emojiPattern = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/u;
 if (emojiPattern.test(html)) throw new Error('화면에 OS 글꼴에 의존하는 문자 이모지가 남아 있습니다.');
 if (!html.includes('class="ui-icon-sprite"') || !html.includes('id="icon-chart"') || !html.includes('<use href="#icon-settings"></use>') || !html.includes('<use href="#icon-phone"></use>')) throw new Error('공통 SVG 아이콘 체계가 화면 요소에 적용되지 않았습니다.');
+
+test('점수 없는 기록도 팀을 구분하고 선수 이름을 안전하게 표시한다', () => {
+    const record = {cId:1,startTime:1000,endTime:3000,pIds:[1,2,3,4],teamNames:[['<img src=x onerror=alert(1)>','A&B'],['셋','넷']]};
+    const runtime = createRuntime(players,[record]);
+    vm.runInContext('openHistory()',runtime);
+    const content=runtime.__elements.get('historyList').innerHTML;
+    assert.ok(content.includes('aria-label="A팀"') && content.includes('aria-label="B팀"'));
+    assert.ok(content.includes('&lt;img src=x onerror=alert(1)&gt;') && content.includes('A&amp;B'));
+    assert.ok(!content.includes('<img src=x'));
+    assert.ok(content.includes('1분 미만') && content.includes('점수 미입력'));
+    assert.equal(runtime.__elements.get('historySummary').innerText,'총 1경기 · 최신순');
+});
+
+test('점수 수정은 선택한 기록에 저장되고 최신순·승패 표시·되돌리기가 유지된다', () => {
+    const records=[0,1].map(i=>({cId:1,startTime:1000-i*100,endTime:901000-i*100,pIds:[1,2,3,4],teamNames:[['첫팀1','첫팀2'],['상대1','상대2']]}));
+    records[0].scores=[0,21];
+    const runtime=createRuntime(players,records);
+    vm.runInContext('openHistory(); editHistoryScore(1)',runtime);
+    runtime.__elements.get('scoreTeam1').value='21';
+    runtime.__elements.get('scoreTeam2').value='19';
+    vm.runInContext('saveHistoryScore()',runtime);
+    assertInRuntime(runtime,'history[0].scores[0]===0 && history[0].scores[1]===21 && history[1].scores[0]===21 && history[1].scores[1]===19','다른 기록에 점수가 저장됐습니다.');
+    const content=runtime.__elements.get('historyList').innerHTML;
+    assert.ok(content.includes('0 대 21, 21점 차') && content.includes('21 대 19, 2점 차'));
+    assert.ok(content.includes('history-result-badge win') && content.includes('history-result-badge loss'));
+    assert.ok(content.indexOf('editHistoryScore(0)')<content.indexOf('editHistoryScore(1)'));
+    vm.runInContext('undoLastAction(); onConfirmAction()',runtime);
+    assertInRuntime(runtime,'!history[1].scores && history[0].scores[1]===21','점수 변경을 되돌리지 못했습니다.');
+});
+
+test('빈 기록과 이전 형식의 팀 정보 없는 기록도 표시한다', () => {
+    const runtime=createRuntime(players,[]);
+    vm.runInContext('openHistory()',runtime);
+    assert.ok(runtime.__elements.get('historyList').innerHTML.includes('아직 완료된 경기가 없어요'));
+    vm.runInContext('history=[{cId:99,names:"<이전 기록>"}]; openHistory()',runtime);
+    const content=runtime.__elements.get('historyList').innerHTML;
+    assert.ok(content.includes('삭제된 코트') && content.includes('&lt;이전 기록&gt;'));
+    assert.ok(content.includes('시간 미기록') && content.includes('팀 정보 미기록'));
+    assert.ok(!content.includes('editHistoryScore(') && !content.includes('NaN'));
+});
 
 console.log('전체·선수별 경기 통계와 SVG 아이콘 테스트 통과');

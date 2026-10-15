@@ -59,17 +59,27 @@ function renderMembers() {
     }
     const visible = visibleMembers();
     document.getElementById('memberSummary').innerText = `저장 회원 ${members.length}명 · 참가 중 ${members.filter(isMemberAttending).length}명`;
-    document.getElementById('memberList').innerHTML = visible.length ? visible.map(member => {
+    const available = visible.filter(member => !isMemberAttending(member));
+    const attendingMembers = visible.filter(isMemberAttending);
+    const searching = document.getElementById('memberSearch').value.trim().length > 0;
+    document.getElementById('memberSearchSummary').innerText = `${searching ? '검색 결과' : '전체'} ${visible.length}명`;
+    document.getElementById('memberSelectAll').disabled = available.every(member => selectedMemberIds.has(member.id));
+    document.getElementById('memberClearSelection').disabled = selectedMemberIds.size === 0;
+    const renderMember = member => {
         const attending = isMemberAttending(member);
-        return `<div class="member-row ${selectedMemberIds.has(member.id) ? 'is-selected' : ''}">
+        return `<div class="member-row ${selectedMemberIds.has(member.id) ? 'is-selected' : ''} ${attending ? 'is-attending' : ''}">
             <label class="member-choice"><input id="member-choice-${member.id}" type="checkbox" ${attending ? 'disabled' : ''} ${selectedMemberIds.has(member.id) ? 'checked' : ''} onchange="toggleMemberSelection(${member.id}, this.checked)">
-                <span>${escapeHTML(member.name)}<small>${member.gender === 'M' ? '남성' : '여성'} · ${tiers[member.tier]}${attending ? ' · 이미 참가 중' : ''}</small></span>
+                <span class="member-profile"><span class="member-name">${escapeHTML(member.name)}</span><small>${member.gender === 'M' ? '남성' : '여성'} · ${tiers[member.tier]}</small>${attending ? '<span class="member-attending-badge">참가 중</span>' : ''}</span>
             </label>
-            <button class="btn btn-outline" onclick="openMemberEditor(${member.id})" aria-label="${escapeHTML(member.name)} 회원 수정">수정</button>
+            <button type="button" class="member-edit-button" onclick="openMemberEditor(${member.id})" aria-label="${escapeHTML(member.name)} 회원 수정" title="회원 수정">${renderUIIcon('edit')}</button>
         </div>`;
-    }).join('') : (members.length
-        ? '<p style="color:#64748b; text-align:center;">검색 결과가 없습니다.</p>'
-        : '<div style="text-align:center; padding:24px 8px;"><p style="color:#64748b;">회원 명단을 저장하면 모임마다 바로 불러올 수 있습니다.</p><button class="btn btn-outline" onclick="setMemberView(\'register\')">회원 등록 시작하기</button></div>');
+    };
+    const renderGroup = (group, label) => group.length ? `<section class="member-group" aria-label="${label}"><h4>${label}<span>${group.length}명</span></h4><div class="member-grid">${group.map(renderMember).join('')}</div></section>` : '';
+    document.getElementById('memberList').innerHTML = visible.length
+        ? renderGroup(available, '참석자 선택') + renderGroup(attendingMembers, '참가 중')
+        : (members.length
+            ? `<div class="member-empty">${renderUIIcon('search')}<strong>검색 결과가 없습니다.</strong><span>다른 이름으로 검색해 주세요.</span></div>`
+            : `<div class="member-empty">${renderUIIcon('users')}<strong>저장된 회원이 없어요</strong><span>회원 명단을 저장하면 모임마다 바로 불러올 수 있습니다.</span><button class="btn btn-outline" onclick="setMemberView('register')">회원 등록 시작하기</button></div>`);
     const button = document.getElementById('loadMembersButton');
     button.innerText = `선택 ${selectedMemberIds.size}명 불러오기`;
     button.disabled = selectedMemberIds.size === 0;

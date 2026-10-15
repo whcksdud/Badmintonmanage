@@ -159,17 +159,24 @@
 
 <!-- 저장된 회원 -->
 <div id="membersModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="membersTitle"><div class="modal-box">
+    <div class="member-modal-heading">
     <h3 id="membersTitle" class="modal-title" style="margin-top:0;"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg><span>선수 등록</span></h3>
     <div class="member-tabs" role="tablist" aria-label="선수 등록 메뉴" onkeydown="handleMemberTabKey(event)">
         <button id="memberSelectTab" class="member-tab" role="tab" aria-selected="true" aria-controls="memberSelectPanel" onclick="setMemberView('select')">참석자 선택</button>
         <button id="memberRegisterTab" class="member-tab" role="tab" aria-selected="false" aria-controls="memberRegisterPanel" tabindex="-1" onclick="setMemberView('register')">등록·관리</button>
     </div>
+    </div>
     <div id="memberSelectPanel" class="member-panel" role="tabpanel" aria-labelledby="memberSelectTab">
+        <div class="member-select-heading">
         <p id="memberSummary" class="member-summary"></p>
-        <input id="memberSearch" type="search" placeholder="회원 이름 검색" aria-label="회원 이름 검색" oninput="renderMembers()">
+        <div class="member-search-field"><svg class="ui-icon" aria-hidden="true"><use href="#icon-search"></use></svg><input id="memberSearch" type="search" placeholder="이름으로 찾기" aria-label="회원 이름 검색" oninput="renderMembers()"></div>
         <div class="member-toolbar member-selection-tools">
-            <button class="btn-text" onclick="selectVisibleMembers()">검색 결과 전체 선택</button>
-            <button class="btn-text" onclick="selectedMemberIds.clear(); renderMembers()">선택 해제</button>
+            <span id="memberSearchSummary" class="member-search-summary" aria-live="polite"></span>
+            <div class="member-selection-actions">
+                <button id="memberSelectAll" type="button" class="btn-text" onclick="selectVisibleMembers()" aria-label="검색 결과 전체 선택">전체 선택</button>
+                <button id="memberClearSelection" type="button" class="btn-text" onclick="selectedMemberIds.clear(); renderMembers()">선택 해제</button>
+            </div>
+        </div>
         </div>
         <div id="memberList" class="member-list"></div>
     </div>
@@ -199,7 +206,7 @@
 <div id="memberEditorModal" class="modal" style="z-index:1100;" role="dialog" aria-modal="true" aria-labelledby="memberEditorTitle"><div class="modal-box">
     <h3 id="memberEditorTitle" style="margin-top:0;">회원 등록</h3>
     <label id="memberNamesLabel" for="memberNames">이름 (여러 명은 줄바꿈으로 구분)</label>
-    <textarea id="memberNames" rows="4" style="width:100%; padding:12px; font:inherit; border:1px solid var(--border); border-radius:8px; margin-bottom:15px;"></textarea>
+    <textarea id="memberNames" rows="4" style="width:100%; padding:12px; font:inherit; border:1px solid var(--border); border-radius:8px; margin-bottom:15px; resize:none;"></textarea>
     <label for="memberGender">성별</label>
     <select id="memberGender"><option value="M">남성</option><option value="F">여성</option></select>
     <label for="memberTier">급수</label>
@@ -289,10 +296,13 @@
 </div></div>
 
 <!-- 경기 기록 모달 -->
-<div id="hModal" class="modal"><div class="modal-box">
-    <h3 style="margin-top:0">경기 기록 (최신순)</h3>
+<div id="hModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="historyTitle"><div class="modal-box history-modal-box">
+    <div class="history-heading">
+        <h3 id="historyTitle" class="modal-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-history"></use></svg><span>경기 기록</span></h3>
+        <p id="historySummary">총 0경기 · 최신순</p>
+    </div>
     <div id="historyList" class="history-list"></div>
-    <button class="btn btn-outline" style="width:100%; margin-top:15px;" onclick="closeHModal()">닫기</button>
+    <div class="history-footer"><button class="btn btn-outline" style="width:100%;" onclick="closeHModal()">닫기</button></div>
 </div></div>
 
 <!-- 경기 통계 모달 -->
