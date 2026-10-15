@@ -1,4 +1,8 @@
-// Automatic/manual selection and partner-history team balancing.
+// Automatic selection considers game count, waiting, and co-play history;
+// automatic/manual team balancing also considers tiers and partner history.
+
+const MATCH_VARIETY_WAIT_WINDOW = 15 * 60 * 1000;
+const MATCH_VARIETY_CANDIDATE_LIMIT = 12;
 
 function getMatchingGameCount(player) {
     const offset = Number(player.matchingOffset);
@@ -44,19 +48,93 @@ function matchCourt(cId) {
         return showToast(`매칭 인원이 부족합니다. (${poolLabel} ${genderPool.length}명 · 휴식 ${restingCount}명)`);
     }
 
-    let selected = [];
-    if(type === 'X') {
-        const m = pool.filter(p => p.gender === 'M');
-        const f = pool.filter(p => p.gender === 'F');
-        const sm = shuffleByGameCount(m);
-        const sf = shuffleByGameCount(f);
-        selected = [...sm.slice(0,2), ...sf.slice(0,2)];
-    } else {
-        const shuffled = shuffleByGameCount(genderPool);
-        selected = shuffled.slice(0, 4);
-    }
-
+    const selected = selectMatchPlayers(genderPool, type, cId);
     applyMatch(cId, selected, 'next');
+}
+
+function getSelectionOptions(pool, count, waitWindow, breakLockedGroup = false) {
+    const ordered = shuffleByGameCount(pool);
+    if(ordered.length < count) return [];
+    const cutoff = getMatchingGameCount(ordered[count - 1]);
+    // All players below the cutoff must play: variety cannot override game count.
+    const required = ordered.filter(player => getMatchingGameCount(player) < cutoff);
+    const boundary = ordered.filter(player => getMatchingGameCount(player) === cutoff);
+    const slots = count - required.length;
+    const now = Date.now();
+    const since = player => Number.isFinite(player.waitingSince) ? player.waitingSince : now;
+    // Protect the longest waiter, and compare nearby waiting times only. Widen
+    // just enough to include the original FIFO selection if the window is sparse.
+    const extra = breakLockedGroup && boundary.length > slots ? since(boundary[slots]) : 0;
+    const latest = Math.max(since(boundary[0]) + waitWindow, since(boundary[slots - 1]), extra);
+    const candidates = boundary.filter(player => since(player) <= latest).slice(0, MATCH_VARIETY_CANDIDATE_LIMIT);
+    const protectedPlayers = [...required, candidates[0]];
+    const remaining = candidates.slice(1);
+    const options = [];
+    function choose(start, selected) {
+        const needed = count - protectedPlayers.length - selected.length;
+        if(needed === 0) { options.push([...protectedPlayers, ...selected]); return; }
+        for(let i = start; i <= remaining.length - needed; i++) choose(i + 1, [...selected, remaining[i]]);
+    }
+    choose(0, []);
+    return options;
+}
+
+function selectMatchPlayers(pool, type, courtId) {
+    const recentGame = history.slice(0, 100).find(record => record.cId === courtId &&
+        Number.isFinite(record.startTime) && Number.isFinite(record.endTime) && record.endTime > record.startTime);
+    // One game's waiting difference, with a minute for court-change operations.
+    const waitWindow = Math.max(MATCH_VARIETY_WAIT_WINDOW, recentGame ? recentGame.endTime - recentGame.startTime : 0) + 60000;
+    function buildOptions(breakLockedGroup = false) {
+        if(type !== 'X') return getSelectionOptions(pool, 4, waitWindow, breakLockedGroup);
+        const men = getSelectionOptions(pool.filter(p => p.gender === 'M'), 2, waitWindow, breakLockedGroup);
+        const women = getSelectionOptions(pool.filter(p => p.gender === 'F'), 2, waitWindow, breakLockedGroup);
+        return men.flatMap(m => women.map(f => [...m, ...f]));
+    }
+    let options = buildOptions();
+    const groups = new Map();
+    const pairs = new Map();
+    const groupKey = ids => [...ids].sort((a, b) => a - b).join(',');
+    const pairKey = (a, b) => a < b ? `${a},${b}` : `${b},${a}`;
+    const records = [
+        ...history.slice(0, 100).map(record => record.pIds),
+        ...courts.flatMap(court => [court.active.map(p => p.id), court.next.map(p => p.id)])
+    ];
+    records.forEach(ids => {
+        if(!Array.isArray(ids) || ids.length !== 4 || new Set(ids).size !== 4) return;
+        const key = groupKey(ids);
+        groups.set(key, (groups.get(key) || 0) + 1);
+        for(let i = 0; i < 4; i++) for(let j = i + 1; j < 4; j++) {
+            const pair = pairKey(ids[i], ids[j]);
+            pairs.set(pair, (pairs.get(pair) || 0) + 1);
+        }
+    });
+    // Break a locked cohort even when it is currently the younger wait group:
+    // otherwise it can be excluded here and forced to play intact next round.
+    if(options.length === 1) {
+        const cutoff = gender => Math.max(...options[0].filter(p => type !== 'X' || p.gender === gender).map(getMatchingGameCount));
+        const cutoffs = { M: cutoff('M'), F: cutoff('F') };
+        const eligible = new Map(pool.filter(p => getMatchingGameCount(p) <= cutoffs[p.gender]).map(p => [p.id, p]));
+        const hasLockedGroup = [...groups].some(([key, repeats]) => {
+            const ids = key.split(',').map(Number);
+            return repeats >= 2 && ids.every(id => eligible.has(id)) &&
+                (type !== 'X' || ids.filter(id => eligible.get(id).gender === 'M').length === 2);
+        });
+        if(hasLockedGroup) options = buildOptions(true);
+    }
+    let best = [];
+    let bestCost = null;
+    const now = Date.now();
+    options.forEach(option => {
+        const ids = option.map(p => p.id);
+        let together = 0;
+        for(let i = 0; i < 4; i++) for(let j = i + 1; j < 4; j++) together += pairs.get(pairKey(ids[i], ids[j])) || 0;
+        const cost = [groups.get(groupKey(ids)) || 0, together,
+            option.reduce((sum, player) => sum + (Number.isFinite(player.waitingSince) ? player.waitingSince : now), 0)];
+        const better = !bestCost || cost[0] < bestCost[0] ||
+            (cost[0] === bestCost[0] && (cost[1] < bestCost[1] || (cost[1] === bestCost[1] && cost[2] < bestCost[2])));
+        if(better) { best = option; bestCost = cost; }
+    });
+    return best;
 }
 
 function openManualMatch(cId) {

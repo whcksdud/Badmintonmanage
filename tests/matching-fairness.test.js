@@ -32,7 +32,7 @@ function runtime(state, random = () => 0, saved = null) {
 }
 function selectedIds(app) { return app.json('courts[0].next.map(p => p.id)').sort((a, b) => a - b); }
 
-test('자동 선발은 매칭 경기 수를 먼저, 동률에서 대기 시작 시각을 비교한다', () => {
+test('조합 이력이 없으면 자동 선발은 경기 수와 대기 시작 시각 순서를 따른다', () => {
     const roster = [
         player(1, { games: 1, matchingOffset: 2, waitingSince: 0 }),
         player(2, { waitingSince: 200 }), player(3, { waitingSince: 100 }),
@@ -47,7 +47,7 @@ test('자동 선발은 매칭 경기 수를 먼저, 동률에서 대기 시작 �
     }
 });
 
-test('혼복 선발은 남녀 각각 오래 기다린 두 명을 선택한다', () => {
+test('조합 이력이 없으면 혼복 선발은 남녀 각각 오래 기다린 두 명을 선택한다', () => {
     const roster = [300,100,200,400,350,150,250,450].map((waitingSince, i) => player(i+1, { gender: i < 4 ? 'M' : 'F', waitingSince }));
     const app = runtime({ players: roster, courts: [court(1, 'X')] });
     app.run('matchCourt(1)');
@@ -169,4 +169,66 @@ test('혼복의 급수 625가지 조합에서 남녀 조건을 지키며 가능�
         const gap = Math.abs(teams[0].reduce((sum,p)=>sum+p.tier,0)-teams[1].reduce((sum,p)=>sum+p.tier,0));
         assert.equal(gap, Math.min(Math.abs(m1+f1-m2-f2),Math.abs(m1+f2-m2-f1)));
     }
+});
+
+function rotatingGroupsState() {
+    const roster = Array.from({ length: 12 }, (_, i) => player(i+1, {
+        tier: 1, games: i < 4 ? 6 : i < 8 ? 4 : 5, matchingOffset: i < 4 ? 0 : 1,
+        status: i < 4 ? 'reserved' : i < 8 ? 'playing' : 'waiting',
+        waitingSince: i < 4 ? 997000 : i < 8 ? null : 999000
+    }));
+    const cohorts = [roster.slice(8), roster.slice(0,4), roster.slice(4,8)];
+    const history = Array.from({ length: 12 }, (_, i) => ({
+        cId: 1, startTime: 99000-i*1000, endTime: 999000-i*1000,
+        pIds: cohorts[i%3].map(p=>p.id)
+    }));
+    return { players: roster, courts: [court(1,'A',roster.slice(4,8),roster.slice(0,4))], history };
+}
+
+test('12명이 종료·승계·다음 예약을 반복해도 같은 세 조로 고정되지 않는다', () => {
+    for (const interval of [2000, 15*60000, 25*60000]) for (const random of [() => .1, () => .5, () => .9]) {
+        const app = runtime(rotatingGroupsState(), random);
+        const groups = new Set();
+        const companions = new Map(Array.from({ length: 12 }, (_, i) => [i+1,new Set()]));
+        for(let round=0; round<18; round++) {
+            app.clock.now += interval;
+            app.run('completeGame(1); matchCourt(1)');
+            const ids = selectedIds(app);
+            groups.add(ids.join(','));
+            ids.forEach(id => ids.filter(other=>other!==id).forEach(other=>companions.get(id).add(other)));
+            assert.equal(ids.length,4);
+            assert.equal(new Set(ids).size,4);
+            assert.ok(app.run('Math.max(...players.map(getMatchingGameCount))-Math.min(...players.map(getMatchingGameCount))') <= 1);
+        }
+        assert.ok(groups.size >= 8, `${interval}ms 간격에서 ${groups.size}개 조만 순환합니다.`);
+        assert.ok([...companions.values()].every(set=>set.size>=5), '모든 선수가 기존 조 밖의 선수들과도 경기해야 합니다.');
+    }
+});
+
+test('조합 다양성을 높여도 적은 경기 수와 가장 오래 기다린 선수는 보호한다', () => {
+    const roster = Array.from({ length: 8 }, (_, i) => player(i+1, { games: i === 0 ? 1 : 2,
+        waitingSince: i === 0 ? 999999 : (i-1)*100 }));
+    const app = runtime({ players: roster, courts: [court()], history: [{ pIds:[1,2,3,4] }] });
+    app.run('matchCourt(1)');
+    assert.ok(selectedIds(app).includes(1), '대기 시간이 짧아도 경기 수가 더 적으면 먼저 선발합니다.');
+    assert.ok(selectedIds(app).includes(2), '경기 수 경계에서 가장 오래 기다린 선수를 제외하면 안 됩니다.');
+    assert.notDeepEqual(selectedIds(app), [1,2,3,4], '선택 가능한 동률 후보가 있으면 반복 조를 바꿉니다.');
+});
+
+test('대기 차이가 한 경기 범위를 넘으면 반복 조여도 오래 기다린 선수들을 먼저 선발한다', () => {
+    const roster = Array.from({ length: 8 }, (_, i) => player(i+1, { waitingSince: i < 4 ? 0 : 2000000 }));
+    const app = runtime({ players: roster, courts: [court()], history: [{ pIds:[1,2,3,4],cId:1,startTime:1000,endTime:901000 }] });
+    app.clock.now = 2000000;
+    app.run('matchCourt(1)');
+    assert.deepEqual(selectedIds(app), [1,2,3,4]);
+});
+
+test('혼복 선발도 남녀 2명씩 유지하면서 반복된 네 명을 섞는다', () => {
+    const roster = Array.from({ length: 8 }, (_, i) => player(i+1, { gender:i<4?'M':'F',waitingSince:i%4<2?100:200 }));
+    const app = runtime({ players: roster, courts:[court(1,'X')], history:[{pIds:[1,2,5,6]},{pIds:[3,4,7,8]}] });
+    app.run('matchCourt(1)');
+    assert.equal(app.run('courts[0].next.filter(p=>p.gender==="M").length'),2);
+    assert.equal(app.run('courts[0].next.filter(p=>p.gender==="F").length'),2);
+    assert.notDeepEqual(selectedIds(app),[1,2,5,6]);
+    assert.notDeepEqual(selectedIds(app),[3,4,7,8]);
 });
