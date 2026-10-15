@@ -1,7 +1,6 @@
-const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-const script = fs.readFileSync('index.html', 'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
+const { runApp } = require('./helpers/app-runtime');
 const roster = Array.from({length:4}, (_, i) => ({id:i + 1, name:`선수${i + 1}`, gender:'M', tier:3, games:0, status:'waiting', lastTime:0}));
 const state = {players:roster, courts:[{id:1, type:'A', active:[], next:[], startTime:null}], history:[], members:[]};
 
@@ -18,7 +17,7 @@ function runtime(storage = new Map([['bm_state_v14', JSON.stringify({current:sta
         localStorage:{getItem:key => storage.get(key) ?? null, setItem:(key, value) => storage.set(key, value)},
         setTimeout(){}, clearTimeout(){}, setInterval(callback){ intervals.push(callback); }
     });
-    vm.runInContext(script, context);
+    runApp(context);
     return {context, storage, clock, elements, run:code => vm.runInContext(code, context), tick:() => intervals.forEach(fn => fn())};
 }
 

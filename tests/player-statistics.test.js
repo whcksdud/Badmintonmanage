@@ -1,10 +1,5 @@
-const fs = require('fs');
 const vm = require('vm');
-
-const html = fs.readFileSync('index.html', 'utf8');
-const inlineScript = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
-
-if (!inlineScript) throw new Error('index.html의 인라인 스크립트를 찾을 수 없습니다.');
+const { html, styles, runApp } = require('./helpers/app-runtime');
 
 function createElement() {
     return {
@@ -61,7 +56,7 @@ function createRuntime(players, history) {
     };
 
     vm.createContext(context);
-    vm.runInContext(inlineScript, context);
+    runApp(context);
     return context;
 }
 
@@ -140,10 +135,10 @@ if (context.__elements.get('statsDetail').innerHTML.includes('<button type="butt
 if (!context.__elements.get('statsPlayerList').innerHTML.includes('stats-player-option-meta') || !context.__elements.get('statsPlayerList').innerHTML.includes('C조 · 3경기')) throw new Error('통계 선수 카드의 이름·급수·경기 수 배치가 대기실 카드와 통일되지 않았습니다.');
 if (!context.__elements.get('statsDetail').innerHTML.includes('stats-profile-meta') || !context.__elements.get('statsDetail').innerHTML.includes('C조 · 3경기')) throw new Error('통계 상단 선수 카드의 이름·급수·경기 수가 한 줄에 표시되지 않았습니다.');
 if (context.__elements.get('statsPlayerList').innerHTML.includes('stats-status-') || context.__elements.get('statsDetail').innerHTML.includes('stats-status-') || context.__elements.get('statsDetail').innerHTML.includes('대기 중') || context.__elements.get('statsDetail').innerHTML.includes('stats-profile-games')) throw new Error('통계 카드에 불필요한 선수 상태 표시나 분리된 경기 수 영역이 남아 있습니다.');
-if (!html.includes('.stats-relation-row.gender-card.gender-m { background: #fff;') || !html.includes('.stats-relation-row.gender-card.gender-f { background: #fff;') || !html.includes('border-left: 5px solid #38bdf8') || !html.includes('border-left: 5px solid #f472b6')) throw new Error('통계 선수 카드의 성별 왼쪽 구분선 스타일이 없습니다.');
+if (!styles.includes('.stats-relation-row.gender-card.gender-m { background: #fff;') || !styles.includes('.stats-relation-row.gender-card.gender-f { background: #fff;') || !styles.includes('border-left: 5px solid #38bdf8') || !styles.includes('border-left: 5px solid #f472b6')) throw new Error('통계 선수 카드의 성별 왼쪽 구분선 스타일이 없습니다.');
 if (context.__elements.get('statsDetail').innerHTML.includes('gender-marker')) throw new Error('통계 화면에 불필요한 성별 동그라미가 남아 있습니다.');
 if (context.__elements.get('statsDetail').innerHTML.includes('>남<') || context.__elements.get('statsDetail').innerHTML.includes('>여<')) throw new Error('통계 화면에 남·녀 글자 배지가 남아 있습니다.');
-if (!html.includes('.stats-player-list { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 40px; gap: 5px; }') || !html.includes('.stats-player-option { height: 40px; min-height: 40px; padding: 5px 7px; border-radius: 8px; }')) throw new Error('모바일 통계 선수 선택 카드가 2열·2행으로 보이는 밀도로 축소되지 않았습니다.');
+if (!styles.includes('.stats-player-list { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 40px; gap: 5px; }') || !styles.includes('.stats-player-option { height: 40px; min-height: 40px; padding: 5px 7px; border-radius: 8px; }')) throw new Error('모바일 통계 선수 선택 카드가 2열·2행으로 보이는 밀도로 축소되지 않았습니다.');
 
 vm.runInContext('selectStatsPlayer(2)', context);
 assertInRuntime(context, 'statsPlayerId === 2', '통계 대상 선수 변경에 실패했습니다.');
@@ -154,12 +149,12 @@ if (context.__elements.get('statsOverallPanel').hidden !== false || context.__el
 const overallHtml = context.__elements.get('statsOverall').innerHTML;
 if (!overallHtml.includes('기록 경기') || !overallHtml.includes('등록 선수') || !overallHtml.includes('총 출전') || !overallHtml.includes('평균 출전')) throw new Error('전체 통계 요약 카드가 렌더링되지 않았습니다.');
 if (!overallHtml.includes('전체 선수 4명') || !players.every(player => overallHtml.includes(player.name)) || !overallHtml.includes('같은 팀 TOP 3') || !overallHtml.includes('상대 TOP 3')) throw new Error('전체 통계에 모든 선수 이름과 조합 목록이 렌더링되지 않았습니다.');
-if (!overallHtml.includes('stats-all-player-item gender-card gender-m') || !overallHtml.includes('stats-all-player-item gender-card gender-f') || !html.includes('.stats-all-player-item.gender-card.gender-m') || !html.includes('.stats-all-player-item.gender-card.gender-f')) throw new Error('전체 통계 선수 카드에 성별 구분선이 표시되지 않았습니다.');
-if (!/\.stats-overall-panel\s*\{[^}]*overflow:\s*hidden/.test(html) || html.includes('stats-overall-side')) throw new Error('전체 통계가 내부 스크롤 없는 압축형 대시보드로 구성되지 않았습니다.');
-if (!/@media \(min-width: 601px\) and \(max-width: 1024px\)\s*\{[^}]*\.stats-modal-box\s*\{[^}]*height:\s*calc\(100dvh - 32px\)/.test(html) || !/\.stats-overall-content\s*\{[^}]*grid-template-rows:\s*auto auto/.test(html)) throw new Error('아이패드 통계 창이 화면 높이에 맞춰 조절되지 않습니다.');
-if (!/@media \(min-width: 601px\) and \(max-width: 1024px\) and \(orientation: portrait\)\s*\{[^}]*\.stats-overall-ranking \.stats-all-player-list\s*\{[^}]*grid-auto-rows:\s*max-content;[^}]*align-content:\s*start/.test(html) || !/\.stats-all-player-item\s*\{[^}]*min-height:\s*36px;[^}]*padding:\s*5px 7px/.test(html)) throw new Error('아이패드 세로 화면의 전체 선수 항목에 과도한 위아래 여백이 남아 있습니다.');
-if ((html.match(/\.stats-overall-ranking \.stats-all-player-list\s*\{[^}]*grid-auto-rows:\s*max-content;[^}]*align-content:\s*start/g) || []).length < 2 || /\.stats-overall-ranking\s*\{[^}]*min-height:\s*clamp/.test(html)) throw new Error('태블릿과 모바일의 전체 선수 섹션에 불필요한 위아래 여백이 남아 있습니다.');
-if (!/\.stats-all-player-item\s*\{[^}]*min-height:\s*44px;[^}]*flex-direction:\s*column;[^}]*justify-content:\s*center/.test(html) || !/\.stats-all-player-name\s*\{[^}]*width:\s*100%;[^}]*overflow-wrap:\s*anywhere/.test(html)) throw new Error('모바일 전체 선수 카드의 이름과 경기 수가 위아래로 표시되지 않습니다.');
+if (!overallHtml.includes('stats-all-player-item gender-card gender-m') || !overallHtml.includes('stats-all-player-item gender-card gender-f') || !styles.includes('.stats-all-player-item.gender-card.gender-m') || !styles.includes('.stats-all-player-item.gender-card.gender-f')) throw new Error('전체 통계 선수 카드에 성별 구분선이 표시되지 않았습니다.');
+if (!/\.stats-overall-panel\s*\{[^}]*overflow:\s*hidden/.test(styles) || html.includes('stats-overall-side')) throw new Error('전체 통계가 내부 스크롤 없는 압축형 대시보드로 구성되지 않았습니다.');
+if (!/@media \(min-width: 601px\) and \(max-width: 1024px\)\s*\{[^}]*\.stats-modal-box\s*\{[^}]*height:\s*calc\(100dvh - 32px\)/.test(styles) || !/\.stats-overall-content\s*\{[^}]*grid-template-rows:\s*auto auto/.test(styles)) throw new Error('아이패드 통계 창이 화면 높이에 맞춰 조절되지 않습니다.');
+if (!/@media \(min-width: 601px\) and \(max-width: 1024px\) and \(orientation: portrait\)\s*\{[^}]*\.stats-overall-ranking \.stats-all-player-list\s*\{[^}]*grid-auto-rows:\s*max-content;[^}]*align-content:\s*start/.test(styles) || !/\.stats-all-player-item\s*\{[^}]*min-height:\s*36px;[^}]*padding:\s*5px 7px/.test(styles)) throw new Error('아이패드 세로 화면의 전체 선수 항목에 과도한 위아래 여백이 남아 있습니다.');
+if ((styles.match(/\.stats-overall-ranking \.stats-all-player-list\s*\{[^}]*grid-auto-rows:\s*max-content;[^}]*align-content:\s*start/g) || []).length < 2 || /\.stats-overall-ranking\s*\{[^}]*min-height:\s*clamp/.test(styles)) throw new Error('태블릿과 모바일의 전체 선수 섹션에 불필요한 위아래 여백이 남아 있습니다.');
+if (!/\.stats-all-player-item\s*\{[^}]*min-height:\s*44px;[^}]*flex-direction:\s*column;[^}]*justify-content:\s*center/.test(styles) || !/\.stats-all-player-name\s*\{[^}]*width:\s*100%;[^}]*overflow-wrap:\s*anywhere/.test(styles)) throw new Error('모바일 전체 선수 카드의 이름과 경기 수가 위아래로 표시되지 않습니다.');
 if (overallHtml.includes('onclick=')) throw new Error('전체 통계의 표시 전용 순위에 불필요한 이동 동작이 있습니다.');
 vm.runInContext('handleStatsTabKey({ key: "ArrowRight", preventDefault() {} })', context);
 assertInRuntime(context, 'statsView === "player"', '키보드로 선수별 통계 탭을 전환하지 못했습니다.');

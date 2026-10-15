@@ -1,8 +1,6 @@
-const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-
-const script = fs.readFileSync('index.html', 'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
+const { runApp } = require('./helpers/app-runtime');
 const player = { id:1, name:'기존회원', gender:'M', tier:3, games:5, matchingOffset:2, lastTime:20, status:'waiting', shuttlecock:true };
 const court = { id:1, type:'A', active:[], next:[], startTime:null };
 
@@ -17,7 +15,7 @@ function runtime(saved) {
         localStorage:{getItem:key => storage.get(key) ?? null, setItem:(key, value) => storage.set(key, value)},
         setTimeout(){}, clearTimeout(){}, setInterval(){}
     });
-    vm.runInContext(script, context);
+    runApp(context);
     return {context, storage, run:code => vm.runInContext(code, context), set:(id, value) => { context.document.getElementById(id).value = value; }};
 }
 

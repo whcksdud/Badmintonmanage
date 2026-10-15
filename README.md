@@ -137,11 +137,23 @@ Safari 기준 설치 방법입니다. App Store 등록이나 Apple 개발자 계
 
 ```text
 Badmintonmanage/
-├── index.html                  # 화면, 스타일, 게임 관리 로직
+├── index.html                  # 화면 구조와 기능별 스크립트 연결
+├── css/style.css               # 공통·모바일 화면 스타일
+├── js/
+│   ├── app.js                  # 공유 상태, 이벤트·타이머 연결, 앱 초기화
+│   ├── ui.js                   # 화면 렌더링, 공통 모달, 대기실 UI
+│   ├── matching.js             # 자동·수동 선발과 팀 편성
+│   ├── courts.js               # 경기 시작·종료, 예약·이동·교체, 점수
+│   ├── players.js              # 당일 선수 등록·수정, 휴식·대기 시간
+│   ├── members.js              # 저장 회원 관리와 참석자 불러오기
+│   ├── storage.js              # 저장·마이그레이션·되돌리기·백업·복구
+│   ├── statistics.js           # 경기 기록과 전체·선수별 통계
+│   └── pwa.js                  # 앱 설치 안내
 ├── manifest.webmanifest        # PWA 이름, 실행 방식, 아이콘 설정
 ├── service-worker.js           # 앱 파일 캐시와 오프라인 실행
 ├── assets/icons/               # Android·iOS 앱 아이콘
 ├── scripts/generate-icons.ps1  # 앱 아이콘 재생성 스크립트
+├── tests/                      # 기능 회귀·정적 파일 오프라인 테스트
 ├── BACKLOG.md                  # 향후 기능 계획
 ├── algorithm.md                # 매칭 알고리즘 설명
 └── LICENSE
@@ -150,6 +162,16 @@ Badmintonmanage/
 ## 로컬 실행과 개발
 
 빌드 과정이나 패키지 설치 없이 정적 파일만으로 동작합니다. 다만 PWA 설치와 서비스 워커는 `file://`로 HTML 파일을 직접 열었을 때 활성화되지 않으므로 `localhost` 또는 HTTPS 환경이 필요합니다.
+
+기능별 JavaScript는 HTML 하단에서 순서대로 불러오는 일반 스크립트입니다. 기존 HTML 이벤트 핸들러가 같은 전역 함수를 사용하며, 기능 함수가 모두 정의된 뒤 마지막 `js/app.js`에서 저장 데이터를 읽고 앱을 초기화합니다. 공유 상태와 LocalStorage 키·JSON 백업 형식은 기존과 동일합니다.
+
+스타일과 스크립트 경로는 모두 `./`로 시작하므로 GitHub Pages의 `/Badmintonmanage/` 하위 경로에서도 동작합니다. 배포 시 `index.html`과 `css/`, `js/`, 서비스 워커를 함께 반영하세요. 로컬 파일을 새로 추가하거나 변경할 때는 `service-worker.js`의 캐시 목록과 캐시 버전을 함께 갱신합니다.
+
+기능 회귀 테스트와 앱 파일의 오프라인 캐시 테스트는 다음 명령으로 실행합니다.
+
+```bash
+node --test tests/*.test.js
+```
 
 Node.js가 설치되어 있다면 프로젝트 폴더에서 다음과 같이 정적 서버를 실행할 수 있습니다.
 

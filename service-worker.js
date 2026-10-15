@@ -1,10 +1,20 @@
 const CACHE_PREFIX = 'badminton-manager-';
-const APP_CACHE = `${CACHE_PREFIX}app-v17`;
-const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-v17`;
+const APP_CACHE = `${CACHE_PREFIX}app-v19`;
+const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-v19`;
 
 const APP_SHELL = [
     './',
     './index.html',
+    './css/style.css',
+    './js/ui.js',
+    './js/storage.js',
+    './js/matching.js',
+    './js/courts.js',
+    './js/members.js',
+    './js/players.js',
+    './js/statistics.js',
+    './js/pwa.js',
+    './js/app.js',
     './manifest.webmanifest',
     './assets/icons/apple-touch-icon.png',
     './assets/icons/icon-192.png',

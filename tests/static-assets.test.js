@@ -1,0 +1,84 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const test = require('node:test');
+const { html, scripts } = require('./helpers/app-runtime');
+
+test('GitHub Pages 하위 경로에서 캐시를 업데이트하고 앱 파일을 오프라인으로 다시 불러온다', async () => {
+    const root = path.resolve(__dirname, '..');
+    const base = new URL('https://example.test/Badmintonmanage/');
+    const callbacks = new Map();
+    const stores = new Map([
+        ['badminton-manager-app-v17', new Map([[new URL('./', base).href, new Response('old app')]])],
+        ['badminton-manager-runtime-v17', new Map()],
+        ['badminton-manager-app-v18', new Map([[new URL('./css/style.css', base).href, new Response('old design')]])],
+        ['badminton-manager-runtime-v18', new Map()],
+        ['unrelated-app-cache', new Map()]
+    ]);
+    let online = true;
+    const keyFor = request => new URL(typeof request === 'string' ? request : request.url, base).href;
+    const fetchFile = async request => {
+        if (!online) throw new Error('offline');
+        const url = new URL(keyFor(request));
+        assert.ok(url.pathname.startsWith(base.pathname), '앱 파일은 프로젝트 하위 경로에서 요청해야 합니다.');
+        const relative = url.pathname.slice(base.pathname.length) || 'index.html';
+        return new Response(fs.readFileSync(path.join(root, relative)));
+    };
+    const caches = {
+        async open(name) {
+            if (!stores.has(name)) stores.set(name, new Map());
+            const entries = stores.get(name);
+            return {
+                async addAll(requests) {
+                    for (const request of requests) entries.set(keyFor(request), await fetchFile(request));
+                },
+                async put(request, response) { entries.set(keyFor(request), response.clone()); }
+            };
+        },
+        async match(request) {
+            for (const entries of stores.values()) {
+                const response = entries.get(keyFor(request));
+                if (response) return response.clone();
+            }
+        },
+        async keys() { return [...stores.keys()]; },
+        async delete(name) { return stores.delete(name); }
+    };
+    const context = vm.createContext({
+        caches, fetch: fetchFile, Response,
+        self: {
+            addEventListener(type, callback) { callbacks.set(type, callback); },
+            async skipWaiting() {},
+            clients: { async claim() {} }
+        }
+    });
+    vm.runInContext(fs.readFileSync(path.join(root, 'service-worker.js'), 'utf8'), context);
+    let pending;
+    callbacks.get('install')({ waitUntil(promise) { pending = promise; } });
+    await pending;
+    callbacks.get('activate')({ waitUntil(promise) { pending = promise; } });
+    await pending;
+    for (const version of [17, 18]) {
+        assert.equal(stores.has(`badminton-manager-app-v${version}`), false);
+        assert.equal(stores.has(`badminton-manager-runtime-v${version}`), false);
+    }
+    assert.equal(stores.has('unrelated-app-cache'), true);
+
+    const linkedAssets = [
+        ...scripts.map(script => script.src),
+        ...[...html.matchAll(/<link\b[^>]*href="(\.\/[^"]+)"/g)].map(([, href]) => href)
+    ];
+    online = false;
+    for (const asset of ['./', './index.html', ...new Set(linkedAssets)]) {
+        let responsePromise;
+        callbacks.get('fetch')({
+            request: { method: 'GET', mode: asset === './' ? 'navigate' : 'cors', url: new URL(asset, base).href },
+            respondWith(promise) { responsePromise = promise; }
+        });
+        const response = await responsePromise;
+        assert.equal(response?.status, 200, `${asset}는 오프라인에서도 제공되어야 합니다.`);
+        const relative = asset === './' ? 'index.html' : asset.slice(2);
+        assert.deepEqual(Buffer.from(await response.arrayBuffer()), fs.readFileSync(path.join(root, relative)), `${asset} 캐시 내용이 원본과 일치해야 합니다.`);
+    }
+});
