@@ -532,6 +532,7 @@ label { display: block; font-size: 0.85rem; font-weight: 700; color: #64748b; ma
 .settings-item:disabled:hover { background:#fff; }
 .settings-icon { flex:0 0 34px; height:34px; display:grid; place-items:center; background:#f1f5f9; border-radius:9px; color:#475569; }
 .settings-icon .ui-icon { width:18px; height:18px; }
+.settings-meeting-icon { background:#dcfce7; color:#15803d; }
 .settings-copy { flex:1; min-width:0; }
 .settings-copy strong { display:block; color:inherit; font-size:0.86rem; font-weight:750; }
 .settings-copy small { display:block; margin-top:4px; color:#64748b; font-size:0.76rem; line-height:1.55; overflow-wrap:anywhere; }
