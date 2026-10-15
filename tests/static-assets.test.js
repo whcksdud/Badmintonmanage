@@ -34,6 +34,12 @@ test('GitHub Pages 하위 경로에서 캐시를 업데이트하고 앱 파일�
         ['badminton-manager-runtime-v27', new Map()],
         ['badminton-manager-app-v28', new Map([[new URL('./css/style.css', base).href, new Response('old meeting icon')]])],
         ['badminton-manager-runtime-v28', new Map()],
+        ['badminton-manager-app-v29', new Map([[new URL('./js/courts.js', base).href, new Response('old player swap')]])],
+        ['badminton-manager-runtime-v29', new Map()],
+        ['badminton-manager-app-v30', new Map([[new URL('./js/courts.js', base).href, new Response('old team action icon')]])],
+        ['badminton-manager-runtime-v30', new Map()],
+        ['badminton-manager-app-v31', new Map([[new URL('./css/style.css', base).href, new Response('old stats modal spacing')]])],
+        ['badminton-manager-runtime-v31', new Map()],
         ['unrelated-app-cache', new Map()]
     ]);
     let online = true;
@@ -79,7 +85,7 @@ test('GitHub Pages 하위 경로에서 캐시를 업데이트하고 앱 파일�
     await pending;
     callbacks.get('activate')({ waitUntil(promise) { pending = promise; } });
     await pending;
-    for (const version of [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28]) {
+    for (const version of [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]) {
         assert.equal(stores.has(`badminton-manager-app-v${version}`), false);
         assert.equal(stores.has(`badminton-manager-runtime-v${version}`), false);
     }

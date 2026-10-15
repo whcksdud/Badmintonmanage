@@ -215,17 +215,30 @@ function openSwap(cId, area, idx) {
     const court = courts.find(candidate => candidate.id === cId);
     if(!court || !court[area] || !court[area][idx]) return;
 
-    swapTarget = {cId, area, idx};
+    swapTarget = {cId, area, idx, playerId:court[area][idx].id};
     renderSwapList();
 }
 
 function renderSwapList() {
     if(!swapTarget) return;
     const list = document.getElementById('swapList'); list.innerHTML='';
+    const court = courts.find(candidate => candidate.id === swapTarget.cId);
+    const match = court && court[swapTarget.area];
+    if(!match || !match[swapTarget.idx] || match[swapTarget.idx].id !== swapTarget.playerId) return closeSwapModal();
+    const selected = match[swapTarget.idx];
     const allowPlayingPlayers = swapTarget.area === 'next';
-    document.getElementById('swapHelp').innerText = allowPlayingPlayers
-        ? '대기 중인 선수와 현재 게임 중인 선수를 선택할 수 있습니다.'
-        : '대기 중인 선수를 선택할 수 있습니다.';
+    document.getElementById('swapHelp').innerText = `${selected.name} · ${courtLabel(court.id)} ${swapTarget.area === 'next' ? '다음 대기' : '현재 경기'}`;
+    if(match.length === 4) {
+        list.innerHTML = '<h4 class="picker-section-label">팀 변경 · 상대 팀 선수와 자리 바꾸기</h4>';
+        match.forEach((player, index) => {
+            if(Math.floor(index / 2) === Math.floor(swapTarget.idx / 2)) return;
+            if(court.type === 'X' && player.gender !== selected.gender) return;
+            list.innerHTML += `<button type="button" class="team-change-choice" onclick="changeCourtTeam(${index}, ${player.id})" aria-label="${escapeHTML(selected.name)}와 ${escapeHTML(player.name)} 자리 바꾸기">
+                <span><strong>${escapeHTML(player.name)}</strong><small>상대 팀 · ${player.gender === 'M' ? '남' : '여'} · ${tiers[player.tier]}</small></span>${renderUIIcon('swap')}
+            </button>`;
+        });
+    }
+    list.innerHTML += `<h4 class="picker-section-label">선수 교체</h4><p class="picker-section-description">${allowPlayingPlayers ? '대기 중인 선수와 현재 게임 중인 선수를 선택할 수 있습니다.' : '대기 중인 선수를 선택할 수 있습니다.'}</p>`;
 
     const candidates = players.filter(player => {
         const isPlaying = isPlayerInCourtArea(player.id, 'active');
@@ -239,7 +252,7 @@ function renderSwapList() {
     });
 
     if(candidates.length === 0) {
-        list.innerHTML = '<div class="empty-state" style="padding:24px 12px;">교체 가능한 선수가 없습니다.</div>';
+        list.innerHTML += '<div class="empty-state" style="padding:24px 12px;">교체 가능한 선수가 없습니다.</div>';
     }
 
     candidates.forEach(p => {
@@ -249,6 +262,20 @@ function renderSwapList() {
         </button>`;
     });
     document.getElementById('swapModal').style.display='flex';
+}
+
+function changeCourtTeam(otherIndex, expectedPlayerId) {
+    if(!swapTarget) return;
+    const {cId, area, idx, playerId} = swapTarget;
+    const court = courts.find(candidate => candidate.id === cId);
+    const match = court && ['active', 'next'].includes(area) ? court[area] : null;
+    if(!match || match.length !== 4 || !Number.isInteger(otherIndex) || otherIndex < 0 || otherIndex > 3 ||
+        !match[idx] || match[idx].id !== playerId || match[otherIndex].id !== expectedPlayerId ||
+        Math.floor(idx / 2) === Math.floor(otherIndex / 2) ||
+        (court.type === 'X' && match[idx].gender !== match[otherIndex].gender)) return closeSwapModal();
+    [match[idx], match[otherIndex]] = [match[otherIndex], match[idx]];
+    if(!saveAction(`${courtLabel(cId)} ${area === 'next' ? '다음 대기' : '현재 경기'} 팀 변경`)) return;
+    closeSwapModal(); render(); showToast('팀 구성을 변경했습니다.');
 }
 
 function doSwap(pId) {

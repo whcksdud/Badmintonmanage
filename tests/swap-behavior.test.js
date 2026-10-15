@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const { html, styles, appSource, runApp } = require('./helpers/app-runtime');
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
 if (html.includes('>F조</option>') || appSource.includes('const tiers = ["F조"') || !html.includes('<option value="1" selected>E조</option>')) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
-if (!serviceWorker.includes('app-v29') || !serviceWorker.includes('runtime-v29') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
+if (!serviceWorker.includes('app-v32') || !serviceWorker.includes('runtime-v32') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
 
 function createPlayers() {
     return Array.from({ length: 13 }, (_, index) => ({
@@ -760,6 +760,58 @@ test('코트를 변경한 예약에 다른 코트 경기 중 선수가 있으면
     assert.ok(context.__elements.get('toast').innerText.includes('승계 불가'));
     vm.runInContext('completeGame(2); completeGame(1)',context);
     assertInRuntime(context,'courts[0].active.map(p=>p.id).join(",")==="9,14,15,16" && courts[0].next.length===0','다른 코트 경기 종료 후 코트를 변경한 예약을 시작하지 못했습니다.');
+});
+
+test('코트 안 팀 변경은 현재 경기·다음 대기의 자리만 바꾸고 저장·재접속·되돌리기를 지원한다', () => {
+    for(const area of ['active','next']) {
+        const context=transferRuntime();
+        const run=code=>vm.runInContext(code,context);
+        const before=run('serializeState()');
+        const unchanged=run('JSON.stringify({players,history,timers:courts.map(c=>c.startTime),otherCourt:courts[1]})');
+        const ids=run(`courts[0].${area}.map(p=>p.id).join(',')`).split(',').map(Number);
+        run(`openSwap(1,'${area}',0)`);
+        const list=context.__elements.get('swapList').innerHTML;
+        assert.ok(list.includes(`changeCourtTeam(2, ${ids[2]})`) && list.includes(`changeCourtTeam(3, ${ids[3]})`));
+        assert.ok(!list.includes(`changeCourtTeam(1, ${ids[1]})`));
+        run(`changeCourtTeam(2,${ids[2]}); changeCourtTeam(2,${ids[2]})`);
+        assert.equal(run(`courts[0].${area}.map(p=>p.id).join(',')`),[ids[2],ids[1],ids[0],ids[3]].join(','));
+        assert.equal(run('JSON.stringify({players,history,timers:courts.map(c=>c.startTime),otherCourt:courts[1]})'),unchanged);
+        const reloaded=createRuntime([],[],Object.fromEntries(context.__storage));
+        assert.equal(vm.runInContext('serializeState()',reloaded),run('serializeState()'));
+        vm.runInContext('undoLastAction(); executeConfirm()',reloaded);
+        assert.equal(vm.runInContext('serializeState()',reloaded),before);
+        run('completeGame(1)');
+        if(area==='next') run('completeGame(1)');
+        assert.equal(run('history[0].pIds.join(",")'),[ids[2],ids[1],ids[0],ids[3]].join(','),'변경한 팀 구성이 경기 기록에 반영되어야 합니다.');
+    }
+});
+
+test('혼복 코트의 팀 변경은 같은 성별끼리만 허용한다', () => {
+    const context=transferRuntime();
+    vm.runInContext('courts[0].type="X"; saveAction("코트 유형 변경"); openSwap(1,"active",0)',context);
+    const list=context.__elements.get('swapList').innerHTML;
+    assert.ok(list.includes('changeCourtTeam(2, 3)'));
+    assert.ok(!list.includes('changeCourtTeam(3, 4)'));
+    const before=vm.runInContext('serializeState()',context);
+    vm.runInContext('changeCourtTeam(3,4)',context);
+    assert.equal(vm.runInContext('serializeState()',context),before);
+    vm.runInContext('openSwap(1,"active",0); changeCourtTeam(2,3)',context);
+    assertInRuntime(context,'courts[0].active[0].id===3 && courts[0].active[2].id===1','혼복 팀 변경이 적용되지 않았습니다.');
+});
+
+test('팀 변경 저장 실패와 오래된 선택은 현재 배정을 훼손하지 않는다', () => {
+    const context=transferRuntime();
+    const before=vm.runInContext('serializeState()',context);
+    vm.runInContext('openSwap(1,"next",0)',context);
+    const write=context.localStorage.setItem;
+    context.localStorage.setItem=()=>{throw new Error('QuotaExceededError');};
+    vm.runInContext('changeCourtTeam(2,7)',context);
+    assert.equal(vm.runInContext('serializeState()',context),before);
+    context.localStorage.setItem=write;
+    vm.runInContext('openSwap(1,"active",0); [courts[0].active[0],courts[0].active[1]]=[courts[0].active[1],courts[0].active[0]]',context);
+    const changed=vm.runInContext('serializeState()',context);
+    vm.runInContext('changeCourtTeam(2,3)',context);
+    assert.equal(vm.runInContext('serializeState()',context),changed);
 });
 
 console.log('매칭·데이터 보호·코트 상태·연속 입력 방지·수동 배정 후 시작 테스트 통과');

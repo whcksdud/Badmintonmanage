@@ -341,14 +341,14 @@ function renderChip(court, area, idx, cls='') {
     const playingBadge = isPlayingReservation
         ? '<span class="next-playing-badge">게임 중</span>'
         : '';
-    return `<div class="player-chip match-player-chip gender-card ${getGenderCardClass(p.gender)} ${cls}" onclick="openSwap(${court.id}, '${area}', ${idx})">
+    return `<button type="button" class="player-chip match-player-chip gender-card ${getGenderCardClass(p.gender)} ${cls}" aria-label="${safePlayerName} · ${idx < 2 ? 'A' : 'B'}팀 · 선수 변경" onclick="openSwap(${court.id}, '${area}', ${idx})">
         ${renderGenderAccessibility(p.gender)}
         ${playingBadge}
         <div class="match-player-content">
             <span class="p-name" title="${safePlayerName}">${safePlayerName}</span>
             <span class="p-info">${tiers[p.tier]}</span>
         </div>
-    </div>`;
+    </button>`;
 }
 
 function getGenderCardClass(gender) {
