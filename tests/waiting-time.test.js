@@ -22,7 +22,7 @@ function runtime(storage = new Map([['bm_state_v14', JSON.stringify({current:sta
 }
 
 let app = runtime();
-assert.equal(app.run('players.every(p => p.waitingSince === 100000 && p.lastTime === 0)'), true, '이전 데이터는 현재부터 계산하고 기존 정렬 기준을 바꾸지 않습니다.');
+assert.equal(app.run('players.every(p => p.waitingSince === 100000 && p.lastTime === 0)'), true, '대기 이력이 없는 이전 데이터는 현재부터 계산하고 마지막 경기 시각은 보존합니다.');
 assert.equal(JSON.parse(app.storage.get('bm_state_v14')).current.players[0].waitingSince, 100000);
 assert.equal(app.run('undoLabel'), '기존 작업');
 assert.equal(app.run('JSON.parse(undoState).players[0].waitingSince'), 100000, '마이그레이션 시 기존 되돌리기를 유지합니다.');

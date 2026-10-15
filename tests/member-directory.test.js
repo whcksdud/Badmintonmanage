@@ -43,7 +43,7 @@ assert.equal(app.run('document.getElementById("memberList").innerHTML.includes("
 app.set('memberSearch', '신규');
 app.run('selectVisibleMembers(); loadSelectedMembers()');
 assert.equal(app.run('players.length'), 2);
-assert.equal(app.run('players[1].games === 0 && players[1].matchingOffset === 6 && !players[1].shuttlecock && players[1].status === "waiting"'), true, '출석에는 이전 경기나 셔틀콕 정보를 복사하지 않고 현행 매칭 기준을 적용해야 합니다.');
+assert.equal(app.run('players[1].games === 0 && players[1].matchingOffset === 7 && !players[1].shuttlecock && players[1].status === "waiting"'), true, '출석에는 이전 경기나 셔틀콕 정보를 복사하지 않고 활동 선수 평균의 매칭 기준을 적용해야 합니다.');
 app.run('openMembersModal(); selectedMemberIds.add(members[1].id); loadSelectedMembers()');
 assert.equal(app.run('players.length'), 2, '직접 호출해도 중복 참석을 방지해야 합니다.');
 

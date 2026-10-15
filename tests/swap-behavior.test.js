@@ -4,7 +4,7 @@ const vm = require('vm');
 const { html, styles, appSource, runApp } = require('./helpers/app-runtime');
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
 if (html.includes('>F조</option>') || appSource.includes('const tiers = ["F조"') || !html.includes('<option value="1" selected>E조</option>')) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
-if (!serviceWorker.includes('app-v19') || !serviceWorker.includes('runtime-v19') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
+if (!serviceWorker.includes('app-v20') || !serviceWorker.includes('runtime-v20') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
 
 function createPlayers() {
     return Array.from({ length: 13 }, (_, index) => ({
@@ -524,15 +524,15 @@ function assertInRuntime(context, assertion, message) {
     const roster = [{id:1,name:'기존',gender:'M',tier:3,games:6,matchingOffset:0,status:'waiting',lastTime:0,shuttlecock:false}];
     const context = createRuntime(roster, []);
     vm.runInContext('openPModal(); document.getElementById("pName").value = "신규"; savePlayer()', context);
-    assertInRuntime(context, 'players[1].games === 0 && getMatchingGameCount(players[1]) === 5 && getPlayerStatistics(players[1].id).recordedGames === 0', '신규 선수의 실제 경기 수와 초기 매칭 보정이 분리되지 않았습니다.');
+    assertInRuntime(context, 'players[1].games === 0 && getMatchingGameCount(players[1]) === 6 && getPlayerStatistics(players[1].id).recordedGames === 0', '신규 선수의 실제 경기 수와 활동 선수 평균의 초기 매칭 보정이 분리되지 않았습니다.');
     vm.runInContext('openPModal(players[1].id)', context);
-    if(!context.__elements.get('playerMatchingInfo').innerText.includes('실제 0경기 · 매칭 기준 5경기')) throw new Error('선수 상세에 실제 경기 수와 매칭 기준이 표시되지 않았습니다.');
+    if(!context.__elements.get('playerMatchingInfo').innerText.includes('실제 0경기 · 매칭 기준 6경기')) throw new Error('선수 상세에 실제 경기 수와 매칭 기준이 표시되지 않았습니다.');
     vm.runInContext('document.getElementById("pGames").value = "-1"; savePlayer()', context);
     assertInRuntime(context, 'players[1].games === 0', '음수 경기 수 입력이 허용되었습니다.');
 
     const bulk = createRuntime(roster, []);
     vm.runInContext('document.getElementById("bulkNames").value = "일괄1\\n일괄2"; document.getElementById("bulkGen").value = "F"; document.getElementById("bulkTier").value = "3"; saveBulkPlayers()', bulk);
-    assertInRuntime(bulk, 'players.length === 3 && players.slice(1).every(p=>p.games===0 && getMatchingGameCount(p)===5)', '일괄 등록의 초기 보정은 같은 기준을 사용하고 실제 경기는 0이어야 합니다.');
+    assertInRuntime(bulk, 'players.length === 3 && players.slice(1).every(p=>p.games===0 && getMatchingGameCount(p)===6)', '일괄 등록의 초기 보정은 같은 활동 선수 평균을 사용하고 실제 경기는 0이어야 합니다.');
 }
 
 {

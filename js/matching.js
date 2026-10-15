@@ -160,9 +160,13 @@ function applyMatch(cId, selectedPlayers, targetArea) {
     let bestTeam = [];
 
     if(ms.length === 2 && fs.length === 2) {
+         const gap1 = Math.abs((ms[0].tier + fs[0].tier) - (ms[1].tier + fs[1].tier));
+         const gap2 = Math.abs((ms[0].tier + fs[1].tier) - (ms[1].tier + fs[0].tier));
          const s1 = getScore(ms[0].id, fs[0].id) + getScore(ms[1].id, fs[1].id);
          const s2 = getScore(ms[0].id, fs[1].id) + getScore(ms[1].id, fs[0].id);
-         bestTeam = (s1 <= s2) ? [ms[0], fs[0], ms[1], fs[1]] : [ms[0], fs[1], ms[1], fs[0]];
+         // Balance first; use partner history only when both gaps are equal.
+         const preferFirst = gap1 < gap2 || (gap1 === gap2 && s1 <= s2);
+         bestTeam = preferFirst ? [ms[0], fs[0], ms[1], fs[1]] : [ms[0], fs[1], ms[1], fs[0]];
     } else {
          const sA = getScore(selectedPlayers[0].id, selectedPlayers[3].id) + getScore(selectedPlayers[1].id, selectedPlayers[2].id);
          const sB = getScore(selectedPlayers[0].id, selectedPlayers[2].id) + getScore(selectedPlayers[1].id, selectedPlayers[3].id);
@@ -181,6 +185,8 @@ function applyMatch(cId, selectedPlayers, targetArea) {
 }
 
 function shuffleByGameCount(list, getGameCount = getMatchingGameCount) {
+    const now = Date.now();
+    const waitingSince = player => Number.isFinite(player.waitingSince) ? player.waitingSince : now;
     const groups = {};
     list.forEach(player => {
         const gameCount = getGameCount(player);
@@ -190,8 +196,10 @@ function shuffleByGameCount(list, getGameCount = getMatchingGameCount) {
     let result = [];
     Object.keys(groups).sort((a,b)=>a-b).forEach(g => {
         const group = groups[g];
+        // Shuffle before the stable wait-time sort so exact ties stay random.
         for (let i = group.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [group[i], group[j]] = [group[j], group[i]]; }
-        result = [...result, ...group];
+        group.sort((a, b) => waitingSince(a) - waitingSince(b));
+        result.push(...group);
     });
     return result;
 }
@@ -209,5 +217,5 @@ function getScore(id1, id2) {
 function getInitialMatchingGames() {
     const activePlayers = players.filter(player => player.status !== 'resting');
     if(activePlayers.length === 0) return 0;
-    return Math.max(0, Math.floor(activePlayers.reduce((sum, player) => sum + getMatchingGameCount(player), 0) / activePlayers.length) - 1);
+    return Math.floor(activePlayers.reduce((sum, player) => sum + getMatchingGameCount(player), 0) / activePlayers.length);
 }
