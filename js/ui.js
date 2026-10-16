@@ -1,5 +1,56 @@
 // Shared dialogs, roster/court rendering, and responsive navigation.
 
+let openReserveTypeCourtId = null;
+
+function closeReserveTypeMenu(restoreFocus = false) {
+    if(openReserveTypeCourtId === null) return;
+    const menu = document.getElementById(`reserve-type-menu-${openReserveTypeCourtId}`);
+    const trigger = document.getElementById(`reserve-type-${openReserveTypeCourtId}`);
+    const wasOpen = menu && !menu.hidden;
+    if(menu) menu.hidden = true;
+    trigger?.setAttribute('aria-expanded', 'false');
+    openReserveTypeCourtId = null;
+    if(restoreFocus && wasOpen) trigger?.focus({preventScroll:true});
+}
+
+function toggleReserveTypeMenu(cId) {
+    const court = courts.find(c => c.id === cId);
+    const menu = document.getElementById(`reserve-type-menu-${cId}`);
+    if(!court || court.next.length || !menu) return false;
+    const opening = openReserveTypeCourtId !== cId;
+    closeReserveTypeMenu();
+    if(!opening) return false;
+    openReserveTypeCourtId = cId;
+    menu.hidden = false;
+    document.getElementById(`reserve-type-${cId}`).setAttribute('aria-expanded', 'true');
+    document.getElementById(`reserve-type-${cId}-${court.type}`)?.focus({preventScroll:true});
+    return true;
+}
+
+function handleReserveTypeKey(event, cId) {
+    if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key)) return;
+    if(openReserveTypeCourtId !== cId) {
+        if(event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            toggleReserveTypeMenu(cId);
+        }
+        return;
+    }
+    event.preventDefault();
+    const options = ['A','M','F','X'];
+    const current = options.findIndex(type => document.activeElement?.id === `reserve-type-${cId}-${type}`);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? 3 : (Math.max(0,current) + (event.key === 'ArrowDown' ? 1 : 3)) % 4;
+    document.getElementById(`reserve-type-${cId}-${options[next]}`)?.focus({preventScroll:true});
+}
+
+function handleReserveTypeOutside(event) {
+    if(!event.target.closest?.('.reserve-split')) closeReserveTypeMenu();
+}
+
+function handleReserveTypeEscape(event) {
+    if(event.key === 'Escape') closeReserveTypeMenu(true);
+}
+
 function setFormChoice(fieldId, value, options) {
     document.getElementById(fieldId).value = String(value);
     options.forEach(option => {
@@ -251,6 +302,7 @@ function renderRoster() {
 }
 
 function render() {
+    closeReserveTypeMenu();
     if(document.getElementById('membersModal').style.display === 'flex') renderMembers();
     document.getElementById('storageError').innerText = storageError;
     document.getElementById('storageError').hidden = !storageError;
@@ -267,12 +319,8 @@ function render() {
         const blockers = c.next.filter(player => isPlayerPlayingOutsideCourt(player.id, c.id));
         const stateLabel = hasActive ? '경기 중' : !hasNext ? '비어 있음' : blockers.length ? '다른 코트 종료 대기' : '시작 가능';
         const stateColor = hasActive ? '#2563eb' : blockers.length ? '#d97706' : hasNext ? '#16a34a' : '#94a3b8';
-        const typeSel = `<select class="type-select" onchange="setType(${c.id}, this.value)" aria-label="코트 ${idx + 1} 경기 유형">
-            <option value="A" ${c.type=='A'?'selected':''}>자율</option>
-            <option value="M" ${c.type=='M'?'selected':''}>남복</option>
-            <option value="F" ${c.type=='F'?'selected':''}>여복</option>
-            <option value="X" ${c.type=='X'?'selected':''}>혼복</option>
-        </select>`;
+        const typeNames = {A:'자율', M:'남복', F:'여복', X:'혼복'};
+        const typeOptions = Object.entries(typeNames).map(([type,name]) => `<button id="reserve-type-${c.id}-${type}" type="button" class="btn reserve-type-option" aria-pressed="${c.type === type}" onclick="setType(${c.id}, '${type}')"><span>${name}</span>${renderUIIcon('checkmark')}</button>`).join('');
 
         let activeHTML = hasActive ? renderMatchTeams(c, 'active') : `<div class="empty-state"><span class="empty-state-content">${renderUIIcon('shuttle')}<span>${hasNext ? '예약 선수 입장 대기' : '선수를 배정해 주세요'}</span></span></div>`;
 
@@ -286,8 +334,14 @@ function render() {
                         </div>`;
         } else {
              nextHTML = `
-             <div style="display:flex; gap:5px;">
-                 <button class="btn btn-reserve" style="flex:2" onclick="matchCourt(${c.id})">${hasActive ? '다음 예약' : `${renderUIIcon('bolt')}<span>자동 매칭</span>`}</button>
+             <div class="reservation-actions">
+                 <div class="reserve-split" onkeydown="handleReserveTypeKey(event, ${c.id})">
+                     <div class="reserve-split-control">
+                         <button type="button" class="btn btn-reserve reserve-match" onclick="matchCourt(${c.id})" aria-label="코트 ${idx+1} ${typeNames[c.type]} ${hasActive ? '다음 예약' : '자동 매칭'}">${hasActive ? '다음 예약' : '자동 매칭'}</button>
+                         <button id="reserve-type-${c.id}" type="button" class="btn reserve-type-trigger" onclick="toggleReserveTypeMenu(${c.id})" aria-label="코트 ${idx+1} 예약 경기 유형 · ${typeNames[c.type]}" aria-expanded="false" aria-controls="reserve-type-menu-${c.id}"><span>${typeNames[c.type]}</span>${renderUIIcon('chevron-right')}</button>
+                     </div>
+                     <div id="reserve-type-menu-${c.id}" class="reserve-type-menu" role="group" aria-label="코트 ${idx+1} 예약 경기 유형" hidden>${typeOptions}</div>
+                 </div>
                  <button class="btn btn-outline" style="flex:1" onclick="openManualMatch(${c.id})">수동</button>
              </div>`;
         }
@@ -308,7 +362,7 @@ function render() {
                     <span id="timer-${c.id}" class="timer-badge" style="display:${hasActive && c.startTime ? 'inline-flex' : 'none'}">${hasActive && c.startTime ? formatElapsedTime(c.startTime) : '00:00'}</span>
                 </div>
                 <div class="cc-actions">
-                    ${typeSel} <button type="button" class="court-delete" onclick="delCourt(${c.id})" aria-label="코트 ${idx+1} 삭제" title="코트 삭제">${renderUIIcon('trash')}</button>
+                    <button type="button" class="court-delete" onclick="delCourt(${c.id})" aria-label="코트 ${idx+1} 삭제" title="코트 삭제">${renderUIIcon('trash')}</button>
                 </div>
             </div>
             <div class="game-section">

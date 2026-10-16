@@ -75,6 +75,9 @@ setInterval(() => {
 }, 1000);
 
 document.addEventListener('click', handleRosterActionSheetOutsideClick);
+document.addEventListener('click', handleReserveTypeOutside);
+document.addEventListener('focusin', handleReserveTypeOutside);
+document.addEventListener('keydown', handleReserveTypeEscape);
 
 render();
 updateInstallButton();

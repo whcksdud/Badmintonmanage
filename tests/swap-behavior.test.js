@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const { html, styles, appSource, runApp } = require('./helpers/app-runtime');
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
 if (html.includes('>F조</option>') || appSource.includes('const tiers = ["F조"') || !['pTier','bulkTier','memberTier'].every(field => html.includes(`id="${field}-1" value="1" checked`))) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
-if (!serviceWorker.includes('app-v42') || !serviceWorker.includes('runtime-v42') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
+if (!serviceWorker.includes('app-v61') || !serviceWorker.includes('runtime-v61') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
 
 function createPlayers() {
     return Array.from({ length: 13 }, (_, index) => ({
@@ -229,7 +229,7 @@ function assertInRuntime(context, assertion, message) {
     const gameSectionHtml = courtHtml.slice(gameSectionStart, nextSectionStart);
     if (!headerHtml.includes('코트 1') || !headerHtml.includes('경기 중') || !headerHtml.includes('timer-1')) throw new Error('진행 상태와 경과 시간이 코트 제목 줄에 표시되지 않았습니다.');
     if (gameSectionHtml.includes('경기 중') || gameSectionHtml.includes('timer-1')) throw new Error('진행 상태 줄이 경기 영역의 공간을 계속 차지하고 있습니다.');
-    if (/class="type-select"[^>]*disabled/.test(courtHtml)) throw new Error('진행 중인 코트의 경기 유형 선택이 잠겨 있습니다.');
+    assert.ok(!headerHtml.includes('<select'), '경기 유형 선택은 코트 제목 줄에서 제거해야 합니다.');
     vm.runInContext('setType(1, "X")', context);
     assertInRuntime(context, 'courts.find(court => court.id === 1).type === "X"', '진행 중인 코트의 경기 유형 변경에 실패했습니다.');
 

@@ -220,7 +220,15 @@ function syncPlayerAssignmentStatuses(playerIds, fallbackStatus = null) {
     [...new Set(playerIds)].forEach(playerId => syncPlayerAssignmentStatus(playerId, fallbackStatus));
 }
 
-function setType(id, val) { courts.find(c=>c.id===id).type = val; if(!saveAction(`${courtLabel(id)} 경기 유형 변경`)) return; render(); }
+function setType(id, val) {
+    const court = courts.find(c => c.id === id);
+    if(!court || !['A','M','F','X'].includes(val)) return false;
+    court.type = val;
+    if(!saveAction(`${courtLabel(id)} 경기 유형 변경`)) return false;
+    render();
+    document.getElementById(`reserve-type-${id}`)?.focus({preventScroll:true});
+    return true;
+}
 
 function addCourt() {
     courts.push({id:Date.now(), type:'A', active:[], next:[], startTime:null});

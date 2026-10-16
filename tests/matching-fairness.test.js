@@ -32,6 +32,58 @@ function runtime(state, random = () => 0, saved = null) {
 }
 function selectedIds(app) { return app.json('courts[0].next.map(p => p.id)').sort((a, b) => a - b); }
 
+test('예약 버튼 안 유형 목록은 한 코트씩 열리고 외부 클릭·Escape·재클릭으로 닫힌다', () => {
+    const roster=Array.from({length:12},(_,i)=>player(i+1));
+    const app=runtime({players:roster,courts:[court(1),court(2),court(3,'A',[],roster.slice(0,4))]});
+    const before=app.run('serializeState()');
+    assert.equal(app.run('toggleReserveTypeMenu(1)'),true);
+    assert.equal(app.elements.get('reserve-type-menu-1').hidden,false);
+    app.run('handleReserveTypeOutside({target:{closest:()=>({})}})');
+    assert.equal(app.run('openReserveTypeCourtId'),1);
+    app.run('toggleReserveTypeMenu(2)');
+    assert.equal(app.elements.get('reserve-type-menu-1').hidden,true);
+    assert.equal(app.elements.get('reserve-type-menu-2').hidden,false);
+    assert.equal(app.run('toggleReserveTypeMenu(3)'),false,'예약이 있는 코트의 유형 목록은 열지 않습니다.');
+    app.run('handleReserveTypeEscape({key:"Escape"})');
+    assert.equal(app.run('openReserveTypeCourtId'),null);
+    assert.equal(app.elements.get('reserve-type-menu-2').hidden,true);
+    app.run('toggleReserveTypeMenu(1); handleReserveTypeOutside({target:{closest:()=>null}})');
+    assert.equal(app.elements.get('reserve-type-menu-1').hidden,true);
+    app.run('toggleReserveTypeMenu(1)');
+    assert.equal(app.run('toggleReserveTypeMenu(1)'),false);
+    assert.equal(app.run('serializeState()'),before);
+});
+
+test('오른쪽에서 유형만 바꾸면 편성을 유지하고 왼쪽 예약은 선택한 유형으로 실행한다', () => {
+    const roster=Array.from({length:12},(_,i)=>player(i+1,{gender:i>=8?'F':'M',status:i<4?'playing':'waiting'}));
+    const app=runtime({players:roster,courts:[court(1,'A',roster.slice(0,4)),court(2)]});
+    const before=app.json('[players,courts.map(c=>[c.active,c.next,c.startTime]),history]');
+    app.run('toggleReserveTypeMenu(1)');
+    assert.equal(app.run('setType(1,"F")'),true);
+    assert.equal(app.run('openReserveTypeCourtId'),null);
+    assert.deepEqual(app.json('[players,courts.map(c=>[c.active,c.next,c.startTime]),history]'),before);
+    assert.ok(app.elements.get('courtGrid').innerHTML.includes('aria-label="코트 1 예약 경기 유형 · 여복"'));
+    const changed=app.run('serializeState()');
+    assert.equal(app.run('setType(99,"X")'),false);
+    assert.equal(app.run('setType(1,"invalid")'),false);
+    assert.equal(app.run('serializeState()'),changed);
+    app.context.localStorage.setItem=()=>{throw new Error('quota');};
+    assert.equal(app.run('setType(1,"M")'),false);
+    assert.equal(app.run('courts[0].type'),'F');
+    assert.equal(app.run('serializeState()'),changed);
+    app.context.localStorage.setItem=(key,value)=>app.storage.set(key,value);
+    app.run('matchCourt(1)');
+    assert.deepEqual(selectedIds(app),[9,10,11,12]);
+    assert.equal(app.run('courts[0].next.every(p=>p.gender==="F")'),true);
+    assert.equal(app.run('courts[1].next.length'),0);
+    assert.deepEqual(app.json('courts[0].active.map(p=>p.id)'),[1,2,3,4]);
+    assert.equal(app.run('courts[0].startTime'),1000);
+    assert.ok(!app.elements.get('courtGrid').innerHTML.includes('id="reserve-type-1"'));
+    app.run('undoLastAction(); executeConfirm()');
+    assert.equal(app.run('courts[0].next.length'),0);
+    assert.equal(app.run('courts[0].type'),'F');
+});
+
 test('조합 이력이 없으면 자동 선발은 경기 수와 대기 시작 시각 순서를 따른다', () => {
     const roster = [
         player(1, { games: 1, matchingOffset: 2, waitingSince: 0 }),
