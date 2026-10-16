@@ -445,6 +445,19 @@ label { display: block; font-size: 0.85rem; font-weight: 700; color: #64748b; ma
 .member-import-list strong { min-width:0; overflow-wrap:anywhere; }
 .member-import-list span { flex-shrink:0; color:#64748b; font-size:12px; }
 #memberImportLink { resize:none; }
+.member-import-input { display:flex; flex-direction:column; }
+.member-import-input[hidden] { display:none; }
+.member-import-input textarea { margin-bottom:0; }
+.member-import-input .member-share-note { margin:8px 0 20px; text-align:left; }
+.member-import-check { width:100%; min-height:44px; }
+.member-qr-camera { position:relative; aspect-ratio:1; overflow:hidden; border-radius:12px; background:#0f172a; }
+.member-qr-camera video { display:block; width:100%; height:100%; object-fit:contain; }
+.member-qr-guide { position:absolute; inset:14%; border:2px solid rgba(255,255,255,0.85); border-radius:12px; pointer-events:none; }
+.member-qr-placeholder { position:absolute; inset:0; display:grid; place-items:center; color:#94a3b8; background:#0f172a; }
+.member-qr-placeholder .ui-icon { width:56px; height:56px; }
+.member-qr-placeholder[hidden], #memberQrScanRetry[hidden], #memberQrPhoto[hidden], #memberQrCanvas[hidden] { display:none; }
+.member-qr-status { margin:14px 0; color:var(--text-secondary); font-size:14px; line-height:1.7; }
+#memberQrScanRetry { width:100%; }
 #memberImportButton[hidden] { display:none; }
 .dialog-actions { flex:0 0 auto; display:flex; gap:10px; padding:14px 20px; border-top:1px solid var(--border); background:var(--card); }
 .dialog-actions>.btn { flex:1; }

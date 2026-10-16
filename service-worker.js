@@ -1,6 +1,6 @@
 const CACHE_PREFIX = 'badminton-manager-';
-const APP_CACHE = `${CACHE_PREFIX}app-v65`;
-const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-v65`;
+const APP_CACHE = `${CACHE_PREFIX}app-v67`;
+const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-v67`;
 
 const APP_SHELL = [
     './',
@@ -12,7 +12,9 @@ const APP_SHELL = [
     './js/courts.js',
     './js/members.js',
     './js/vendor/qrcode.js',
+    './js/vendor/jsQR.js',
     './js/member-share.js',
+    './js/member-qr-scan.js',
     './js/players.js',
     './js/statistics.js',
     './js/pwa.js',

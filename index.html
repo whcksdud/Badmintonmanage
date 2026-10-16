@@ -235,6 +235,7 @@
             <p>이름·성별·급수만 공유합니다. 받는 기기의 기존 명단은 유지하고 같은 회원은 제외합니다.</p>
             <div class="member-toolbar">
                 <button class="btn btn-outline" onclick="openMemberShare()"><svg class="ui-icon" aria-hidden="true"><use href="#icon-qr"></use></svg>명단 공유</button>
+                <button class="btn btn-outline" onclick="openMemberQrScan()"><svg class="ui-icon" aria-hidden="true"><use href="#icon-qr"></use></svg>QR 스캔</button>
                 <button class="btn btn-outline" onclick="openMemberImport()">코드 불러오기</button>
             </div>
         </section>
@@ -300,11 +301,11 @@
 <div id="memberImportModal" class="modal" style="z-index:1100;" role="dialog" aria-modal="true" aria-labelledby="memberImportTitle"><div class="modal-box form-modal">
     <div class="dialog-heading"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg><h3 id="memberImportTitle">회원명단 불러오기</h3></div>
     <div class="dialog-body">
-        <div id="memberImportInput">
+        <div id="memberImportInput" class="member-import-input">
             <label for="memberImportLink">회원명단 공유 코드</label>
-            <textarea id="memberImportLink" rows="4" placeholder="BM2-로 시작하는 코드 전체를 붙여 넣으세요" spellcheck="false"></textarea>
-            <p class="member-share-note">이전에 받은 회원명단 공유 링크도 사용할 수 있습니다.</p>
-            <button class="btn btn-outline" onclick="previewMemberImport()">명단 확인</button>
+            <textarea id="memberImportLink" rows="4" placeholder="BM2-로 시작하는 코드 전체를 붙여 넣으세요" spellcheck="false" aria-describedby="memberImportHint"></textarea>
+            <p id="memberImportHint" class="member-share-note">이전에 받은 회원명단 공유 링크도 사용할 수 있습니다.</p>
+            <button class="btn btn-primary member-import-check" onclick="previewMemberImport()">명단 확인</button>
         </div>
         <div id="memberImportPreview" hidden>
             <p id="memberImportSummary" class="member-share-summary" aria-live="polite"></p>
@@ -314,6 +315,24 @@
         </div>
     </div>
     <div class="dialog-actions"><button id="memberImportButton" class="btn btn-primary" onclick="importSharedMembers()" hidden>회원 추가</button><button class="btn btn-outline" onclick="closeMemberImport()">닫기</button></div>
+</div></div>
+
+<div id="memberQrScanModal" class="modal" style="z-index:1200;" role="dialog" aria-modal="true" aria-labelledby="memberQrScanTitle"><div class="modal-box form-modal">
+    <div class="dialog-heading"><svg class="ui-icon" aria-hidden="true"><use href="#icon-qr"></use></svg><h3 id="memberQrScanTitle">회원명단 QR 스캔</h3></div>
+    <div class="dialog-body">
+        <p class="member-share-intro">보내는 기기의 회원명단 QR을 비춰 주세요.</p>
+        <div class="member-qr-camera">
+            <video id="memberQrVideo" autoplay muted playsinline aria-label="QR 스캔 카메라"></video>
+            <div class="member-qr-guide" aria-hidden="true"></div>
+            <div id="memberQrScanPlaceholder" class="member-qr-placeholder"><svg class="ui-icon" aria-hidden="true"><use href="#icon-qr"></use></svg></div>
+        </div>
+        <canvas id="memberQrCanvas" hidden></canvas>
+        <p id="memberQrScanStatus" class="member-qr-status" role="status" aria-live="polite"></p>
+        <button id="memberQrScanRetry" class="btn btn-outline" onclick="startMemberQrCamera()" hidden>카메라 다시 켜기</button>
+        <p class="member-share-note">영상과 사진은 기기 안에서만 처리합니다. 명단을 확인하고 추가하면 기존 회원은 유지하고 중복은 제외합니다.</p>
+        <input id="memberQrPhoto" type="file" accept="image/*" onchange="readMemberQrPhoto(this)" hidden>
+    </div>
+    <div class="dialog-actions"><button class="btn btn-outline" onclick="document.getElementById('memberQrPhoto').click()">사진에서 읽기</button><button class="btn btn-outline" onclick="openMemberImport()">코드 입력</button><button class="btn btn-outline" onclick="closeMemberQrScan()">닫기</button></div>
 </div></div>
 
 <!-- 설정 모달 -->
@@ -573,7 +592,9 @@
     <script src="./js/courts.js"></script>
     <script src="./js/members.js"></script>
     <script src="./js/vendor/qrcode.js"></script>
+    <script src="./js/vendor/jsQR.js"></script>
     <script src="./js/member-share.js"></script>
+    <script src="./js/member-qr-scan.js"></script>
     <script src="./js/players.js"></script>
     <script src="./js/statistics.js"></script>
     <script src="./js/pwa.js"></script>

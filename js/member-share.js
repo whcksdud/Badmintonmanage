@@ -198,6 +198,7 @@ function closeMemberShare() {
 }
 
 function openMemberImport() {
+    closeMemberQrScan();
     updateMemberQrImportState();
     memberImportRequest++;
     pendingMemberImport = null;
@@ -209,6 +210,7 @@ function openMemberImport() {
 }
 
 function closeMemberImport() {
+    closeMemberQrScan();
     updateMemberQrImportState();
     memberImportRequest++;
     document.getElementById('memberImportModal').style.display = 'none';
@@ -231,6 +233,7 @@ function previewMemberImport(link = document.getElementById('memberImportLink').
     document.getElementById('memberImportButton').hidden = true;
     const accept = data => {
         if(request !== memberImportRequest) return false;
+        closeMemberQrScan();
         if(fromQr) updateMemberQrImportState(link);
         pendingMemberImport = data;
         renderMemberImportPreview();
