@@ -4,6 +4,7 @@ const MEMBER_QR_URL_LIMIT = 450;
 const MEMBER_CODE_PREFIX = 'BM2-';
 const MEMBER_CODE_BYTE_LIMIT = 2000000;
 const MEMBER_CODE_CHAR_LIMIT = 2700000;
+const MEMBER_QR_HISTORY_KEY = 'bmPendingMemberQr';
 let memberSharePages = [];
 let memberSharePage = 0;
 let memberShareCode = '';
@@ -133,8 +134,8 @@ async function openMemberShare() {
     document.getElementById('memberCodeSummary').innerText = '공유 코드를 만드는 중입니다…';
     document.getElementById('memberCodeSummary').hidden = false;
     document.getElementById('memberCodeCopy').disabled = true;
-    document.getElementById('memberShareQr').open = false;
     document.getElementById('memberShareModal').style.display = 'flex';
+    showMemberShareQr();
     try {
         const code = await encodeMemberCode(memberShareDirectory);
         if(request !== memberShareRequest) return;
@@ -149,8 +150,7 @@ async function openMemberShare() {
     }
 }
 
-function showMemberShareQr(details) {
-    if(!details.open) return;
+function showMemberShareQr() {
     try {
         if(!memberSharePages.length) memberSharePages = buildMemberSharePages(memberShareDirectory);
         renderMemberShare();
@@ -198,6 +198,7 @@ function closeMemberShare() {
 }
 
 function openMemberImport() {
+    updateMemberQrImportState();
     memberImportRequest++;
     pendingMemberImport = null;
     document.getElementById('memberImportLink').value = '';
@@ -208,6 +209,7 @@ function openMemberImport() {
 }
 
 function closeMemberImport() {
+    updateMemberQrImportState();
     memberImportRequest++;
     document.getElementById('memberImportModal').style.display = 'none';
     pendingMemberImport = null;
@@ -222,12 +224,14 @@ function uniqueIncomingMembers(rows) {
     return additions;
 }
 
-function previewMemberImport(link = document.getElementById('memberImportLink').value.trim()) {
+function previewMemberImport(link = document.getElementById('memberImportLink').value.trim(), fromQr = false) {
+    if(!fromQr) updateMemberQrImportState();
     const request = ++memberImportRequest;
     pendingMemberImport = null;
     document.getElementById('memberImportButton').hidden = true;
     const accept = data => {
         if(request !== memberImportRequest) return false;
+        if(fromQr) updateMemberQrImportState(link);
         pendingMemberImport = data;
         renderMemberImportPreview();
         document.getElementById('memberImportModal').style.display = 'flex';
@@ -235,6 +239,7 @@ function previewMemberImport(link = document.getElementById('memberImportLink').
     };
     const reject = error => {
         if(request !== memberImportRequest) return false;
+        if(fromQr) updateMemberQrImportState();
         document.getElementById('memberImportInput').hidden = false;
         document.getElementById('memberImportPreview').hidden = true;
         showToast(error.message);
@@ -274,10 +279,35 @@ function importSharedMembers() {
     return true;
 }
 
+function updateMemberQrImportState(link = null) {
+    if(!window.location || !window.history?.replaceState) return;
+    const browserState = window.history.state;
+    const hasFragment = window.location.hash.startsWith('#members=');
+    const hasPendingQr = browserState && Object.prototype.hasOwnProperty.call(browserState, MEMBER_QR_HISTORY_KEY);
+    if(!link && !hasFragment && !hasPendingQr) return;
+    const nextState = browserState && typeof browserState === 'object' ? {...browserState} : {};
+    if(link) nextState[MEMBER_QR_HISTORY_KEY] = link;
+    else delete nextState[MEMBER_QR_HISTORY_KEY];
+    // Keep the validated QR in this history entry until the user adds or closes it.
+    // A service-worker controller change may reload the page after URL cleanup.
+    const cleanUrl = window.location.pathname + window.location.search + (hasFragment ? '' : window.location.hash);
+    try {
+        window.history.replaceState(Object.keys(nextState).length ? nextState : null, '', cleanUrl);
+    } catch(error) {
+        // If history updates are unavailable, leave the original QR fragment intact.
+    }
+}
+
 function handleMemberShareFragment() {
-    if(!window.location?.hash.startsWith('#members=')) return;
-    const link = window.location.href;
-    // The browser API must be explicit: the app's `history` is the game log.
-    window.history.replaceState(null, '', window.location.pathname + window.location.search);
-    previewMemberImport(link);
+    if(!window.location) return;
+    const hasFragment = window.location.hash.startsWith('#members=');
+    const browserState = window.history?.state;
+    if(!hasFragment && !(browserState && Object.prototype.hasOwnProperty.call(browserState, MEMBER_QR_HISTORY_KEY))) return;
+    const link = hasFragment ? window.location.href : browserState[MEMBER_QR_HISTORY_KEY];
+    if(typeof link !== 'string' || link.length > MEMBER_QR_URL_LIMIT) {
+        updateMemberQrImportState();
+        showToast('회원명단 공유 링크를 확인해 주세요.');
+        return;
+    }
+    previewMemberImport(link, true);
 }

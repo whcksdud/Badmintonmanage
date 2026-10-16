@@ -10,18 +10,29 @@ const state = {
     courts:[{id:1,type:'A',active:[],next:[],startTime:null}],
     history:[{cId:1,startTime:100,endTime:200,pIds:[1,2,3,4],teamNames:[['오늘만 참가','이전 선수'],['상대1','상대2']],scores:[21,17]}]
 };
-function runtime(saved, href) {
+function runtime(saved, href, options = {}) {
     const storage = new Map(saved || [['bm_state_v14',JSON.stringify({current:state,previous:null})]]);
     const elements = new Map();
     const el = () => ({value:'',style:{},classList:{toggle(){},add(){},remove(){}},setAttribute(){},addEventListener(){},focus(){},select(){},click(){}});
     const location = href ? new URL(href) : undefined;
-    const context = vm.createContext({console,Blob,URL,TextEncoder,TextDecoder,btoa,atob,CompressionStream,DecompressionStream,navigator:{},
+    const events = new Map();
+    let reloadCount = 0;
+    if(location) location.reload = () => reloadCount++;
+    const serviceWorker = {controller:{},addEventListener(type,listener){events.set(`sw:${type}`,listener);}};
+    const context = vm.createContext({console,Blob,URL,TextEncoder,TextDecoder,btoa,atob,CompressionStream,DecompressionStream,
+        navigator:options.controlled ? {serviceWorker} : {},
         document:{getElementById(id){if(!elements.has(id))elements.set(id,el());return elements.get(id);},createElement:el,addEventListener(){}},
-        window:{navigator:{},location,history:{replaceState(a,b,url){context.cleanedUrl=url;}},matchMedia:()=>({matches:false}),addEventListener(){}},
+        window:{navigator:{},location,isSecureContext:Boolean(options.controlled),
+            history:{state:options.historyState || null,replaceState(nextState,title,url){
+                this.state=structuredClone(nextState);
+                context.cleanedUrl=url;
+                if(location)location.href=new URL(url,location.href).href;
+            }},
+            matchMedia:()=>({matches:false}),addEventListener(type,listener){events.set(type,listener);}},
         localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},
         setTimeout(){},clearTimeout(){},setInterval(){}});
     runApp(context);
-    return {context,storage,run:code=>vm.runInContext(code,context)};
+    return {context,storage,events,get reloadCount(){return reloadCount;},run:code=>vm.runInContext(code,context)};
 }
 function link(rows, extra={}) {
     const data={v:1,p:1,t:1,m:rows,...extra};
@@ -32,7 +43,6 @@ function preview(app, url) {app.context.inputLink=url;return app.run('previewMem
 test('QR shares only saved member profiles, round-trips Korean and escapes names',async()=>{
     const app=runtime();
     await app.run('members.push({id:101,name:"<홍길동 & 회원>",gender:"F",tier:5,secret:"never-share"}); openMemberShare()');
-    app.run('showMemberShareQr({open:true})');
     const url=app.run('memberSharePages[0].url');
     const payload=JSON.parse(Buffer.from(url.split('#members=')[1],'base64url'));
     assert.deepEqual(Object.keys(payload).sort(),['m','p','t','v']);
@@ -138,6 +148,75 @@ test('opening a QR link previews without importing and removes member data from 
     assert.equal(app.run('members.length'),1);
 });
 
+test('QR preview survives service-worker update reloads until the user imports or cancels',()=>{
+    const url=link([['업데이트 후 회원','F',4]]);
+    const app=runtime(undefined,url,{controlled:true});
+    assert.equal(app.context.window.location.hash,'');
+    assert.equal(app.context.window.history.state.bmPendingMemberQr,url);
+    const before=JSON.parse(app.run('serializeState()'));
+    app.events.get('sw:controllerchange')();
+    app.events.get('sw:controllerchange')();
+    assert.equal(app.reloadCount,1);
+    const reloaded=runtime(app.storage,app.context.window.location.href,{historyState:app.context.window.history.state,controlled:true});
+    assert.equal(reloaded.run('document.getElementById("memberImportModal").style.display'),'flex');
+    assert.equal(reloaded.run('pendingMemberImport.rows[0].name'),'업데이트 후 회원');
+    assert.deepEqual(JSON.parse(reloaded.run('serializeState()')),before,'reload only previews, never imports');
+    assert.equal(reloaded.run('importSharedMembers()'),true);
+    assert.equal(reloaded.context.window.history.state,null);
+    const after=JSON.parse(reloaded.run('serializeState()'));
+    assert.equal(after.members.length,2);
+    for(const key of ['players','courts','history'])assert.deepEqual(after[key],before[key]);
+    const finished=runtime(reloaded.storage,reloaded.context.window.location.href,{historyState:reloaded.context.window.history.state});
+    assert.equal(finished.run('pendingMemberImport'),null,'a confirmed import must not reopen');
+    const cancelled=runtime(undefined,url);
+    cancelled.run('closeMemberImport()');
+    const afterCancel=runtime(cancelled.storage,cancelled.context.window.location.href,{historyState:cancelled.context.window.history.state});
+    assert.equal(afterCancel.run('pendingMemberImport'),null,'a dismissed QR must not reopen');
+});
+
+test('QR import preserves other history state, survives quota failure and clears when manual import starts',()=>{
+    const url=link([['재시도 회원','M',2]]);
+    const app=runtime(undefined,url,{historyState:{otherScreen:'courts'}});
+    assert.equal(app.context.window.history.state.otherScreen,'courts');
+    app.context.localStorage.setItem=()=>{throw new Error('quota');};
+    assert.equal(app.run('importSharedMembers()'),false);
+    assert.equal(app.context.window.history.state.bmPendingMemberQr,url);
+    const reloaded=runtime(app.storage,app.context.window.location.href,{historyState:app.context.window.history.state});
+    assert.equal(reloaded.run('pendingMemberImport.rows[0].name'),'재시도 회원');
+    reloaded.run('openMemberImport()');
+    assert.deepEqual(reloaded.context.window.history.state,{otherScreen:'courts'});
+    assert.equal(reloaded.run('pendingMemberImport'),null);
+});
+
+test('restored QR state is validated and invalid input is discarded without modifying members',()=>{
+    const bad='https://example.test/#members=!';
+    const app=runtime(undefined,'https://example.test/Badmintonmanage/?view=courts#help',{
+        historyState:{otherScreen:'courts',bmPendingMemberQr:bad}
+    });
+    assert.equal(app.run('pendingMemberImport'),null);
+    assert.deepEqual(app.context.window.history.state,{otherScreen:'courts'});
+    assert.equal(app.context.window.location.hash,'#help');
+    assert.equal(app.run('members.length'),1);
+    for(const invalid of [null,0,{},[],true,'X'.repeat(451)]) {
+        const restored=runtime(undefined,'https://example.test/Badmintonmanage/',{historyState:{bmPendingMemberQr:invalid}});
+        assert.equal(restored.run('pendingMemberImport'),null);
+        assert.equal(restored.context.window.history.state,null);
+        assert.equal(restored.run('members.length'),1);
+    }
+});
+
+test('if browser history updates fail, the original QR URL remains available for reload',()=>{
+    const app=runtime(undefined,'https://example.test/Badmintonmanage/');
+    const url=link([['주소로 재시도','F',3]]);
+    app.context.window.location.href=url;
+    app.context.window.history.replaceState=()=>{throw new Error('history unavailable');};
+    app.run('handleMemberShareFragment()');
+    assert.equal(app.run('pendingMemberImport.rows[0].name'),'주소로 재시도');
+    assert.equal(app.context.window.location.href,url);
+    const reloaded=runtime(app.storage,url);
+    assert.equal(reloaded.run('pendingMemberImport.rows[0].name'),'주소로 재시도');
+});
+
 function compressed(data) {
     return 'BM2-'+gzipSync(Buffer.from(JSON.stringify(data))).toString('base64url');
 }
@@ -157,7 +236,7 @@ test('compressed code contains only profiles, is shorter than a link and imports
     assert.equal(sender.run('document.getElementById("memberShareCode").value'),code);
     const copied=[];
     sender.context.navigator.clipboard={writeText:async text=>copied.push(text)};
-    sender.run('showMemberShareQr({open:true}); changeMemberSharePage(1)');
+    sender.run('changeMemberSharePage(1)');
     await sender.run('copyMemberShareCode()');
     assert.deepEqual(copied,[code],'copy always sends every member, regardless of visible QR page');
     const receiver=runtime();
@@ -249,7 +328,6 @@ test('unsupported compression APIs leave QR sharing and legacy imports usable',a
     app.context.DecompressionStream=undefined;
     await app.run('openMemberShare()');
     assert.equal(app.run('document.getElementById("memberCodeCopy").disabled'),true);
-    app.run('showMemberShareQr({open:true})');
     assert.ok(app.run('document.getElementById("memberQrImage").innerHTML.includes("<svg")'));
     assert.equal(preview(app,link([['구형 브라우저','M',2]])),true);
     assert.equal(await preview(app,compressed({v:2,m:[['새 코드','F',1]]})),false);

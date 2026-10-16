@@ -281,8 +281,8 @@
         <label for="memberShareCode">전체 회원명단 압축 코드</label>
         <textarea id="memberShareCode" class="member-share-code" rows="4" readonly spellcheck="false" aria-describedby="memberCodeNote"></textarea>
         <p id="memberCodeNote" class="member-share-note">이름·성별·급수만 포함됩니다. 경기 기록은 공유되지 않으며, 받는 기기의 기존 명단은 유지합니다.</p>
-        <details id="memberShareQr" class="member-share-qr" ontoggle="showMemberShareQr(this)">
-        <summary>가까이 있다면 QR로 보내기</summary>
+        <section id="memberShareQr" class="member-share-qr" aria-labelledby="memberShareQrTitle">
+        <h4 id="memberShareQrTitle">가까이 있다면 QR로 보내기</h4>
         <p class="member-share-note">받는 휴대폰의 카메라로 QR을 읽고 링크를 열어 주세요.</p>
         <div id="memberQrImage" class="member-qr-image" role="img" aria-label="회원명단 공유 QR 코드"></div>
         <p id="memberQrSummary" class="member-share-summary" aria-live="polite"></p>
@@ -292,7 +292,7 @@
             <button id="memberQrNext" class="btn btn-outline" onclick="changeMemberSharePage(1)" aria-label="다음 QR">다음</button>
             <p>모든 QR을 차례로 읽어 주세요. 다시 읽어도 중복 추가되지 않습니다.</p>
         </div>
-        </details>
+        </section>
         <p class="member-share-note">코드 생성과 불러오기는 서버 없이 기기 안에서 처리합니다. 처음 앱을 여는 기기는 인터넷 연결이 필요합니다.</p>
     </div>
     <div class="dialog-actions"><button id="memberCodeCopy" class="btn btn-primary" onclick="copyMemberShareCode()">코드 복사</button><button class="btn btn-outline" onclick="closeMemberShare()">닫기</button></div>

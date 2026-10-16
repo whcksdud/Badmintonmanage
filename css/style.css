@@ -438,8 +438,7 @@ label { display: block; font-size: 0.85rem; font-weight: 700; color: #64748b; ma
 .member-share-body label { display:block; margin:18px 0 8px; text-align:left; font-size:13px; font-weight:600; }
 .member-share-code { width:100%; box-sizing:border-box; margin-bottom:0; font-family:inherit; font-size:13px; line-height:1.7; background:#f8fafc; overflow-wrap:anywhere; word-break:break-all; resize:none; }
 .member-share-qr { margin-top:20px; padding-top:16px; border-top:1px solid var(--border); }
-.member-share-qr summary { padding:6px 0; text-align:left; color:var(--dark); font-size:14px; font-weight:700; cursor:pointer; }
-.member-share-qr summary:focus-visible { outline:2px solid var(--primary); outline-offset:4px; border-radius:4px; }
+.member-share-qr h4 { margin:0; padding:6px 0; text-align:left; color:var(--dark); font-size:14px; font-weight:700; }
 .member-import-list { margin:16px 0; padding:0; list-style:none; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
 .member-import-list li { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 14px; font-size:14px; }
 .member-import-list li+li { border-top:1px solid var(--border); }
