@@ -1,21 +1,85 @@
-// Member-only QR links. Each page is independently mergeable and safe to scan again.
+// Member-only compressed codes; legacy QR pages remain independently mergeable.
 const MEMBER_SHARE_APP_URL = 'https://whcksdud.github.io/Badmintonmanage/';
 const MEMBER_QR_URL_LIMIT = 450;
+const MEMBER_CODE_PREFIX = 'BM2-';
+const MEMBER_CODE_BYTE_LIMIT = 2000000;
+const MEMBER_CODE_CHAR_LIMIT = 2700000;
 let memberSharePages = [];
 let memberSharePage = 0;
+let memberShareCode = '';
+let memberShareDirectory = [];
+let memberShareRequest = 0;
+let memberImportRequest = 0;
 let pendingMemberImport = null;
 
-function validateSharedMembers(data) {
-    if(!data || data.v !== 1 || !Number.isInteger(data.p) || !Number.isInteger(data.t) ||
-        data.p < 1 || data.p > data.t || data.t > 2000 || !Array.isArray(data.m) ||
-        !data.m.length || data.m.length > 50) throw new Error('올바른 회원명단 QR이 아닙니다.');
-    return data.m.map(row => {
+function validateMemberProfiles(rows, limit) {
+    if(!Array.isArray(rows) || !rows.length || rows.length > limit)
+        throw new Error('공유할 회원명단을 확인해 주세요.');
+    return rows.map(row => {
         if(!Array.isArray(row) || row.length !== 3 || typeof row[0] !== 'string' ||
             !row[0].trim() || row[0].length > 120 || !['M', 'F'].includes(row[1]) ||
             !Number.isInteger(row[2]) || row[2] < 1 || row[2] > 5)
             throw new Error('회원 정보의 이름·성별·급수를 확인해 주세요.');
         return {name:row[0].trim(), gender:row[1], tier:row[2]};
     });
+}
+
+function validateSharedMembers(data) {
+    if(!data || data.v !== 1 || !Number.isInteger(data.p) || !Number.isInteger(data.t) ||
+        data.p < 1 || data.p > data.t || data.t > 2000 || !Array.isArray(data.m) ||
+        !data.m.length || data.m.length > 50) throw new Error('올바른 회원명단 QR이 아닙니다.');
+    return validateMemberProfiles(data.m, 50);
+}
+
+async function transformMemberBytes(bytes, decompress = false) {
+    const Codec = decompress ? globalThis.DecompressionStream : globalThis.CompressionStream;
+    if(!Codec) throw new Error('압축 코드 기능을 사용하려면 브라우저를 최신 버전으로 업데이트해 주세요. QR 공유는 계속 사용할 수 있습니다.');
+    const reader = new Blob([bytes]).stream().pipeThrough(new Codec('gzip')).getReader();
+    const chunks = [];
+    let size = 0;
+    try {
+        while(true) {
+            const {value, done} = await reader.read();
+            if(done) break;
+            size += value.length;
+            if(size > MEMBER_CODE_BYTE_LIMIT) {
+                await reader.cancel().catch(() => {});
+                throw new Error('공유 코드의 데이터가 너무 큽니다.');
+            }
+            chunks.push(value);
+        }
+    } finally { reader.releaseLock(); }
+    const result = new Uint8Array(size);
+    let offset = 0;
+    chunks.forEach(chunk => { result.set(chunk, offset); offset += chunk.length; });
+    return result;
+}
+
+async function encodeMemberCode(directory) {
+    const rows = directory.map(member => [member.name.trim(), member.gender, member.tier]);
+    validateMemberProfiles(rows, 2000);
+    const bytes = await transformMemberBytes(new TextEncoder().encode(JSON.stringify({v:2, m:rows})));
+    // Chunk conversion avoids exceeding the argument limit with large directories.
+    let binary = '';
+    for(let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    return MEMBER_CODE_PREFIX + btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function decodeMemberCode(input) {
+    if(input.length > MEMBER_CODE_CHAR_LIMIT) throw new Error('공유 코드가 너무 깁니다.');
+    const code = input.replace(/\s/g, '');
+    const encoded = code.slice(MEMBER_CODE_PREFIX.length);
+    if(!code.startsWith(MEMBER_CODE_PREFIX) || !/^[A-Za-z0-9_-]+$/.test(encoded) || encoded.length % 4 === 1)
+        throw new Error('BM2-로 시작하는 공유 코드 전체를 붙여 넣어 주세요.');
+    if(!globalThis.DecompressionStream)
+        throw new Error('압축 코드를 읽으려면 브라우저를 최신 버전으로 업데이트해 주세요.');
+    try {
+        const binary = atob(encoded.replace(/-/g, '+').replace(/_/g, '/'));
+        const bytes = await transformMemberBytes(Uint8Array.from(binary, c => c.charCodeAt(0)), true);
+        const data = JSON.parse(new TextDecoder('utf-8', {fatal:true}).decode(bytes));
+        if(!data || data.v !== 2) throw new Error('version');
+        return {rows:validateMemberProfiles(data.m, 2000), page:1, total:1};
+    } catch(error) { throw new Error('압축 코드를 읽을 수 없습니다. 코드 전체를 다시 복사해 주세요.'); }
 }
 
 function encodeMemberShare(rows, page, total) {
@@ -58,14 +122,43 @@ function buildMemberSharePages(directory) {
     return groups.map((rows, index) => ({url:encodeMemberShare(rows, index + 1, groups.length), count:rows.length}));
 }
 
-function openMemberShare() {
+async function openMemberShare() {
     if(!members.length) return showToast('공유할 회원을 먼저 저장해 주세요.');
+    const request = ++memberShareRequest;
+    memberShareDirectory = members.map(({name, gender, tier}) => ({name, gender, tier}));
+    memberShareCode = '';
+    memberSharePages = [];
+    memberSharePage = 0;
+    document.getElementById('memberShareCode').value = '';
+    document.getElementById('memberCodeSummary').innerText = '공유 코드를 만드는 중입니다…';
+    document.getElementById('memberCodeSummary').hidden = false;
+    document.getElementById('memberCodeCopy').disabled = true;
+    document.getElementById('memberShareQr').open = false;
+    document.getElementById('memberShareModal').style.display = 'flex';
     try {
-        memberSharePages = buildMemberSharePages(members);
-        memberSharePage = 0;
+        const code = await encodeMemberCode(memberShareDirectory);
+        if(request !== memberShareRequest) return;
+        memberShareCode = code;
+        document.getElementById('memberShareCode').value = code;
+        document.getElementById('memberCodeSummary').innerText = '';
+        document.getElementById('memberCodeSummary').hidden = true;
+        document.getElementById('memberCodeCopy').disabled = false;
+    } catch(error) {
+        if(request !== memberShareRequest) return;
+        document.getElementById('memberCodeSummary').innerText = error.message;
+    }
+}
+
+function showMemberShareQr(details) {
+    if(!details.open) return;
+    try {
+        if(!memberSharePages.length) memberSharePages = buildMemberSharePages(memberShareDirectory);
         renderMemberShare();
-        document.getElementById('memberShareModal').style.display = 'flex';
-    } catch(error) { showToast(error.message); }
+    } catch(error) {
+        document.getElementById('memberQrImage').innerText = error.message;
+        document.getElementById('memberQrSummary').innerText = '';
+        document.getElementById('memberQrPagination').hidden = true;
+    }
 }
 
 function renderMemberShare() {
@@ -79,7 +172,6 @@ function renderMemberShare() {
     document.getElementById('memberQrPrev').disabled = memberSharePage === 0;
     document.getElementById('memberQrNext').disabled = memberSharePage === memberSharePages.length - 1;
     document.getElementById('memberQrPagination').hidden = memberSharePages.length < 2;
-    document.getElementById('memberShareLink').value = page.url;
 }
 
 function changeMemberSharePage(offset) {
@@ -89,19 +181,24 @@ function changeMemberSharePage(offset) {
     renderMemberShare();
 }
 
-async function copyMemberShareLink() {
+async function copyMemberShareCode() {
+    if(!memberShareCode) return;
     try {
-        await navigator.clipboard.writeText(memberSharePages[memberSharePage].url);
-        showToast('현재 QR의 공유 링크를 복사했습니다.');
+        await navigator.clipboard.writeText(memberShareCode);
+        showToast('전체 회원명단의 압축 코드를 복사했습니다.');
     } catch(error) {
-        document.getElementById('memberShareLink').select();
-        showToast('공유 링크를 길게 눌러 복사해 주세요.');
+        document.getElementById('memberShareCode').select();
+        showToast('공유 코드를 길게 눌러 복사해 주세요.');
     }
 }
 
-function closeMemberShare() { document.getElementById('memberShareModal').style.display = 'none'; }
+function closeMemberShare() {
+    memberShareRequest++;
+    document.getElementById('memberShareModal').style.display = 'none';
+}
 
 function openMemberImport() {
+    memberImportRequest++;
     pendingMemberImport = null;
     document.getElementById('memberImportLink').value = '';
     document.getElementById('memberImportPreview').hidden = true;
@@ -111,6 +208,7 @@ function openMemberImport() {
 }
 
 function closeMemberImport() {
+    memberImportRequest++;
     document.getElementById('memberImportModal').style.display = 'none';
     pendingMemberImport = null;
 }
@@ -125,13 +223,27 @@ function uniqueIncomingMembers(rows) {
 }
 
 function previewMemberImport(link = document.getElementById('memberImportLink').value.trim()) {
-    try {
-        const data = decodeMemberShare(link);
+    const request = ++memberImportRequest;
+    pendingMemberImport = null;
+    document.getElementById('memberImportButton').hidden = true;
+    const accept = data => {
+        if(request !== memberImportRequest) return false;
         pendingMemberImport = data;
         renderMemberImportPreview();
         document.getElementById('memberImportModal').style.display = 'flex';
         return true;
-    } catch(error) { closeMemberImport(); showToast(error.message); return false; }
+    };
+    const reject = error => {
+        if(request !== memberImportRequest) return false;
+        document.getElementById('memberImportInput').hidden = false;
+        document.getElementById('memberImportPreview').hidden = true;
+        showToast(error.message);
+        return false;
+    };
+    if(!/^https?:\/\//i.test(link.trim())) return decodeMemberCode(link).then(accept, reject);
+    try {
+        return accept(decodeMemberShare(link));
+    } catch(error) { return reject(error); }
 }
 
 function renderMemberImportPreview() {
@@ -154,7 +266,7 @@ function importSharedMembers() {
     const additions = uniqueIncomingMembers(pendingMemberImport.rows);
     if(!additions.length) { renderMemberImportPreview(); return false; }
     additions.forEach(member => members.push({id:nextPersonId(), name:member.name, gender:member.gender, tier:member.tier}));
-    if(!saveAction('회원명단 QR 불러오기')) return false;
+    if(!saveAction('회원명단 불러오기')) return false;
     closeMemberImport();
     render();
     openMembersModal();
