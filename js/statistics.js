@@ -375,7 +375,7 @@ function openHistory() {
         let resultHTML = '';
         const isDraw = hasScore && scores[0] === scores[1];
         const winnerIndex = !hasScore || isDraw ? -1 : scores[0] > scores[1] ? 0 : 1;
-        const resultLabel = hasScore ? isDraw ? '무승부' : `${Math.abs(scores[0] - scores[1])}점 차` : '점수 미입력';
+        const scoreNote = !hasScore ? '점수 미입력' : isDraw ? '무승부' : '';
 
         if(teams) {
             const renderTeam = teamIndex => {
@@ -387,9 +387,9 @@ function openHistory() {
             };
             resultHTML = `<div class="history-result">
                 ${renderTeam(0)}
-                <div class="history-scoreboard" aria-label="${hasScore ? `${scores[0]} 대 ${scores[1]}, ${resultLabel}` : '점수 미입력'}">
+                <div class="history-scoreboard" aria-label="${hasScore ? `${scores[0]} 대 ${scores[1]}` : '점수 미입력'}">
                     <div class="history-scores">${hasScore ? `<strong class="${winnerIndex === 0 ? 'winning-score' : ''}">${scores[0]}</strong><span>:</span><strong class="${winnerIndex === 1 ? 'winning-score' : ''}">${scores[1]}</strong>` : '<span class="history-versus">VS</span>'}</div>
-                    <span class="history-score-diff">${resultLabel}</span>
+                    ${scoreNote ? `<span class="history-score-note">${scoreNote}</span>` : ''}
                 </div>
                 ${renderTeam(1)}
             </div>`;

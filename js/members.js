@@ -103,8 +103,8 @@ function openMemberEditor(id = null) {
     document.getElementById('memberNamesLabel').textContent = member ? '이름' : '이름 (여러 명은 줄바꿈으로 구분)';
     document.getElementById('memberNames').rows = member ? 1 : 4;
     document.getElementById('memberNames').value = member ? member.name : '';
-    document.getElementById('memberGender').value = member ? member.gender : 'M';
-    document.getElementById('memberTier').value = member ? member.tier : '1';
+    setFormChoice('memberGender', member ? member.gender : 'M', ['M', 'F']);
+    setFormChoice('memberTier', member ? member.tier : 1, [5, 4, 3, 2, 1]);
     document.getElementById('deleteMemberButton').hidden = !member;
     document.getElementById('memberEditorModal').style.display = 'flex';
     document.getElementById('memberNames').focus();

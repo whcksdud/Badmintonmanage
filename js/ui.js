@@ -1,5 +1,12 @@
 // Shared dialogs, roster/court rendering, and responsive navigation.
 
+function setFormChoice(fieldId, value, options) {
+    document.getElementById(fieldId).value = String(value);
+    options.forEach(option => {
+        document.getElementById(`${fieldId}-${option}`).checked = String(option) === String(value);
+    });
+}
+
 function setMobileView(view) {
     const showWaitingRoom = view === 'waiting';
     const mainContainer = document.getElementById('mainContainer');

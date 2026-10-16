@@ -139,15 +139,30 @@ function cancelNext(cId) {
     render();
 }
 
+function renderTransferPlayers(match) {
+    const names = match.map(player => escapeHTML(player.name));
+    if(names.length !== 4) return `<span>${names.join(' · ')}</span>`;
+    const renderTeam = team => `<span class="transfer-team">${team.map(name => `<span class="transfer-player" title="${name}">${name}</span>`).join('')}</span>`;
+    return `${renderTeam(names.slice(0, 2))}<span class="transfer-versus" aria-label="대">VS</span>${renderTeam(names.slice(2))}`;
+}
+
 function openTransferNext(cId) {
     const source = courts.find(c => c.id === cId);
     if(!source || source.next.length === 0) return showToast("이동할 다음 대기 선수가 없습니다.");
     const targets = courts.filter(c => c.id !== cId);
     if(targets.length === 0) return showToast("변경할 다른 코트가 없습니다.");
     transferSourceCourtId = cId;
-    const select = document.getElementById('transferCourtSelect');
-    select.innerHTML = targets.map(c => `<option value="${c.id}">${courtLabel(c.id)} · ${c.active.length ? '경기 중' : '경기 없음'} · ${c.next.length ? '예약 있음' : '예약 없음'}</option>`).join('');
-    select.value = String(targets[0].id);
+    document.getElementById('transferSourceName').innerText = courtLabel(source.id);
+    document.getElementById('transferSourcePlayers').innerHTML = renderTransferPlayers(source.next);
+    document.getElementById('transferCourtSelect').value = String(targets[0].id);
+    document.getElementById('transferCourtOptions').innerHTML = targets.map(c => `<label class="transfer-court-option">
+        <input type="radio" name="transferCourt" id="transfer-court-${c.id}" value="${c.id}" onchange="document.getElementById('transferCourtSelect').value=this.value; updateTransferNextPreview()">
+        <span class="transfer-court-card">
+            <span class="transfer-court-heading"><strong>${courtLabel(c.id)}</strong><span class="transfer-state ${c.active.length ? 'is-playing' : ''}">${c.active.length ? '경기 중' : '비어 있음'}</span></span>
+            <span class="transfer-reservation-label">${c.next.length ? '예약 있음' : '예약 없음'}</span>
+            ${c.next.length ? `<span class="transfer-players">${renderTransferPlayers(c.next)}</span>` : ''}
+        </span>
+    </label>`).join('');
     updateTransferNextPreview();
     document.getElementById('transferModal').style.display = 'flex';
 }
@@ -155,6 +170,9 @@ function openTransferNext(cId) {
 function updateTransferNextPreview() {
     const source = courts.find(c => c.id === transferSourceCourtId);
     const target = courts.find(c => c.id === Number(document.getElementById('transferCourtSelect').value));
+    courts.filter(c => c.id !== transferSourceCourtId).forEach(c => {
+        document.getElementById(`transfer-court-${c.id}`).checked = c.id === target?.id;
+    });
     const swap = Boolean(target && target.next.length);
     document.getElementById('transferHelp').innerText = source && target
         ? swap ? `${courtLabel(source.id)}의 예약은 ${courtLabel(target.id)}로, ${courtLabel(target.id)}의 예약은 ${courtLabel(source.id)}로 옮깁니다. 선수와 팀 구성은 그대로 유지됩니다.`
@@ -233,8 +251,9 @@ function renderSwapList() {
         match.forEach((player, index) => {
             if(Math.floor(index / 2) === Math.floor(swapTarget.idx / 2)) return;
             if(court.type === 'X' && player.gender !== selected.gender) return;
-            list.innerHTML += `<button type="button" class="team-change-choice" onclick="changeCourtTeam(${index}, ${player.id})" aria-label="${escapeHTML(selected.name)}와 ${escapeHTML(player.name)} 자리 바꾸기">
-                <span><strong>${escapeHTML(player.name)}</strong><small>상대 팀 · ${player.gender === 'M' ? '남' : '여'} · ${tiers[player.tier]}</small></span>${renderUIIcon('swap')}
+            const status = isPlayerInCourtArea(player.id, 'active') ? 'playing' : player.status;
+            list.innerHTML += `<button type="button" class="player-chip waiting-chip roster-chip manual-chip swap-chip gender-card ${getGenderCardClass(player.gender)} roster-status-${status} team-change-choice" onclick="changeCourtTeam(${index}, ${player.id})" aria-label="${escapeHTML(selected.name)}와 ${escapeHTML(player.name)} 자리 바꾸기">
+                ${renderRosterSummary(player, 'swap-', status)}
             </button>`;
         });
     }

@@ -116,10 +116,23 @@
     <div class="dialog-heading"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg><h3 id="pModalTitle">선수 등록</h3></div>
     <div class="dialog-body">
     <label for="pName">이름</label><input type="text" id="pName" placeholder="이름 입력" autocomplete="off">
-    <div class="form-grid">
-        <div><label for="pGen">성별</label><select id="pGen"><option value="M">남성</option><option value="F">여성</option></select></div>
-        <div><label for="pTier">급수</label><select id="pTier"><option value="5">A조</option><option value="4">B조</option><option value="3">C조</option><option value="2">D조</option><option value="1" selected>E조</option></select></div>
-    </div>
+    <input type="hidden" id="pGen" value="M">
+    <fieldset class="profile-choice-field"><legend>성별</legend>
+        <div class="profile-options profile-gender-options">
+            <label><input type="radio" name="pGenChoice" id="pGen-M" value="M" checked onchange="document.getElementById('pGen').value=this.value"><span>남성</span></label>
+            <label><input type="radio" name="pGenChoice" id="pGen-F" value="F" onchange="document.getElementById('pGen').value=this.value"><span>여성</span></label>
+        </div>
+    </fieldset>
+    <input type="hidden" id="pTier" value="1">
+    <fieldset class="profile-choice-field"><legend>급수</legend>
+        <div class="profile-options profile-tier-options">
+            <label><input type="radio" name="pTierChoice" id="pTier-5" value="5" onchange="document.getElementById('pTier').value=this.value"><span>A조</span></label>
+            <label><input type="radio" name="pTierChoice" id="pTier-4" value="4" onchange="document.getElementById('pTier').value=this.value"><span>B조</span></label>
+            <label><input type="radio" name="pTierChoice" id="pTier-3" value="3" onchange="document.getElementById('pTier').value=this.value"><span>C조</span></label>
+            <label><input type="radio" name="pTierChoice" id="pTier-2" value="2" onchange="document.getElementById('pTier').value=this.value"><span>D조</span></label>
+            <label><input type="radio" name="pTierChoice" id="pTier-1" value="1" checked onchange="document.getElementById('pTier').value=this.value"><span>E조</span></label>
+        </div>
+    </fieldset>
     <label for="pGames">실제 경기 수</label>
     <input type="number" id="pGames" min="0" step="1" value="0" inputmode="numeric">
     <p id="playerMatchingInfo" class="field-note"></p>
@@ -151,10 +164,23 @@
     <p class="field-note">한 줄에 한 명씩 입력하세요.</p>
     <textarea id="bulkNames" rows="5" placeholder="김철수&#13;&#10;이영희&#13;&#10;박지성"></textarea>
 
-    <div class="form-grid">
-        <div><label for="bulkGen">성별</label><select id="bulkGen"><option value="M">남성</option><option value="F">여성</option></select></div>
-        <div><label for="bulkTier">급수</label><select id="bulkTier"><option value="5">A조</option><option value="4">B조</option><option value="3">C조</option><option value="2">D조</option><option value="1" selected>E조</option></select></div>
-    </div>
+    <input type="hidden" id="bulkGen" value="M">
+    <fieldset class="profile-choice-field"><legend>성별</legend>
+        <div class="profile-options profile-gender-options">
+            <label><input type="radio" name="bulkGenChoice" id="bulkGen-M" value="M" checked onchange="document.getElementById('bulkGen').value=this.value"><span>남성</span></label>
+            <label><input type="radio" name="bulkGenChoice" id="bulkGen-F" value="F" onchange="document.getElementById('bulkGen').value=this.value"><span>여성</span></label>
+        </div>
+    </fieldset>
+    <input type="hidden" id="bulkTier" value="1">
+    <fieldset class="profile-choice-field"><legend>급수</legend>
+        <div class="profile-options profile-tier-options">
+            <label><input type="radio" name="bulkTierChoice" id="bulkTier-5" value="5" onchange="document.getElementById('bulkTier').value=this.value"><span>A조</span></label>
+            <label><input type="radio" name="bulkTierChoice" id="bulkTier-4" value="4" onchange="document.getElementById('bulkTier').value=this.value"><span>B조</span></label>
+            <label><input type="radio" name="bulkTierChoice" id="bulkTier-3" value="3" onchange="document.getElementById('bulkTier').value=this.value"><span>C조</span></label>
+            <label><input type="radio" name="bulkTierChoice" id="bulkTier-2" value="2" onchange="document.getElementById('bulkTier').value=this.value"><span>D조</span></label>
+            <label><input type="radio" name="bulkTierChoice" id="bulkTier-1" value="1" checked onchange="document.getElementById('bulkTier').value=this.value"><span>E조</span></label>
+        </div>
+    </fieldset>
     </div>
     <div class="dialog-actions">
         <button class="btn btn-primary" onclick="saveBulkPlayers()">저장</button>
@@ -213,13 +239,23 @@
     <div class="dialog-body">
     <label id="memberNamesLabel" for="memberNames">이름 (여러 명은 줄바꿈으로 구분)</label>
     <textarea id="memberNames" rows="4"></textarea>
-    <div class="form-grid"><div>
-    <label for="memberGender">성별</label>
-    <select id="memberGender"><option value="M">남성</option><option value="F">여성</option></select>
-    </div><div>
-    <label for="memberTier">급수</label>
-    <select id="memberTier"><option value="5">A조</option><option value="4">B조</option><option value="3">C조</option><option value="2">D조</option><option value="1" selected>E조</option></select>
-    </div></div>
+    <input type="hidden" id="memberGender" value="M">
+    <fieldset class="profile-choice-field"><legend>성별</legend>
+        <div class="profile-options profile-gender-options">
+            <label><input type="radio" name="memberGenderChoice" id="memberGender-M" value="M" checked onchange="document.getElementById('memberGender').value=this.value"><span>남성</span></label>
+            <label><input type="radio" name="memberGenderChoice" id="memberGender-F" value="F" onchange="document.getElementById('memberGender').value=this.value"><span>여성</span></label>
+        </div>
+    </fieldset>
+    <input type="hidden" id="memberTier" value="1">
+    <fieldset class="profile-choice-field"><legend>급수</legend>
+        <div class="profile-options profile-tier-options">
+            <label><input type="radio" name="memberTierChoice" id="memberTier-5" value="5" onchange="document.getElementById('memberTier').value=this.value"><span>A조</span></label>
+            <label><input type="radio" name="memberTierChoice" id="memberTier-4" value="4" onchange="document.getElementById('memberTier').value=this.value"><span>B조</span></label>
+            <label><input type="radio" name="memberTierChoice" id="memberTier-3" value="3" onchange="document.getElementById('memberTier').value=this.value"><span>C조</span></label>
+            <label><input type="radio" name="memberTierChoice" id="memberTier-2" value="2" onchange="document.getElementById('memberTier').value=this.value"><span>D조</span></label>
+            <label><input type="radio" name="memberTierChoice" id="memberTier-1" value="1" checked onchange="document.getElementById('memberTier').value=this.value"><span>E조</span></label>
+        </div>
+    </fieldset>
     <div class="player-delete-zone">
         <button id="deleteMemberButton" type="button" class="player-delete-button" onclick="deleteMember(editMemberId)" hidden>회원 명단에서 삭제</button>
     </div>
@@ -450,9 +486,15 @@
 <div id="transferModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="transferTitle"><div class="modal-box form-modal dialog-compact">
     <div class="dialog-heading"><svg class="ui-icon" aria-hidden="true"><use href="#icon-resume"></use></svg><h3 id="transferTitle">코트 변경</h3></div>
     <div class="dialog-body">
-    <p id="transferHelp" class="field-note">대상 코트를 선택하세요.</p>
-    <label for="transferCourtSelect">대상 코트</label>
-    <select id="transferCourtSelect" aria-label="대상 코트" onchange="updateTransferNextPreview()"></select>
+    <section class="transfer-source" aria-label="현재 예약">
+        <div class="transfer-court-heading"><strong id="transferSourceName"></strong><span class="transfer-state">현재 예약</span></div>
+        <div id="transferSourcePlayers" class="transfer-players"></div>
+    </section>
+    <input type="hidden" id="transferCourtSelect">
+    <fieldset class="profile-choice-field"><legend>변경할 코트</legend>
+        <div id="transferCourtOptions" class="transfer-court-options"></div>
+    </fieldset>
+    <p id="transferHelp" class="field-note transfer-preview" role="status" aria-live="polite">대상 코트를 선택하세요.</p>
     </div><div class="dialog-actions">
         <button id="transferConfirmButton" class="btn btn-primary" onclick="confirmTransferNext()">코트 변경</button>
         <button class="btn btn-outline" onclick="closeTransferModal()">취소</button>

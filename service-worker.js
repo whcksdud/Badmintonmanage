@@ -1,6 +1,6 @@
 const CACHE_PREFIX = 'badminton-manager-';
-const APP_CACHE = `${CACHE_PREFIX}app-v33`;
-const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-v33`;
+const APP_CACHE = `${CACHE_PREFIX}app-v39`;
+const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-v39`;
 
 const APP_SHELL = [
     './',

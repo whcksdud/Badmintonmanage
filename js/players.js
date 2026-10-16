@@ -66,8 +66,8 @@ function openPModal(id=null) {
     editPId = id; const p = players.find(x=>x.id===id);
     document.getElementById('pModalTitle').innerText = id ? "선수 정보 수정" : "선수 등록";
     document.getElementById('pName').value = id ? p.name : "";
-    document.getElementById('pGen').value = id ? p.gender : "M";
-    document.getElementById('pTier').value = id ? p.tier : "1";
+    setFormChoice('pGen', id ? p.gender : 'M', ['M', 'F']);
+    setFormChoice('pTier', id ? p.tier : 1, [5, 4, 3, 2, 1]);
     document.getElementById('pGames').value = id ? p.games : 0;
     document.getElementById('playerMatchingInfo').innerText = id
         ? `실제 ${p.games}경기 · 매칭 기준 ${getMatchingGameCount(p)}경기 (보정 +${getMatchingGameCount(p) - p.games})`
@@ -83,6 +83,8 @@ function closePModal() { document.getElementById('pModal').style.display='none';
 
 function openBulkPModal() {
     document.getElementById('bulkNames').value = '';
+    setFormChoice('bulkGen', document.getElementById('bulkGen').value, ['M', 'F']);
+    setFormChoice('bulkTier', document.getElementById('bulkTier').value, [5, 4, 3, 2, 1]);
     document.getElementById('bulkPModal').style.display = 'flex';
     document.getElementById('bulkNames').focus();
 }

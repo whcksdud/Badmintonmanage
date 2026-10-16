@@ -5,8 +5,8 @@ const assert = require('node:assert/strict');
 
 const { html, styles, appSource, runApp } = require('./helpers/app-runtime');
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
-if (html.includes('>F조</option>') || appSource.includes('const tiers = ["F조"') || !html.includes('<option value="1" selected>E조</option>')) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
-if (!serviceWorker.includes('app-v33') || !serviceWorker.includes('runtime-v33') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
+if (html.includes('>F조</option>') || appSource.includes('const tiers = ["F조"') || !['pTier','bulkTier','memberTier'].every(field => html.includes(`id="${field}-1" value="1" checked`))) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
+if (!serviceWorker.includes('app-v39') || !serviceWorker.includes('runtime-v39') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
 
 function createPlayers() {
     return Array.from({ length: 13 }, (_, index) => ({
@@ -703,7 +703,7 @@ test('두 예약의 코트 변경은 팀 순서와 진행 경기·타이머·선
     const before = run('serializeState()');
     const untouched = run('JSON.stringify({players,history,active:courts.map(c=>[c.active,c.startTime,c.type])})');
     run('openTransferNext(1)');
-    assert.ok(context.__elements.get('transferCourtSelect').innerHTML.includes('예약 있음'));
+    assert.ok(context.__elements.get('transferCourtOptions').innerHTML.includes('예약 있음'));
     assert.match(html, /id="transferConfirmButton"[^>]*>코트 변경<\/button>/);
     run('confirmTransferNext(); confirmTransferNext()');
     assert.equal(run('courts[0].next.map(p=>p.id).join(",")'),'13,14,15,16');

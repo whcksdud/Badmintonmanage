@@ -187,7 +187,8 @@ test('점수 수정은 선택한 기록에 저장되고 최신순·승패 표시
     vm.runInContext('saveHistoryScore()',runtime);
     assertInRuntime(runtime,'history[0].scores[0]===0 && history[0].scores[1]===21 && history[1].scores[0]===21 && history[1].scores[1]===19','다른 기록에 점수가 저장됐습니다.');
     const content=runtime.__elements.get('historyList').innerHTML;
-    assert.ok(content.includes('0 대 21, 21점 차') && content.includes('21 대 19, 2점 차'));
+    assert.ok(content.includes('aria-label="0 대 21"') && content.includes('aria-label="21 대 19"'));
+    assert.ok(!content.includes('점 차'));
     assert.ok(content.includes('history-result-badge win') && content.includes('history-result-badge loss'));
     assert.ok(content.indexOf('editHistoryScore(0)')<content.indexOf('editHistoryScore(1)'));
     vm.runInContext('undoLastAction(); onConfirmAction()',runtime);
