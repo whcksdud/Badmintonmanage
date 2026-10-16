@@ -82,7 +82,7 @@ function undoLastAction() {
     showConfirmModal(`${undoLabel} 작업을 되돌리시겠습니까?\n해당 작업 전의 선수·코트·경기 기록으로 복원합니다.`, () => {
         applyState(undoState);
         if(!save(false)) return;
-        closePModal(); closeManualModal(); closeSwapModal(); closeScoreModal(); closeHModal(); closeStatsModal(); closeTransferModal(); closeSettings(); closeMembersModal();
+        closePModal(); closeManualModal(); closeSwapModal(); closeScoreModal(); closeHModal(); closeStatsModal(); closeTransferModal(); closeSettings(); closeMembersModal(); closeMemberShare(); closeMemberImport();
         selectedRosterPlayerId = null;
         render(); showToast('최근 작업을 되돌렸습니다.');
     });

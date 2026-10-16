@@ -78,6 +78,8 @@ document.addEventListener('click', handleRosterActionSheetOutsideClick);
 
 render();
 updateInstallButton();
+handleMemberShareFragment();
+window.addEventListener('hashchange', handleMemberShareFragment);
 
 if ('serviceWorker' in navigator && window.isSecureContext) {
     const hadServiceWorkerController = Boolean(navigator.serviceWorker.controller);

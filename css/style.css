@@ -414,6 +414,24 @@ label { display: block; font-size: 0.85rem; font-weight: 700; color: #64748b; ma
 .dialog-heading h3 { margin:0; font-size:1.15rem; font-weight:750; }
 .dialog-body { flex:1 1 auto; min-height:0; padding:20px var(--dialog-padding); overflow-y:auto; overscroll-behavior:contain; }
 .dialog-body>:last-child { margin-bottom:0; }
+.member-share-body { text-align:center; }
+.member-share-intro { margin:0 0 16px; font-size:14px; line-height:1.6; color:#64748b; }
+.member-qr-image { width:min(100%, 320px); margin:0 auto; background:#fff; border:1px solid var(--border); border-radius:12px; padding:8px; box-sizing:border-box; }
+.member-qr-image svg { display:block; width:100%; height:auto; shape-rendering:crispEdges; }
+.member-share-summary { margin:16px 0 8px; font-size:15px; font-weight:700; color:var(--dark); }
+.member-share-note { margin:10px 0; color:#64748b; font-size:12px; line-height:1.7; overflow-wrap:anywhere; }
+.member-qr-pagination { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:14px; margin-top:12px; }
+.member-qr-pagination[hidden] { display:none; }
+.member-qr-pagination p { flex-basis:100%; margin:0; color:#64748b; font-size:12px; line-height:1.6; }
+.member-share-body label { display:block; margin:18px 0 8px; text-align:left; font-size:13px; font-weight:600; }
+.member-share-link { width:100%; box-sizing:border-box; font-size:12px; }
+.member-import-list { margin:16px 0; padding:0; list-style:none; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.member-import-list li { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 14px; font-size:14px; }
+.member-import-list li+li { border-top:1px solid var(--border); }
+.member-import-list strong { min-width:0; overflow-wrap:anywhere; }
+.member-import-list span { flex-shrink:0; color:#64748b; font-size:12px; }
+#memberImportLink { resize:none; }
+#memberImportButton[hidden] { display:none; }
 .dialog-actions { flex:0 0 auto; display:flex; gap:10px; padding:14px 20px; border-top:1px solid var(--border); background:var(--card); }
 .dialog-actions>.btn { flex:1; }
 .dialog-actions>.btn-primary, .dialog-actions>.btn-danger { flex:2; }
