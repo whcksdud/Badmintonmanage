@@ -5,8 +5,8 @@ const assert = require('node:assert/strict');
 
 const { html, styles, appSource, runApp } = require('./helpers/app-runtime');
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
-if (html.includes('>F조</option>') || appSource.includes('const tiers = ["F조"') || !['pTier','bulkTier','memberTier'].every(field => html.includes(`id="${field}-1" value="1" checked`))) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
-if (!serviceWorker.includes('app-v69') || !serviceWorker.includes('runtime-v69') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
+if (html.includes('>F조</option>') || appSource.includes('const tiers = ["F조"') || !['pTier','memberTier'].every(field => html.includes(`id="${field}-1" value="1" checked`))) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
+if (!serviceWorker.includes('app-v70') || !serviceWorker.includes('runtime-v70') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
 
 function createPlayers() {
     return Array.from({ length: 13 }, (_, index) => ({
@@ -534,7 +534,7 @@ function assertInRuntime(context, assertion, message) {
     assertInRuntime(context, 'players[1].games === 0', '음수 경기 수 입력이 허용되었습니다.');
 
     const bulk = createRuntime(roster, []);
-    vm.runInContext('document.getElementById("bulkNames").value = "일괄1\\n일괄2"; document.getElementById("bulkGen").value = "F"; document.getElementById("bulkTier").value = "3"; saveBulkPlayers()', bulk);
+    vm.runInContext('document.getElementById("memberNames").value = "일괄1\\n일괄2"; document.getElementById("memberGender").value = "F"; document.getElementById("memberTier").value = "3"; saveBulkPlayers()', bulk);
     assertInRuntime(bulk, 'players.length === 3 && players.slice(1).every(p=>p.games===0 && getMatchingGameCount(p)===6)', '일괄 등록의 초기 보정은 같은 활동 선수 평균을 사용하고 실제 경기는 0이어야 합니다.');
 }
 

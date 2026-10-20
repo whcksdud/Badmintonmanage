@@ -96,10 +96,26 @@ function selectVisibleMembers() {
     renderMembers();
 }
 
+function setMemberRegistrationMode(mode) {
+    if(editMemberId !== null || !['member', 'guest'].includes(mode)) return;
+    memberRegistrationMode = mode;
+    document.getElementById('registrationModeMember').checked = mode === 'member';
+    document.getElementById('registrationModeGuest').checked = mode === 'guest';
+    document.getElementById('registrationModeNote').innerText = mode === 'member'
+        ? '회원 명단에 저장하고 모임마다 불러옵니다.'
+        : '오늘 대기실에 바로 추가합니다.';
+    document.getElementById('memberRegistrationSave').innerText = mode === 'member' ? '회원 등록' : '게스트 등록';
+}
+
 function openMemberEditor(id = null) {
     editMemberId = id;
     const member = members.find(m => m.id === id);
-    document.getElementById('memberEditorTitle').innerText = member ? '회원 정보 수정' : '회원 등록';
+    memberRegistrationMode = 'member';
+    document.getElementById('memberEditorTitle').innerText = member ? '회원 정보 수정' : '선수 등록';
+    document.getElementById('registrationModeField').hidden = Boolean(member);
+    document.getElementById('registrationModeNote').hidden = Boolean(member);
+    if(member) document.getElementById('memberRegistrationSave').innerText = '저장';
+    else setMemberRegistrationMode('member');
     document.getElementById('memberNamesNote').hidden = Boolean(member);
     document.getElementById('memberNames').rows = member ? 1 : 4;
     document.getElementById('memberNames').value = member ? member.name : '';
@@ -114,8 +130,9 @@ function saveMember() {
     const names = document.getElementById('memberNames').value.split('\n').map(name => name.trim()).filter(Boolean);
     const gender = document.getElementById('memberGender').value;
     const tier = Number(document.getElementById('memberTier').value);
-    if(!names.length) return showToast('회원 이름을 입력하세요.');
+    if(!names.length) return showToast('이름을 입력하세요.');
     if(!['M', 'F'].includes(gender) || !Number.isInteger(tier) || tier < 1 || tier > 5) return showToast('성별과 급수를 확인하세요.');
+    if(editMemberId === null && memberRegistrationMode === 'guest') return saveBulkPlayers();
     if(editMemberId !== null) {
         if(names.length !== 1) return showToast('수정할 회원의 이름 하나만 입력하세요.');
         const member = members.find(m => m.id === editMemberId);

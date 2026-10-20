@@ -35,6 +35,7 @@ let waitingRoomCollapsed = false;
 let transferSourceCourtId = null;
 let deferredInstallPrompt = null;
 let editMemberId = null;
+let memberRegistrationMode = 'member';
 const selectedMemberIds = new Set();
 
 window.addEventListener('beforeinstallprompt', event => {

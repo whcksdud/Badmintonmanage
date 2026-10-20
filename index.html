@@ -158,38 +158,6 @@
     </div>
 </div></div>
 
-<!-- 게스트 등록 모달 -->
-<div id="bulkPModal" class="modal" style="z-index:1100;" role="dialog" aria-modal="true" aria-labelledby="bulkTitle"><div class="modal-box form-modal">
-    <div class="dialog-heading"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg><h3 id="bulkTitle">게스트 등록</h3></div>
-    <div class="dialog-body">
-    <label for="bulkNames">이름</label>
-    <p id="bulkNamesNote" class="field-note">한 줄에 한 명씩 입력하세요.</p>
-    <textarea id="bulkNames" rows="4" placeholder="김철수&#13;&#10;이영희&#13;&#10;박지성" aria-describedby="bulkNamesNote"></textarea>
-
-    <input type="hidden" id="bulkGen" value="M">
-    <fieldset class="profile-choice-field"><legend>성별</legend>
-        <div class="profile-options profile-gender-options">
-            <label><input type="radio" name="bulkGenChoice" id="bulkGen-M" value="M" checked onchange="document.getElementById('bulkGen').value=this.value"><span>남성</span></label>
-            <label><input type="radio" name="bulkGenChoice" id="bulkGen-F" value="F" onchange="document.getElementById('bulkGen').value=this.value"><span>여성</span></label>
-        </div>
-    </fieldset>
-    <input type="hidden" id="bulkTier" value="1">
-    <fieldset class="profile-choice-field"><legend>급수</legend>
-        <div class="profile-options profile-tier-options">
-            <label><input type="radio" name="bulkTierChoice" id="bulkTier-5" value="5" onchange="document.getElementById('bulkTier').value=this.value"><span>A조</span></label>
-            <label><input type="radio" name="bulkTierChoice" id="bulkTier-4" value="4" onchange="document.getElementById('bulkTier').value=this.value"><span>B조</span></label>
-            <label><input type="radio" name="bulkTierChoice" id="bulkTier-3" value="3" onchange="document.getElementById('bulkTier').value=this.value"><span>C조</span></label>
-            <label><input type="radio" name="bulkTierChoice" id="bulkTier-2" value="2" onchange="document.getElementById('bulkTier').value=this.value"><span>D조</span></label>
-            <label><input type="radio" name="bulkTierChoice" id="bulkTier-1" value="1" checked onchange="document.getElementById('bulkTier').value=this.value"><span>E조</span></label>
-        </div>
-    </fieldset>
-    </div>
-    <div class="dialog-actions">
-        <button class="btn btn-primary" onclick="saveBulkPlayers()">저장</button>
-        <button class="btn btn-outline" onclick="closeBulkPModal()">취소</button>
-    </div>
-</div></div>
-
 <!-- 저장된 회원 -->
 <div id="membersModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="membersTitle"><div class="modal-box">
     <div class="member-modal-heading">
@@ -215,11 +183,10 @@
     </div>
     <div id="memberRegisterPanel" class="member-panel member-register-panel" role="tabpanel" aria-labelledby="memberRegisterTab" hidden>
         <section class="member-register-card">
-            <h4>회원 명단에 저장</h4>
-            <p>이름·성별·급수를 저장하고 모임마다 불러오세요. 이름 옆 연필 버튼에서 회원 정보를 수정·삭제할 수 있습니다.</p>
+            <h4>회원·게스트 등록</h4>
+            <p>회원은 명단에 저장하고, 게스트는 오늘 대기실에 추가합니다.</p>
             <div class="member-toolbar">
-                <button class="btn btn-primary" onclick="openMemberEditor()">+ 회원 등록</button>
-                <button class="btn btn-outline" onclick="openBulkPModal()">게스트 등록</button>
+                <button class="btn btn-primary" onclick="openMemberEditor()">+ 선수 등록</button>
             </div>
         </section>
         <section class="member-register-card">
@@ -238,8 +205,15 @@
     </div>
 </div></div>
 <div id="memberEditorModal" class="modal" style="z-index:1100;" role="dialog" aria-modal="true" aria-labelledby="memberEditorTitle"><div class="modal-box form-modal">
-    <div class="dialog-heading"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg><h3 id="memberEditorTitle">회원 등록</h3></div>
+    <div class="dialog-heading"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg><h3 id="memberEditorTitle">선수 등록</h3></div>
     <div class="dialog-body">
+    <fieldset id="registrationModeField" class="profile-choice-field"><legend>등록 방식</legend>
+        <div class="profile-options profile-gender-options">
+            <label><input type="radio" name="registrationMode" id="registrationModeMember" value="member" checked onchange="setMemberRegistrationMode(this.value)"><span>회원 등록</span></label>
+            <label><input type="radio" name="registrationMode" id="registrationModeGuest" value="guest" onchange="setMemberRegistrationMode(this.value)"><span>게스트 등록</span></label>
+        </div>
+    </fieldset>
+    <p id="registrationModeNote" class="field-note" aria-live="polite">회원 명단에 저장하고 모임마다 불러옵니다.</p>
     <label for="memberNames">이름</label>
     <p id="memberNamesNote" class="field-note">한 줄에 한 명씩 입력하세요.</p>
     <textarea id="memberNames" rows="4" placeholder="김철수&#13;&#10;이영희&#13;&#10;박지성" aria-describedby="memberNamesNote"></textarea>
@@ -264,7 +238,7 @@
         <button id="deleteMemberButton" type="button" class="player-delete-button" onclick="deleteMember(editMemberId)" hidden>회원 명단에서 삭제</button>
     </div>
     </div>
-    <div class="dialog-actions"><button class="btn btn-primary" onclick="saveMember()">저장</button><button class="btn btn-outline" onclick="closeMemberEditor()">취소</button></div>
+    <div class="dialog-actions"><button id="memberRegistrationSave" class="btn btn-primary" onclick="saveMember()">회원 등록</button><button class="btn btn-outline" onclick="closeMemberEditor()">취소</button></div>
 </div></div>
 
 <div id="memberShareModal" class="modal" style="z-index:1100;" role="dialog" aria-modal="true" aria-labelledby="memberShareTitle"><div class="modal-box form-modal">

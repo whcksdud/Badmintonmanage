@@ -81,25 +81,16 @@ function openPModal(id=null) {
 
 function closePModal() { document.getElementById('pModal').style.display='none'; }
 
-function openBulkPModal() {
-    document.getElementById('bulkNames').value = '';
-    setFormChoice('bulkGen', document.getElementById('bulkGen').value, ['M', 'F']);
-    setFormChoice('bulkTier', document.getElementById('bulkTier').value, [5, 4, 3, 2, 1]);
-    document.getElementById('bulkPModal').style.display = 'flex';
-    document.getElementById('bulkNames').focus();
-}
-
-function closeBulkPModal() { document.getElementById('bulkPModal').style.display='none'; }
-
 function saveBulkPlayers() {
-    const text = document.getElementById('bulkNames').value.trim();
+    const text = document.getElementById('memberNames').value.trim();
     if(!text) return showToast("이름을 입력하세요.");
 
     const lines = text.split('\n').map(l => l.trim()).filter(l => l);
     if(lines.length === 0) return;
 
-    const tier = parseInt(document.getElementById('bulkTier').value);
-    const gen = document.getElementById('bulkGen').value;
+    const tier = Number(document.getElementById('memberTier').value);
+    const gen = document.getElementById('memberGender').value;
+    if(!['M', 'F'].includes(gen) || !Number.isInteger(tier) || tier < 1 || tier > 5) return showToast('성별과 급수를 확인하세요.');
     const matchingOffset = getInitialMatchingGames();
 
     let count = 0;
@@ -119,7 +110,7 @@ function saveBulkPlayers() {
     });
 
     if(!saveAction(`게스트 ${count}명 등록`)) return;
-    closeBulkPModal(); render(); setMobileView('waiting'); showToast(`${count}명 등록 완료`);
+    closeMemberEditor(); render(); setMobileView('waiting'); showToast(`게스트 ${count}명 등록 완료`);
 }
 
 function savePlayer() {

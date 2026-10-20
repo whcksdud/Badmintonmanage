@@ -156,9 +156,9 @@ test('신규 참가자는 활동 선수의 보정 포함 평균 5.5를 버림한
 
 test('일괄 등록과 회원 불러오기도 같은 평균 기준을 적용한다', () => {
     const bulk = runtime(arrivalState());
-    bulk.set('bulkNames', '신규1\n신규2\n신규3');
-    bulk.set('bulkGen', 'M');
-    bulk.set('bulkTier', '3');
+    bulk.set('memberNames', '신규1\n신규2\n신규3');
+    bulk.set('memberGender', 'M');
+    bulk.set('memberTier', '3');
     bulk.run('saveBulkPlayers()');
     assert.deepEqual(bulk.json('players.slice(-3).map(p=>[p.games,getMatchingGameCount(p)])'), [[0,5],[0,5],[0,5]]);
     const members = runtime(arrivalState());

@@ -134,4 +134,53 @@ test('전체 선택·선택 해제 버튼은 선택 가능한 회원 수에 맞�
     assert.equal(ui.run('document.getElementById("loadMembersButton").disabled'),true);
 });
 
+test('등록 방식 전환은 입력을 보존하고 회원과 게스트를 각각 올바른 명단에 저장한다', () => {
+    const ui = runtime();
+    ui.run('openMembersModal(); setMemberView("register"); openMemberEditor()');
+    ui.set('memberNames', '등록예시\n등록예시');
+    ui.set('memberGender', 'F');
+    ui.set('memberTier', '2');
+    ui.run('setMemberRegistrationMode("guest"); setMemberRegistrationMode("member")');
+    assert.equal(ui.run('document.getElementById("memberNames").value'), '등록예시\n등록예시');
+    assert.equal(ui.run('document.getElementById("memberGender").value'), 'F');
+    assert.equal(ui.run('document.getElementById("memberTier").value'), '2');
+    ui.run('saveMember()');
+    assert.equal(ui.run('members.length'), 1);
+    assert.equal(ui.run('players.length'), 1);
+    ui.run('openMemberEditor(); setMemberRegistrationMode("guest")');
+    ui.set('memberNames', '게스트1\n게스트2');
+    ui.set('memberGender', 'F');
+    ui.set('memberTier', '2');
+    ui.run('saveMember()');
+    assert.equal(ui.run('members.length'), 1);
+    assert.equal(ui.run('players.length'), 3);
+    assert.equal(ui.run('players.slice(1).every(p => p.gender === "F" && p.tier === 2 && p.status === "waiting" && p.memberId === undefined)'), true);
+    const reloaded = runtime(ui.storage);
+    assert.equal(reloaded.run('members.length === 1 && players.length === 3'), true);
+});
+
+test('회원 수정은 게스트 방식으로 전환되지 않고 취소와 재열기는 등록 기본값을 복원한다', () => {
+    const ui = runtime();
+    ui.run('members=[{id:101,name:"회원",gender:"M",tier:3}]; openMemberEditor(); setMemberRegistrationMode("guest"); closeMemberEditor(); openMemberEditor()');
+    assert.equal(ui.run('memberRegistrationMode'), 'member');
+    assert.equal(ui.run('document.getElementById("memberNames").value'), '');
+    ui.run('openMemberEditor(101); setMemberRegistrationMode("guest")');
+    assert.equal(ui.run('document.getElementById("registrationModeField").hidden'), true);
+    ui.set('memberNames', '수정회원');
+    ui.run('saveMember()');
+    assert.equal(ui.run('members[0].name'), '수정회원');
+    assert.equal(ui.run('players.length'), 1);
+});
+
+test('게스트 등록 저장 실패는 회원과 대기실을 복구하고 입력 창을 유지한다', () => {
+    const ui = runtime();
+    ui.run('openMemberEditor(); setMemberRegistrationMode("guest")');
+    ui.set('memberNames', '저장실패');
+    const before = ui.run('serializeState()');
+    ui.context.localStorage.setItem = () => { throw new Error('quota'); };
+    ui.run('saveMember()');
+    assert.equal(ui.run('serializeState()'), before);
+    assert.equal(ui.run('document.getElementById("memberEditorModal").style.display'), 'flex');
+});
+
 console.log('회원 등록·중복 방지·출석·재접속·새 모임·수정·삭제·백업·되돌리기·저장 실패 테스트 통과');

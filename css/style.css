@@ -466,7 +466,7 @@ label { display: block; font-size: 0.85rem; font-weight: 700; color: #64748b; ma
 .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
 .form-grid>div { min-width:0; }
 .profile-choice-field { min-width:0; margin:0 0 16px; padding:0; border:0; }
-#memberEditorModal .profile-choice-field:last-of-type, #bulkPModal .profile-choice-field:last-of-type { margin-bottom:0; }
+#memberEditorModal .profile-choice-field:last-of-type { margin-bottom:0; }
 .profile-choice-field legend { margin-bottom:7px; padding:0; color:var(--text-secondary); font-size:0.85rem; font-weight:700; }
 .profile-options { display:grid; gap:6px; }
 .profile-gender-options { grid-template-columns:repeat(2,minmax(0,1fr)); }
