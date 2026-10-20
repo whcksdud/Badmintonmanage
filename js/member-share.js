@@ -1,6 +1,8 @@
 // Member-only compressed codes; legacy QR pages remain independently mergeable.
 const MEMBER_SHARE_APP_URL = 'https://whcksdud.github.io/Badmintonmanage/';
 const MEMBER_QR_URL_LIMIT = 450;
+const MEMBER_COMPRESSED_QR_URL_LIMIT = 900;
+const MEMBER_CODE_QR_FRAGMENT = '#member-code=';
 const MEMBER_CODE_PREFIX = 'BM2-';
 const MEMBER_CODE_BYTE_LIMIT = 2000000;
 const MEMBER_CODE_CHAR_LIMIT = 2700000;
@@ -56,10 +58,12 @@ async function transformMemberBytes(bytes, decompress = false) {
     return result;
 }
 
-async function encodeMemberCode(directory) {
+async function encodeMemberCode(directory, page = 1, total = 1) {
     const rows = directory.map(member => [member.name.trim(), member.gender, member.tier]);
     validateMemberProfiles(rows, 2000);
-    const bytes = await transformMemberBytes(new TextEncoder().encode(JSON.stringify({v:2, m:rows})));
+    const data = {v:2, m:rows};
+    if(page !== 1 || total !== 1) Object.assign(data, {p:page, t:total});
+    const bytes = await transformMemberBytes(new TextEncoder().encode(JSON.stringify(data)));
     // Chunk conversion avoids exceeding the argument limit with large directories.
     let binary = '';
     for(let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
@@ -79,7 +83,10 @@ async function decodeMemberCode(input) {
         const bytes = await transformMemberBytes(Uint8Array.from(binary, c => c.charCodeAt(0)), true);
         const data = JSON.parse(new TextDecoder('utf-8', {fatal:true}).decode(bytes));
         if(!data || data.v !== 2) throw new Error('version');
-        return {rows:validateMemberProfiles(data.m, 2000), page:1, total:1};
+        const paginated = data.p !== undefined || data.t !== undefined;
+        if(paginated && (!Number.isInteger(data.p) || !Number.isInteger(data.t) || data.p < 1 || data.p > data.t || data.t > 2000))
+            throw new Error('page');
+        return {rows:validateMemberProfiles(data.m, 2000), page:paginated ? data.p : 1, total:paginated ? data.t : 1};
     } catch(error) { throw new Error('압축 코드를 읽을 수 없습니다. 코드 전체를 다시 복사해 주세요.'); }
 }
 
@@ -91,6 +98,10 @@ function encodeMemberShare(rows, page, total) {
 
 function decodeMemberShare(link) {
     const url = new URL(link);
+    if(url.hash.startsWith(MEMBER_CODE_QR_FRAGMENT)) {
+        if(link.length > MEMBER_COMPRESSED_QR_URL_LIMIT) throw new Error('회원명단 공유 링크를 확인해 주세요.');
+        return decodeMemberCode(url.hash.slice(MEMBER_CODE_QR_FRAGMENT.length));
+    }
     const encoded = url.hash.slice('#members='.length);
     if(!url.hash.startsWith('#members=') || link.length > MEMBER_QR_URL_LIMIT ||
         !/^[A-Za-z0-9_-]+$/.test(encoded) || encoded.length % 4 === 1)
@@ -123,6 +134,39 @@ function buildMemberSharePages(directory) {
     return groups.map((rows, index) => ({url:encodeMemberShare(rows, index + 1, groups.length), count:rows.length}));
 }
 
+async function buildCompressedMemberSharePages(directory, fullCode) {
+    const toUrl = code => `${MEMBER_SHARE_APP_URL}${MEMBER_CODE_QR_FRAGMENT}${code}`;
+    const completeUrl = toUrl(fullCode);
+    if(completeUrl.length <= MEMBER_COMPRESSED_QR_URL_LIMIT)
+        return [{url:completeUrl, count:directory.length}];
+    const groups = [];
+    async function split(group) {
+        const code = await encodeMemberCode(group, 2000, 2000);
+        // Reserve space for the final page metadata without making dense QR codes.
+        if(group.length > 1 && toUrl(code).length > MEMBER_COMPRESSED_QR_URL_LIMIT - 64) {
+            const middle = Math.ceil(group.length / 2);
+            await split(group.slice(0, middle));
+            await split(group.slice(middle));
+        } else groups.push(group);
+    }
+    await split(directory);
+    // Check actual output lengths too: gzip size varies with page numbers.
+    while(true) {
+        const pages = [];
+        let oversized = -1;
+        for(let i = 0; i < groups.length; i++) {
+            const url = toUrl(await encodeMemberCode(groups[i], i + 1, groups.length));
+            if(url.length > MEMBER_COMPRESSED_QR_URL_LIMIT) { oversized = i; break; }
+            pages.push({url, count:groups[i].length});
+        }
+        if(oversized < 0) return pages;
+        const group = groups[oversized];
+        if(group.length === 1) throw new Error('회원명단 QR을 만들지 못했습니다. 압축 코드를 공유해 주세요.');
+        const middle = Math.ceil(group.length / 2);
+        groups.splice(oversized, 1, group.slice(0, middle), group.slice(middle));
+    }
+}
+
 async function openMemberShare() {
     if(!members.length) return showToast('공유할 회원을 먼저 저장해 주세요.');
     const request = ++memberShareRequest;
@@ -135,7 +179,9 @@ async function openMemberShare() {
     document.getElementById('memberCodeSummary').hidden = false;
     document.getElementById('memberCodeCopy').disabled = true;
     document.getElementById('memberShareModal').style.display = 'flex';
-    showMemberShareQr();
+    document.getElementById('memberQrImage').innerText = '전체 회원명단 QR을 만드는 중입니다…';
+    document.getElementById('memberQrSummary').innerText = '';
+    document.getElementById('memberQrPagination').hidden = true;
     try {
         const code = await encodeMemberCode(memberShareDirectory);
         if(request !== memberShareRequest) return;
@@ -148,13 +194,20 @@ async function openMemberShare() {
         if(request !== memberShareRequest) return;
         document.getElementById('memberCodeSummary').innerText = error.message;
     }
+    if(request === memberShareRequest) await showMemberShareQr();
 }
 
-function showMemberShareQr() {
+async function showMemberShareQr() {
+    const request = memberShareRequest;
     try {
-        if(!memberSharePages.length) memberSharePages = buildMemberSharePages(memberShareDirectory);
+        const pages = memberShareCode
+            ? await buildCompressedMemberSharePages(memberShareDirectory, memberShareCode)
+            : buildMemberSharePages(memberShareDirectory);
+        if(request !== memberShareRequest) return;
+        memberSharePages = pages;
         renderMemberShare();
     } catch(error) {
+        if(request !== memberShareRequest) return;
         document.getElementById('memberQrImage').innerText = error.message;
         document.getElementById('memberQrSummary').innerText = '';
         document.getElementById('memberQrPagination').hidden = true;
@@ -167,7 +220,9 @@ function renderMemberShare() {
     qr.addData(page.url, 'Byte');
     qr.make();
     document.getElementById('memberQrImage').innerHTML = qr.createSvgTag({cellSize:4, margin:16, scalable:true});
-    document.getElementById('memberQrSummary').innerText = `총 ${memberSharePages.reduce((sum, item) => sum + item.count, 0)}명 · 이 QR에 ${page.count}명`;
+    document.getElementById('memberQrSummary').innerText = memberSharePages.length === 1
+        ? `저장된 전체 회원 ${page.count}명`
+        : `전체 ${memberSharePages.reduce((sum, item) => sum + item.count, 0)}명 중 이 QR에 ${page.count}명 · 모든 QR을 읽어 주세요.`;
     document.getElementById('memberQrPage').innerText = `${memberSharePage + 1} / ${memberSharePages.length}`;
     document.getElementById('memberQrPrev').disabled = memberSharePage === 0;
     document.getElementById('memberQrNext').disabled = memberSharePage === memberSharePages.length - 1;
@@ -250,7 +305,8 @@ function previewMemberImport(link = document.getElementById('memberImportLink').
     };
     if(!/^https?:\/\//i.test(link.trim())) return decodeMemberCode(link).then(accept, reject);
     try {
-        return accept(decodeMemberShare(link));
+        const data = decodeMemberShare(link);
+        return data && typeof data.then === 'function' ? data.then(accept, reject) : accept(data);
     } catch(error) { return reject(error); }
 }
 
@@ -285,7 +341,7 @@ function importSharedMembers() {
 function updateMemberQrImportState(link = null) {
     if(!window.location || !window.history?.replaceState) return;
     const browserState = window.history.state;
-    const hasFragment = window.location.hash.startsWith('#members=');
+    const hasFragment = isMemberShareFragment(window.location.hash);
     const hasPendingQr = browserState && Object.prototype.hasOwnProperty.call(browserState, MEMBER_QR_HISTORY_KEY);
     if(!link && !hasFragment && !hasPendingQr) return;
     const nextState = browserState && typeof browserState === 'object' ? {...browserState} : {};
@@ -303,14 +359,18 @@ function updateMemberQrImportState(link = null) {
 
 function handleMemberShareFragment() {
     if(!window.location) return;
-    const hasFragment = window.location.hash.startsWith('#members=');
+    const hasFragment = isMemberShareFragment(window.location.hash);
     const browserState = window.history?.state;
     if(!hasFragment && !(browserState && Object.prototype.hasOwnProperty.call(browserState, MEMBER_QR_HISTORY_KEY))) return;
     const link = hasFragment ? window.location.href : browserState[MEMBER_QR_HISTORY_KEY];
-    if(typeof link !== 'string' || link.length > MEMBER_QR_URL_LIMIT) {
+    if(typeof link !== 'string' || !/^https?:\/\//i.test(link) || link.length > MEMBER_COMPRESSED_QR_URL_LIMIT) {
         updateMemberQrImportState();
         showToast('회원명단 공유 링크를 확인해 주세요.');
         return;
     }
-    previewMemberImport(link, true);
+    return previewMemberImport(link, true);
+}
+
+function isMemberShareFragment(hash) {
+    return hash.startsWith('#members=') || hash.startsWith(MEMBER_CODE_QR_FRAGMENT);
 }

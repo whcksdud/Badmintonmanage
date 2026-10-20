@@ -101,7 +101,7 @@ async function acceptMemberQrScan(value, request) {
     const isLink = /^https?:\/\//i.test(value.trim());
     // Validate before closing the scanner. Ordinary URLs and malformed QR data
     // stay in the scanner and cannot open another website or alter app data.
-    if(isLink) decodeMemberShare(value);
+    if(isLink) await decodeMemberShare(value);
     else await decodeMemberCode(value);
     if(request !== memberQrScanRequest) return false;
     closeMemberQrScan();

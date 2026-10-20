@@ -238,3 +238,30 @@ test('QR containing a compressed code can also be read without navigating',async
     assert.equal(app.tracks[0].stops,1);
     assert.equal(app.context.window.location.href,'https://example.test/Badmintonmanage/');
 });
+
+test('one displayed QR transfers all 35 saved members including 15 absent members through the real scanner',async()=>{
+    const sender=runtime();
+    sender.context.directory=Array.from({length:35},(_,i)=>({
+        id:1000+i,name:(i<20?'참석회원':'미참석회원')+String(i+1).padStart(2,'0'),gender:i%2?'M':'F',tier:i%5+1
+    }));
+    await sender.run(`members=directory;
+        players=members.slice(0,20).map((m,i)=>({...m,id:i+2000,memberId:m.id,games:0,status:'waiting',waitingSince:100,matchingOffset:0,lastTime:0}));
+        openMemberShare()`);
+    assert.equal(sender.run('players.length'),20);
+    const pages=JSON.parse(sender.run('JSON.stringify(memberSharePages)'));
+    assert.equal(pages.length,1,'the full directory must fit in one compressed QR');
+    assert.equal(pages[0].count,35);
+    const receiver=runtime(qrPixels(pages[0].url));
+    const before=JSON.parse(receiver.run('serializeState()'));
+    await receiver.run('openMemberQrScan()');
+    await receiver.tick();
+    assert.equal(receiver.tracks[0].stops,1);
+    const rows=JSON.parse(receiver.run('JSON.stringify(pendingMemberImport.rows)'));
+    assert.equal(rows.length,35);
+    assert.equal(rows.filter(m=>m.name.startsWith('미참석')).length,15);
+    assert.deepEqual(rows,sender.context.directory.map(({name,gender,tier})=>({name,gender,tier})));
+    assert.equal(receiver.run('importSharedMembers()'),true);
+    const after=JSON.parse(receiver.run('serializeState()'));
+    assert.equal(after.members.length,36);
+    for(const key of ['players','courts','history'])assert.deepEqual(after[key],before[key]);
+});

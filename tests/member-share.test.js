@@ -44,11 +44,11 @@ test('QR shares only saved member profiles, round-trips Korean and escapes names
     const app=runtime();
     await app.run('members.push({id:101,name:"<홍길동 & 회원>",gender:"F",tier:5,secret:"never-share"}); openMemberShare()');
     const url=app.run('memberSharePages[0].url');
-    const payload=JSON.parse(Buffer.from(url.split('#members=')[1],'base64url'));
-    assert.deepEqual(Object.keys(payload).sort(),['m','p','t','v']);
+    const payload=JSON.parse(gunzipSync(Buffer.from(url.split('#member-code=')[1].slice(4),'base64url')));
+    assert.deepEqual(Object.keys(payload).sort(),['m','v']);
     assert.deepEqual(payload.m,[['기존 회원','M',3],['<홍길동 & 회원>','F',5]]);
     assert.ok(!url.includes('127.0.0.1'));
-    assert.equal(preview(app,url),true);
+    assert.equal(await preview(app,url),true);
     assert.equal(app.run('document.getElementById("memberImportList").innerHTML.includes("&lt;홍길동 &amp; 회원&gt;")'),false,'all existing profiles are excluded');
     assert.equal(preview(app,link([['<새 회원>','M',1]])),true);
     assert.ok(app.run('document.getElementById("memberImportList").innerHTML.includes("&lt;새 회원&gt;")'));
@@ -267,6 +267,8 @@ test('compressed input rejects corrupt, truncated, oversized and invalid payload
         compressed({v:1,m:[['새 회원','M',1]]}),compressed({v:2,m:[]}),
         compressed({v:2,m:[['X','other',1]]}),compressed({v:2,m:[['X','F',6]]}),
         compressed({v:2,m:[['X','M',1,'extra']]}),compressed({v:2,m:[['X'.repeat(121),'M',1]]}),
+        compressed({v:2,p:0,t:1,m:[['X','M',1]]}),compressed({v:2,p:2,t:1,m:[['X','M',1]]}),
+        compressed({v:2,p:1,t:2001,m:[['X','M',1]]}),compressed({v:2,p:1,m:[['X','M',1]]}),
         compressed({v:2,m:Array.from({length:2001},()=>['회원','M',1])}),
         compressed({v:2,m:[['X','M',1]],extra:'X'.repeat(2000000)})];
     for(const code of invalid) {
@@ -331,4 +333,50 @@ test('unsupported compression APIs leave QR sharing and legacy imports usable',a
     assert.ok(app.run('document.getElementById("memberQrImage").innerHTML.includes("<svg")'));
     assert.equal(preview(app,link([['구형 브라우저','M',2]])),true);
     assert.equal(await preview(app,compressed({v:2,m:[['새 코드','F',1]]})),false);
+});
+
+test('compressed QR pages include every saved member and preserve page metadata for large directories',async()=>{
+    const {createHash}=require('node:crypto');
+    const sender=runtime();
+    sender.context.directory=Array.from({length:200},(_,i)=>({
+        id:1000+i,name:`회원${i} ${createHash('sha256').update(String(i)).digest('hex').slice(0,40)}`,
+        gender:i%2?'M':'F',tier:i%5+1
+    }));
+    await sender.run('members=directory; openMemberShare()');
+    const pages=JSON.parse(sender.run('JSON.stringify(memberSharePages)'));
+    assert.ok(pages.length>1);
+    const receiver=runtime();
+    const names=[];
+    for(let i=0;i<pages.length;i++) {
+        assert.ok(pages[i].url.length<=sender.run('MEMBER_COMPRESSED_QR_URL_LIMIT'));
+        assert.ok(pages[i].url.includes('#member-code=BM2-'));
+        assert.equal(await preview(receiver,pages[i].url),true);
+        const data=JSON.parse(receiver.run('JSON.stringify(pendingMemberImport)'));
+        assert.equal(data.page,i+1);
+        assert.equal(data.total,pages.length);
+        names.push(...data.rows.map(member=>member.name));
+        assert.equal(receiver.run('importSharedMembers()'),true);
+    }
+    assert.deepEqual(names,sender.context.directory.map(m=>m.name));
+    assert.equal(receiver.run('members.length'),201);
+    assert.equal(receiver.run('players.length'),1);
+});
+
+test('compressed QR links survive app updates, clean their URL and clear after cancellation',async()=>{
+    const url='https://whcksdud.github.io/Badmintonmanage/#member-code='+compressed({v:2,m:[['압축 링크 회원','F',5]]});
+    const app=runtime(undefined,url,{controlled:true});
+    await app.run('handleMemberShareFragment()');
+    assert.equal(app.context.window.location.hash,'');
+    assert.equal(app.context.window.history.state.bmPendingMemberQr,url);
+    assert.equal(app.run('pendingMemberImport.rows[0].name'),'압축 링크 회원');
+    app.events.get('sw:controllerchange')();
+    assert.equal(app.reloadCount,1);
+    const restored=runtime(app.storage,app.context.window.location.href,{historyState:app.context.window.history.state});
+    await restored.run('handleMemberShareFragment()');
+    assert.equal(restored.run('pendingMemberImport.rows[0].name'),'압축 링크 회원');
+    assert.equal(restored.run('members.length'),1);
+    restored.run('closeMemberImport()');
+    assert.equal(restored.context.window.history.state,null);
+    assert.equal(await preview(restored,'https://example.test/#member-code=BM2-'+ 'A'.repeat(900)),false);
+    assert.equal(restored.run('pendingMemberImport'),null);
 });
