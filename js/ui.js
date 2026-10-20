@@ -202,17 +202,11 @@ function renderRosterActionSheet() {
     const canToggleRest = player.status === 'waiting' || player.status === 'resting';
     const shuttleActionLabel = player.shuttlecock ? '콕 냄 표시 취소' : '콕 냄 표시';
     sheet.innerHTML = `
-        <div class="roster-sheet-heading">
-            <span>선택</span>
-            <strong id="rosterActionSheetTitle" title="${safePlayerName}">${safePlayerName}</strong>
-            <span>${tiers[player.tier]} · ${player.games}경기</span>
-            <button type="button" class="roster-sheet-close" onclick="closeRosterActionSheet(true)" aria-label="선수 관리 닫기" title="선수 관리 닫기">${renderUIIcon('close')}</button>
-        </div>
-        <p class="roster-matching-summary">실제 ${player.games}경기 · 매칭 기준 ${getMatchingGameCount(player)}경기</p>
         <div class="roster-sheet-action-buttons" role="group" aria-label="${safePlayerName} 선수 관리 동작">
             ${canToggleRest ? `<button type="button" class="roster-action ${player.status === 'resting' ? 'resume' : 'rest'}" onclick="toggleRestStatus(${player.id})" title="${player.status === 'resting' ? '대기로 복귀' : '휴식'}">${renderRosterActionIcon(player.status === 'resting' ? 'resume' : 'rest')}<span>${player.status === 'resting' ? '복귀' : '휴식'}</span></button>` : ''}
             <button type="button" class="roster-action shuttle ${player.shuttlecock ? 'active' : ''}" onclick="toggleShuttlecock(${player.id})" aria-pressed="${player.shuttlecock}" aria-label="${shuttleActionLabel}">${renderRosterActionIcon(player.shuttlecock ? 'cancel' : 'shuttle')}<span>${player.shuttlecock ? '콕 취소' : '콕 냄'}</span></button>
             <button type="button" class="roster-action edit" onclick="openPModal(${player.id})" title="정보 수정">${renderRosterActionIcon('edit')}<span>수정</span></button>
+            <button type="button" class="roster-action cancel" onclick="closeRosterActionSheet(true)" aria-label="선수 선택 취소">${renderRosterActionIcon('close')}<span>취소</span></button>
         </div>`;
     sheet.hidden = false;
     waitingCourt.classList.add('has-roster-selection');
@@ -292,7 +286,7 @@ function renderRoster() {
             const isSelected = String(selectedRosterPlayerId) === String(p.id);
 
             container.innerHTML += `
-            <div id="roster-player-${p.id}" class="player-chip waiting-chip roster-chip gender-card ${getGenderCardClass(p.gender)} roster-status-${p.status} ${p.shuttlecock ? 'has-shuttlecock' : ''} ${isSelected ? 'action-selected' : ''}" role="button" tabindex="0" aria-expanded="${isSelected}" aria-controls="rosterActionSheet" aria-label="${safePlayerName} · ${p.gender === 'M' ? '남' : '여'} · ${tiers[p.tier]} · ${p.games}경기 · ${statusLabels[p.status]}${p.shuttlecock ? ' · 콕 냄' : ''} 선수 관리 ${isSelected ? '닫기' : '열기'}" onclick="toggleRosterActionSheet(${p.id})" onkeydown="handleRosterCardKey(event, ${p.id})">
+            <div id="roster-player-${p.id}" class="player-chip waiting-chip roster-chip gender-card ${getGenderCardClass(p.gender)} roster-status-${p.status} ${p.shuttlecock ? 'has-shuttlecock' : ''} ${isSelected ? 'action-selected' : ''}" role="button" tabindex="0" aria-expanded="${isSelected}" aria-controls="rosterActionSheet" aria-label="${isSelected ? '선택됨 · ' : ''}${safePlayerName} · ${p.gender === 'M' ? '남' : '여'} · ${tiers[p.tier]} · ${p.games}경기 · ${statusLabels[p.status]}${p.shuttlecock ? ' · 콕 냄' : ''} 선수 관리 ${isSelected ? '닫기' : '열기'}" onclick="toggleRosterActionSheet(${p.id})" onkeydown="handleRosterCardKey(event, ${p.id})">
                 ${renderRosterSummary(p, '', p.status, false)}
             </div>`;
         });

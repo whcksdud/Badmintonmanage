@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const { html, styles, appSource, runApp } = require('./helpers/app-runtime');
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
 if (html.includes('>F조</option>') || appSource.includes('const tiers = ["F조"') || !['pTier','memberTier'].every(field => html.includes(`id="${field}-1" value="1" checked`))) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
-if (!serviceWorker.includes('app-v88') || !serviceWorker.includes('runtime-v88') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
+if (!serviceWorker.includes('app-v95') || !serviceWorker.includes('runtime-v95') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
 
 function createPlayers() {
     return Array.from({ length: 13 }, (_, index) => ({
@@ -179,14 +179,22 @@ function assertInRuntime(context, assertion, message) {
     let selectedRosterHtml = context.__elements.get('waitList').innerHTML;
     let rosterActionSheetHtml = rosterActionSheet.innerHTML;
     if (!selectedRosterHtml.includes('aria-expanded="true"') || !selectedRosterHtml.includes('action-selected') || !selectedRosterHtml.includes('roster-identity')) throw new Error('선택된 선수 카드가 정보와 고정 크기를 유지하지 못했습니다.');
+    if ((selectedRosterHtml.match(/action-selected/g) || []).length !== 1 || !selectedRosterHtml.includes('aria-label="선택됨 · ')) throw new Error('선택한 선수 한 명의 카드에만 선택 표시가 필요합니다.');
+    if (selectedRosterHtml.includes('>선택됨</span>') || selectedRosterHtml.includes('roster-selected-indicator')) throw new Error('선수 선택은 글자나 체크 아이콘 없이 카드 배경으로만 표시해야 합니다.');
     if (selectedRosterHtml.includes('roster-action-icon') || selectedRosterHtml.includes('roster-action-sheet') || selectedRosterHtml.includes('openPModal(13)')) throw new Error('이전 카드 내부 관리 버튼 로직이 남아 있습니다.');
-    if (rosterActionSheet.hidden !== false || !rosterActionSheetHtml.includes('roster-sheet-heading') || !rosterActionSheetHtml.includes('roster-sheet-action-buttons') || !rosterActionSheetHtml.includes('roster-sheet-close')) throw new Error('독립된 선수 관리 하단 시트가 열리지 않았습니다.');
+    if (rosterActionSheet.hidden !== false || !rosterActionSheetHtml.includes('roster-sheet-action-buttons')) throw new Error('독립된 선수 관리 하단 시트가 열리지 않았습니다.');
+    if (rosterActionSheetHtml.includes('roster-sheet-heading') || rosterActionSheetHtml.includes('roster-matching-summary') || rosterActionSheetHtml.includes('roster-sheet-close') || rosterActionSheetHtml.includes('매칭 기준') || (rosterActionSheetHtml.match(/<button\b/g) || []).length !== 4) throw new Error('선수 관리 영역에는 중복 정보 없이 휴식·콕 냄·수정·취소 버튼만 표시해야 합니다.');
+    if (!rosterActionSheetHtml.includes('onclick="closeRosterActionSheet(true)"') || !rosterActionSheetHtml.includes('>취소</span>')) throw new Error('선수 선택을 해제하는 취소 버튼이 필요합니다.');
     if (!rosterActionSheetHtml.includes('roster-action-icon-rest') || !rosterActionSheetHtml.includes('roster-action-icon-shuttle') || !rosterActionSheetHtml.includes('roster-action-icon-edit') || !rosterActionSheetHtml.includes('>휴식</span>') || !rosterActionSheetHtml.includes('>콕 냄</span>') || !rosterActionSheetHtml.includes('openPModal(13)')) throw new Error('하단 시트의 휴식·콕·수정 동작이 누락되었습니다.');
     if (!styles.includes('.roster-action-sheet[hidden] { display: none; }') || html.indexOf('id="rosterActionSheet"') > html.indexOf('id="courtArea"')) throw new Error('선수 관리 영역은 대기실 안에 있어야 합니다.');
-    if (!/\.roster-sheet-close\s*\{[^}]*width:\s*44px[^}]*height:\s*44px/.test(styles) || !/#toast\s*\{[^}]*pointer-events:\s*none/.test(styles) || !styles.includes('#toast.roster-sheet-open, #toast.roster-sheet-open.show')) throw new Error('하단 시트 닫기 터치 영역이나 알림 겹침 방지 처리가 없습니다.');
+    if (!/\.roster-action-sheet \.roster-action\s*\{[^}]*min-height:\s*48px/.test(styles) || !/#toast\s*\{[^}]*pointer-events:\s*none/.test(styles) || !styles.includes('#toast.roster-sheet-open, #toast.roster-sheet-open.show')) throw new Error('관리 버튼 터치 영역이나 알림 겹침 방지 처리가 없습니다.');
     if (['roster-inline-actions', 'roster-inline-action-buttons', 'roster-inline-close', 'roster-mobile-sheet-heading', 'roster-mobile-sheet-close'].some(token => html.includes(token))) throw new Error('제거해야 할 이전 카드 내부 관리 UI가 남아 있습니다.');
     if (/[⏸↩✓🏸✎]/u.test(rosterActionSheetHtml)) throw new Error('하단 시트 관리 버튼에 OS마다 다르게 보이는 문자 이모지가 남아 있습니다.');
     assertInRuntime(context, 'selectedRosterPlayerId === 13', '하단 시트의 선택 선수 상태를 유지하지 못했습니다.');
+    vm.runInContext('closeRosterActionSheet(true)', context);
+    assertInRuntime(context, 'selectedRosterPlayerId === null && document.getElementById("rosterActionSheet").hidden', '취소 버튼은 선수 선택을 해제하고 관리 영역을 닫아야 합니다.');
+    if (context.__elements.get('waitList').innerHTML.includes('action-selected')) throw new Error('취소 후에는 선택 배경도 해제되어야 합니다.');
+    vm.runInContext('toggleRosterActionSheet(13)', context);
     vm.runInContext(`handleRosterActionSheetOutsideClick({ target: { closest() { return null; } } })`, context);
     if (rosterActionSheet.hidden !== true || rosterActionSheet.innerHTML !== '') throw new Error('하단 시트 바깥 화면을 눌렀을 때 관리 시트가 닫히지 않았습니다.');
     vm.runInContext('toggleRosterActionSheet(13)', context);
@@ -197,6 +205,7 @@ function assertInRuntime(context, assertion, message) {
     selectedRosterHtml = context.__elements.get('waitList').innerHTML;
     rosterActionSheetHtml = rosterActionSheet.innerHTML;
     if (!selectedRosterHtml.includes('aria-expanded="true"') || !selectedRosterHtml.includes('action-selected') || !rosterActionSheetHtml.includes('openPModal(6)') || rosterActionSheetHtml.includes('roster-action-icon-rest')) throw new Error('예약 선수의 하단 시트에 허용된 동작만 표시되지 않았습니다.');
+    if ((selectedRosterHtml.match(/action-selected/g) || []).length !== 1 || !/id="roster-player-6"[^>]*aria-label="선택됨 · /.test(selectedRosterHtml)) throw new Error('다른 선수를 누르면 선택 표시도 해당 선수에게 이동해야 합니다.');
     vm.runInContext('toggleRosterActionSheet(13)', context);
 
     vm.runInContext('toggleShuttlecock(13)', context);
@@ -213,7 +222,7 @@ function assertInRuntime(context, assertion, message) {
     vm.runInContext('toggleRestStatus(13)', context);
     assertInRuntime(context, 'players.find(player => player.id === 13).status === "waiting"', '펼친 카드 동작으로 대기 상태에 복귀하지 못했습니다.');
     vm.runInContext('toggleRosterActionSheet(13)', context);
-    if (rosterActionSheet.hidden !== true || rosterActionSheet.innerHTML !== '' || context.__elements.get('waitList').innerHTML.includes('action-selected')) throw new Error('선수 카드를 다시 눌렀을 때 하단 관리 시트가 닫히지 않았습니다.');
+    if (rosterActionSheet.hidden !== true || rosterActionSheet.innerHTML !== '' || context.__elements.get('waitList').innerHTML.includes('action-selected') || context.__elements.get('waitList').innerHTML.includes('roster-selected-indicator')) throw new Error('선수 카드를 다시 누르면 관리 시트와 선택 표시가 함께 해제되어야 합니다.');
 
     if (!html.includes('id="deletePlayerButton"') || !html.includes('class="player-delete-button"') || !html.includes('class="player-delete-zone"')) throw new Error('선수 삭제 버튼의 분리된 위험 작업 디자인이 없습니다.');
     vm.runInContext('openPModal()', context);
@@ -635,7 +644,8 @@ function assertInRuntime(context, assertion, message) {
     if(!courtHtml.includes('시작 가능') || /onclick="endGame\(2\)" disabled/.test(courtHtml)) throw new Error('다른 코트 경기 종료 후 시작 상태가 갱신되지 않았습니다.');
 
     vm.runInContext('players[0].matchingOffset=4; toggleRosterActionSheet(1)', context);
-    if(!context.__elements.get('rosterActionSheet').innerHTML.includes('실제 1경기 · 매칭 기준 5경기')) throw new Error('선수 선택 영역에 매칭 기준이 표시되지 않았습니다.');
+    if(context.__elements.get('rosterActionSheet').innerHTML.includes('매칭 기준')) throw new Error('매칭 보정값이 있어도 선수 관리 영역에는 중복 정보를 표시하지 않아야 합니다.');
+    assertInRuntime(context, 'players[0].games === 1 && getMatchingGameCount(players[0]) === 5', '표시만 제거하고 실제 경기 수와 매칭 보정값은 유지해야 합니다.');
 }
 
 {
