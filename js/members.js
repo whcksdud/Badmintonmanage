@@ -100,7 +100,7 @@ function openMemberEditor(id = null) {
     editMemberId = id;
     const member = members.find(m => m.id === id);
     document.getElementById('memberEditorTitle').innerText = member ? '회원 정보 수정' : '회원 등록';
-    document.getElementById('memberNamesLabel').textContent = member ? '이름' : '이름 (여러 명은 줄바꿈으로 구분)';
+    document.getElementById('memberNamesNote').hidden = Boolean(member);
     document.getElementById('memberNames').rows = member ? 1 : 4;
     document.getElementById('memberNames').value = member ? member.name : '';
     setFormChoice('memberGender', member ? member.gender : 'M', ['M', 'F']);

@@ -180,7 +180,6 @@ async function openMemberShare() {
     document.getElementById('memberCodeCopy').disabled = true;
     document.getElementById('memberShareModal').style.display = 'flex';
     document.getElementById('memberQrImage').innerText = '전체 회원명단 QR을 만드는 중입니다…';
-    document.getElementById('memberQrSummary').innerText = '';
     document.getElementById('memberQrPagination').hidden = true;
     try {
         const code = await encodeMemberCode(memberShareDirectory);
@@ -209,7 +208,6 @@ async function showMemberShareQr() {
     } catch(error) {
         if(request !== memberShareRequest) return;
         document.getElementById('memberQrImage').innerText = error.message;
-        document.getElementById('memberQrSummary').innerText = '';
         document.getElementById('memberQrPagination').hidden = true;
     }
 }
@@ -220,9 +218,6 @@ function renderMemberShare() {
     qr.addData(page.url, 'Byte');
     qr.make();
     document.getElementById('memberQrImage').innerHTML = qr.createSvgTag({cellSize:4, margin:16, scalable:true});
-    document.getElementById('memberQrSummary').innerText = memberSharePages.length === 1
-        ? `저장된 전체 회원 ${page.count}명`
-        : `전체 ${memberSharePages.reduce((sum, item) => sum + item.count, 0)}명 중 이 QR에 ${page.count}명 · 모든 QR을 읽어 주세요.`;
     document.getElementById('memberQrPage').innerText = `${memberSharePage + 1} / ${memberSharePages.length}`;
     document.getElementById('memberQrPrev').disabled = memberSharePage === 0;
     document.getElementById('memberQrNext').disabled = memberSharePage === memberSharePages.length - 1;

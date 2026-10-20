@@ -168,16 +168,10 @@ function openTransferNext(cId) {
 }
 
 function updateTransferNextPreview() {
-    const source = courts.find(c => c.id === transferSourceCourtId);
     const target = courts.find(c => c.id === Number(document.getElementById('transferCourtSelect').value));
     courts.filter(c => c.id !== transferSourceCourtId).forEach(c => {
         document.getElementById(`transfer-court-${c.id}`).checked = c.id === target?.id;
     });
-    const swap = Boolean(target && target.next.length);
-    document.getElementById('transferHelp').innerText = source && target
-        ? swap ? `${courtLabel(source.id)}의 예약은 ${courtLabel(target.id)}로, ${courtLabel(target.id)}의 예약은 ${courtLabel(source.id)}로 옮깁니다. 선수와 팀 구성은 그대로 유지됩니다.`
-               : `${courtLabel(source.id)}의 다음 대기를 ${courtLabel(target.id)}로 옮깁니다. 선수와 팀 구성은 그대로 유지됩니다.`
-        : '대상 코트를 선택하세요.';
 }
 
 function closeTransferModal() {

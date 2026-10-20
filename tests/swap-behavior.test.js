@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const { html, styles, appSource, runApp } = require('./helpers/app-runtime');
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
 if (html.includes('>F조</option>') || appSource.includes('const tiers = ["F조"') || !['pTier','bulkTier','memberTier'].every(field => html.includes(`id="${field}-1" value="1" checked`))) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
-if (!serviceWorker.includes('app-v68') || !serviceWorker.includes('runtime-v68') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
+if (!serviceWorker.includes('app-v69') || !serviceWorker.includes('runtime-v69') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
 
 function createPlayers() {
     return Array.from({ length: 13 }, (_, index) => ({
@@ -720,18 +720,21 @@ test('대상에 예약이 없으면 기존 이동 동작을 유지한다', () =>
     const context = transferRuntime(false);
     vm.runInContext('openTransferNext(1); confirmTransferNext()',context);
     assertInRuntime(context,'courts[0].next.length===0 && courts[1].next.map(p=>p.id).join(",")==="5,6,7,8"','빈 다음 대기로 이동하지 못했습니다.');
-    assert.ok(context.__elements.get('transferHelp').innerText.includes('2번 코트로 옮깁니다'));
 });
 
-test('대상 코트 선택에 따라 예약을 옮길 코트 안내가 바뀐다', () => {
+test('대상 코트를 바꾸면 선택 표시와 실제 예약 이동 대상이 함께 바뀐다', () => {
     const context = transferRuntime();
     vm.runInContext('courts.push({id:3,type:"A",active:[],next:[],startTime:null}); openTransferNext(1)',context);
     context.__elements.get('transferCourtSelect').value='3';
     vm.runInContext('updateTransferNextPreview()',context);
-    assert.ok(context.__elements.get('transferHelp').innerText.includes('3번 코트로 옮깁니다'));
+    assert.equal(context.__elements.get('transfer-court-3').checked, true);
+    assert.equal(context.__elements.get('transfer-court-2').checked, false);
     context.__elements.get('transferCourtSelect').value='2';
     vm.runInContext('updateTransferNextPreview()',context);
-    assert.ok(context.__elements.get('transferHelp').innerText.includes('2번 코트의 예약은 1번 코트로'));
+    assert.equal(context.__elements.get('transfer-court-2').checked, true);
+    assert.equal(context.__elements.get('transfer-court-3').checked, false);
+    vm.runInContext('confirmTransferNext()',context);
+    assertInRuntime(context,'courts[0].next.map(p=>p.id).join(",")==="13,14,15,16" && courts[1].next.map(p=>p.id).join(",")==="5,6,7,8" && courts[2].next.length===0','선택한 코트로 예약을 옮기지 못했습니다.');
 });
 
 test('코트 변경 저장 실패는 양쪽 예약을 모두 복구한다', () => {

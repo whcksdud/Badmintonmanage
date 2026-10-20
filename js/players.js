@@ -118,7 +118,7 @@ function saveBulkPlayers() {
         count++;
     });
 
-    if(!saveAction(`선수 ${count}명 일괄 등록`)) return;
+    if(!saveAction(`게스트 ${count}명 등록`)) return;
     closeBulkPModal(); render(); setMobileView('waiting'); showToast(`${count}명 등록 완료`);
 }
 

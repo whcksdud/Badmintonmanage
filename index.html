@@ -158,13 +158,13 @@
     </div>
 </div></div>
 
-<!-- 일괄 등록 모달 -->
-<div id="bulkPModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="bulkTitle"><div class="modal-box form-modal">
-    <div class="dialog-heading"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg><h3 id="bulkTitle">선수 일괄 등록</h3></div>
+<!-- 게스트 등록 모달 -->
+<div id="bulkPModal" class="modal" style="z-index:1100;" role="dialog" aria-modal="true" aria-labelledby="bulkTitle"><div class="modal-box form-modal">
+    <div class="dialog-heading"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg><h3 id="bulkTitle">게스트 등록</h3></div>
     <div class="dialog-body">
     <label for="bulkNames">이름</label>
-    <p class="field-note">한 줄에 한 명씩 입력하세요.</p>
-    <textarea id="bulkNames" rows="5" placeholder="김철수&#13;&#10;이영희&#13;&#10;박지성"></textarea>
+    <p id="bulkNamesNote" class="field-note">한 줄에 한 명씩 입력하세요.</p>
+    <textarea id="bulkNames" rows="4" placeholder="김철수&#13;&#10;이영희&#13;&#10;박지성" aria-describedby="bulkNamesNote"></textarea>
 
     <input type="hidden" id="bulkGen" value="M">
     <fieldset class="profile-choice-field"><legend>성별</legend>
@@ -219,15 +219,7 @@
             <p>이름·성별·급수를 저장하고 모임마다 불러오세요. 이름 옆 연필 버튼에서 회원 정보를 수정·삭제할 수 있습니다.</p>
             <div class="member-toolbar">
                 <button class="btn btn-primary" onclick="openMemberEditor()">+ 회원 등록</button>
-                <button class="btn btn-outline" onclick="saveRosterAsMembers()">현재 선수 명단 저장</button>
-            </div>
-        </section>
-        <section class="member-register-card">
-            <h4>오늘 참가할 선수 직접 등록</h4>
-            <p>회원 명단에 저장하지 않고 오늘 대기실에 바로 추가합니다.</p>
-            <div class="member-toolbar">
-                <button class="btn btn-outline" onclick="closeMembersModal(); openPModal()">+ 개별</button>
-                <button class="btn btn-outline" onclick="closeMembersModal(); openBulkPModal()">+ 일괄</button>
+                <button class="btn btn-outline" onclick="openBulkPModal()">게스트 등록</button>
             </div>
         </section>
         <section class="member-register-card">
@@ -248,8 +240,9 @@
 <div id="memberEditorModal" class="modal" style="z-index:1100;" role="dialog" aria-modal="true" aria-labelledby="memberEditorTitle"><div class="modal-box form-modal">
     <div class="dialog-heading"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg><h3 id="memberEditorTitle">회원 등록</h3></div>
     <div class="dialog-body">
-    <label id="memberNamesLabel" for="memberNames">이름 (여러 명은 줄바꿈으로 구분)</label>
-    <textarea id="memberNames" rows="4"></textarea>
+    <label for="memberNames">이름</label>
+    <p id="memberNamesNote" class="field-note">한 줄에 한 명씩 입력하세요.</p>
+    <textarea id="memberNames" rows="4" placeholder="김철수&#13;&#10;이영희&#13;&#10;박지성" aria-describedby="memberNamesNote"></textarea>
     <input type="hidden" id="memberGender" value="M">
     <fieldset class="profile-choice-field"><legend>성별</legend>
         <div class="profile-options profile-gender-options">
@@ -280,13 +273,12 @@
         <p class="member-share-intro">코드를 보내고, 받는 기기의 <strong>코드 불러오기</strong>에 붙여 넣으세요.</p>
         <p id="memberCodeSummary" class="member-share-summary" aria-live="polite" hidden></p>
         <label for="memberShareCode">전체 회원명단 압축 코드</label>
-        <textarea id="memberShareCode" class="member-share-code" rows="4" readonly spellcheck="false" aria-describedby="memberCodeNote"></textarea>
-        <p id="memberCodeNote" class="member-share-note">참석 여부와 관계없이 저장된 전체 회원의 이름·성별·급수를 공유합니다. 경기 기록은 포함하지 않으며, 받는 기기의 기존 명단은 유지합니다.</p>
+        <textarea id="memberShareCode" class="member-share-code" rows="4" readonly spellcheck="false"></textarea>
+        <button id="memberCodeCopy" class="btn btn-primary" onclick="copyMemberShareCode()">코드 복사</button>
         <section id="memberShareQr" class="member-share-qr" aria-labelledby="memberShareQrTitle">
         <h4 id="memberShareQrTitle">가까이 있다면 QR로 보내기</h4>
         <p class="member-share-note">받는 휴대폰의 카메라로 QR을 읽고 링크를 열어 주세요.</p>
         <div id="memberQrImage" class="member-qr-image" role="img" aria-label="회원명단 공유 QR 코드"></div>
-        <p id="memberQrSummary" class="member-share-summary" aria-live="polite"></p>
         <div id="memberQrPagination" class="member-qr-pagination" hidden>
             <button id="memberQrPrev" class="btn btn-outline" onclick="changeMemberSharePage(-1)" aria-label="이전 QR">이전</button>
             <strong id="memberQrPage" aria-live="polite"></strong>
@@ -296,7 +288,7 @@
         </section>
         <p class="member-share-note">코드 생성과 불러오기는 서버 없이 기기 안에서 처리합니다. 처음 앱을 여는 기기는 인터넷 연결이 필요합니다.</p>
     </div>
-    <div class="dialog-actions"><button id="memberCodeCopy" class="btn btn-primary" onclick="copyMemberShareCode()">코드 복사</button><button class="btn btn-outline" onclick="closeMemberShare()">닫기</button></div>
+    <div class="dialog-actions"><button class="btn btn-outline" onclick="closeMemberShare()">닫기</button></div>
 </div></div>
 <div id="memberImportModal" class="modal" style="z-index:1100;" role="dialog" aria-modal="true" aria-labelledby="memberImportTitle"><div class="modal-box form-modal">
     <div class="dialog-heading"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg><h3 id="memberImportTitle">회원명단 불러오기</h3></div>
@@ -420,7 +412,7 @@
         <section class="help-start" aria-labelledby="helpStartTitle">
             <h4 id="helpStartTitle">처음 시작할 때</h4>
             <ol class="help-steps">
-                <li><strong>선수 등록</strong><p><span class="help-action">참석자 선택</span>에서 회원을 불러오세요. 처음 오는 선수는 <span class="help-action">등록·관리</span>에서 개별·일괄 등록합니다.</p></li>
+                <li><strong>선수 등록</strong><p><span class="help-action">참석자 선택</span>에서 회원을 불러오세요. 처음 오는 선수는 <span class="help-action">등록·관리</span>에서 회원 또는 게스트로 등록합니다.</p></li>
                 <li><strong>경기 배정</strong><p>코트의 <span class="help-action">자동 매칭</span> 또는 <span class="help-action">수동</span>으로 선수 4명을 배정합니다.</p></li>
                 <li><strong>경기 시작·종료</strong><p>배정 후 <span class="help-action">경기 시작</span>을 누르세요. 경기 종료 시 다음 예약이 있으면 이어서 시작합니다.</p></li>
             </ol>
@@ -566,7 +558,6 @@
     <fieldset class="profile-choice-field"><legend>변경할 코트</legend>
         <div id="transferCourtOptions" class="transfer-court-options"></div>
     </fieldset>
-    <p id="transferHelp" class="field-note transfer-preview" role="status" aria-live="polite">대상 코트를 선택하세요.</p>
     </div><div class="dialog-actions">
         <button id="transferConfirmButton" class="btn btn-primary" onclick="confirmTransferNext()">코트 변경</button>
         <button class="btn btn-outline" onclick="closeTransferModal()">취소</button>
