@@ -228,8 +228,8 @@ function renderRosterSummary(player, timerPrefix = '', status = player.status) {
     ]).filter(Boolean).join(' · ');
     return `<span class="roster-summary">
         <span class="roster-identity">
-            <span class="roster-name-line"><span class="p-name" title="${safePlayerName}">${safePlayerName}</span>${isGuestPlayer(player) ? '<span class="roster-guest-badge">게스트</span>' : ''}</span>
-            <span class="roster-details"><span>${player.gender === 'M' ? '남' : '여'} · ${tiers[player.tier]}</span><span>${player.games}경기</span>${player.shuttlecock ? `<span class="roster-shuttle">${renderUIIcon('shuttle')}콕 냄</span>` : ''}</span>
+            <span class="roster-name-line"><span class="p-name" title="${safePlayerName}">${safePlayerName}</span></span>
+            <span class="roster-details"><span>${player.gender === 'M' ? '남' : '여'} · ${tiers[player.tier]}</span><span>${player.games}경기</span>${isGuestPlayer(player) ? '<span class="roster-guest-badge">게스트</span>' : ''}${player.shuttlecock ? `<span class="roster-shuttle" role="img" aria-label="콕 냄" title="콕 냄">${renderUIIcon('shuttle')}</span>` : ''}</span>
         </span>
         <span class="roster-metrics">
             ${status === 'waiting' || status === 'reserved' ? `<span id="${timerPrefix}waiting-time-${player.id}" class="roster-wait-time">${formatWaitingTime(player)}</span>` : `<span class="roster-status-label">${statusLabels[status]}</span>`}

@@ -343,7 +343,7 @@ input[type="checkbox"] { accent-color:var(--primary); }
 .roster-guest-badge { flex-shrink:0; padding:2px 6px; border:1px solid #c4b5fd; border-radius:5px; background:#f5f3ff; color:#6d28d9; font-size:0.65rem; font-weight:700; line-height:1.4; }
 .roster-chip .p-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left; font-size:1rem; line-height:1.25; }
 .roster-details { display:flex; align-items:center; flex-wrap:wrap; gap:5px 8px; color:#64748b; font-size:0.75rem; }
-.roster-shuttle { color:#7e22ce; font-size:0.68rem; font-weight:700; display:inline-flex; align-items:center; gap:3px; }
+.roster-shuttle { flex-shrink:0; color:#7e22ce; display:inline-flex; align-items:center; }
 .roster-shuttle .ui-icon { width:13px; height:13px; }
 .roster-metrics { flex:0 0 auto; max-width:45%; display:grid; justify-items:end; gap:7px; font-size:0.75rem; text-align:right; }
 .roster-wait-time { color:#1d4ed8; font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap; }

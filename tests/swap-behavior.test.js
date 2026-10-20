@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const { html, styles, appSource, runApp } = require('./helpers/app-runtime');
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
 if (html.includes('>F조</option>') || appSource.includes('const tiers = ["F조"') || !['pTier','memberTier'].every(field => html.includes(`id="${field}-1" value="1" checked`))) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
-if (!serviceWorker.includes('app-v71') || !serviceWorker.includes('runtime-v71') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
+if (!serviceWorker.includes('app-v77') || !serviceWorker.includes('runtime-v77') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
 
 function createPlayers() {
     return Array.from({ length: 13 }, (_, index) => ({
@@ -203,7 +203,7 @@ function assertInRuntime(context, assertion, message) {
     const shuttleActiveHtml = context.__elements.get('waitList').innerHTML;
     const shuttleActiveSheetHtml = rosterActionSheet.innerHTML;
     if (!shuttleActiveSheetHtml.includes('roster-action shuttle active') || !shuttleActiveSheetHtml.includes('aria-pressed="true"') || !shuttleActiveSheetHtml.includes('roster-action-icon-cancel') || !shuttleActiveSheetHtml.includes('>콕 취소</span>') || !shuttleActiveHtml.includes('has-shuttlecock') || !shuttleActiveHtml.includes('· 콕 냄 선수 관리')) throw new Error('콕 냄 선택 상태가 하단 시트와 카드 접근성 정보에 표시되지 않았습니다.');
-    if (!shuttleActiveHtml.includes('roster-shuttle') || !shuttleActiveHtml.includes('콕 냄</span>')) throw new Error('콕 제출 여부가 글자로 표시되지 않았습니다.');
+    if (!shuttleActiveHtml.includes('roster-shuttle') || !shuttleActiveHtml.includes('href="#icon-shuttle"') || !shuttleActiveHtml.includes('aria-label="콕 냄"') || shuttleActiveHtml.includes('콕 냄</span>')) throw new Error('콕 제출 여부는 기존 SVG 아이콘만 표시해야 합니다.');
     vm.runInContext('toggleShuttlecock(13)', context);
 
     vm.runInContext('toggleRestStatus(13)', context);
