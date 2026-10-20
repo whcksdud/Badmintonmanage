@@ -30,6 +30,12 @@ function isWaitingForGame(player) {
     return player.status === 'waiting' || player.status === 'reserved';
 }
 
+function isGuestPlayer(player) {
+    if(typeof player.isGuest === 'boolean') return player.isGuest;
+    // Older registrations have no marker; keep saved members distinguishable.
+    return player.memberId === undefined && !members.some(member => sameMemberProfile(player, member));
+}
+
 function formatWaitingTime(player) {
     const elapsed = Number.isFinite(player.waitingSince) ? Date.now() - player.waitingSince : 0;
     return `대기 ${Math.max(0, Math.floor(elapsed / 60000))}분`;
@@ -104,6 +110,7 @@ function saveBulkPlayers() {
             matchingOffset,
             lastTime: 0,
             status: 'waiting',
+            isGuest: true,
             shuttlecock: false
         });
         count++;

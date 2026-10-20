@@ -228,7 +228,7 @@ function renderRosterSummary(player, timerPrefix = '', status = player.status) {
     ]).filter(Boolean).join(' · ');
     return `<span class="roster-summary">
         <span class="roster-identity">
-            <span class="p-name" title="${safePlayerName}">${safePlayerName}</span>
+            <span class="roster-name-line"><span class="p-name" title="${safePlayerName}">${safePlayerName}</span>${isGuestPlayer(player) ? '<span class="roster-guest-badge">게스트</span>' : ''}</span>
             <span class="roster-details"><span>${player.gender === 'M' ? '남' : '여'} · ${tiers[player.tier]}</span><span>${player.games}경기</span>${player.shuttlecock ? `<span class="roster-shuttle">${renderUIIcon('shuttle')}콕 냄</span>` : ''}</span>
         </span>
         <span class="roster-metrics">

@@ -339,6 +339,8 @@ input[type="checkbox"] { accent-color:var(--primary); }
 .roster-chip.action-selected, .roster-chip.selected { border-color: #93c5fd; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12); }
 .roster-summary { min-width:0; min-height:76px; padding:12px; display:flex; align-items:center; gap:10px; }
 .roster-identity { flex:1; min-width:0; display:grid; gap:7px; }
+.roster-name-line { min-width:0; display:flex; align-items:center; gap:6px; }
+.roster-guest-badge { flex-shrink:0; padding:2px 6px; border:1px solid #c4b5fd; border-radius:5px; background:#f5f3ff; color:#6d28d9; font-size:0.65rem; font-weight:700; line-height:1.4; }
 .roster-chip .p-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left; font-size:1rem; line-height:1.25; }
 .roster-details { display:flex; align-items:center; flex-wrap:wrap; gap:5px 8px; color:#64748b; font-size:0.75rem; }
 .roster-shuttle { color:#7e22ce; font-size:0.68rem; font-weight:700; display:inline-flex; align-items:center; gap:3px; }

@@ -183,4 +183,34 @@ test('게스트 등록 저장 실패는 회원과 대기실을 복구하고 입�
     assert.equal(ui.run('document.getElementById("memberEditorModal").style.display'), 'flex');
 });
 
+test('게스트 표시는 같은 프로필의 회원이 있어도 구분되고 재접속·정보 수정·백업 복구 후 유지된다', () => {
+    const ui = runtime();
+    ui.run('members=[{id:101,name:"등록예시",gender:"F",tier:2}]; openMemberEditor(); setMemberRegistrationMode("guest")');
+    ui.set('memberNames', '등록예시');
+    ui.set('memberGender', 'F');
+    ui.set('memberTier', '2');
+    ui.run('saveMember()');
+    assert.equal(ui.run('players[1].isGuest'), true);
+    assert.match(ui.run('renderRosterSummary(players[1])'), /class="roster-guest-badge">게스트/);
+    const reloaded = runtime(ui.storage);
+    reloaded.run('openPModal(players[1].id)');
+    reloaded.set('pName', '수정게스트');
+    reloaded.run('savePlayer()');
+    assert.equal(reloaded.run('isGuestPlayer(players[1])'), true);
+    reloaded.run('var guestBackup=JSON.parse(serializeState()); validateImportData(guestBackup); applyState(JSON.stringify(guestBackup)); render()');
+    assert.match(reloaded.run('document.getElementById("waitList").innerHTML'), /roster-guest-badge/);
+    assert.equal(reloaded.run('players[1].name'), '수정게스트');
+});
+
+test('기존 미저장 선수는 게스트로 표시하고 회원으로 불러온 선수와 저장 회원은 제외한다', () => {
+    const ui = runtime();
+    assert.equal(ui.run('isGuestPlayer(players[0])'), true);
+    ui.run('members=[{id:101,name:"기존회원",gender:"M",tier:3},{id:102,name:"새회원",gender:"F",tier:2}]');
+    assert.equal(ui.run('isGuestPlayer(players[0])'), false);
+    ui.run('selectedMemberIds.add(102); loadSelectedMembers()');
+    assert.doesNotMatch(ui.run('renderRosterSummary(players[1])'), /roster-guest-badge/);
+    ui.run('players[0].isGuest="true"');
+    assert.throws(() => ui.run('validateImportData(JSON.parse(serializeState()))'));
+});
+
 console.log('회원 등록·중복 방지·출석·재접속·새 모임·수정·삭제·백업·되돌리기·저장 실패 테스트 통과');

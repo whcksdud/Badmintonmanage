@@ -153,6 +153,7 @@ function validateImportData(data, allowLegacyAssignments = false) {
             !countOK(p.games) || !['waiting','resting','playing','reserved'].includes(p.status) ||
             (p.matchingOffset !== undefined && !countOK(p.matchingOffset)) || !timeOK(p.lastTime) ||
             !timeOK(p.waitingSince) ||
+            (p.isGuest !== undefined && typeof p.isGuest !== 'boolean') ||
             (p.shuttlecock !== undefined && typeof p.shuttlecock !== 'boolean')) fail();
         ids.add(p.id);
         if(p.memberId !== undefined) {
