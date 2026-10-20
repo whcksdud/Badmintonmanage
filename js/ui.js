@@ -219,7 +219,7 @@ function renderRosterActionSheet() {
     document.getElementById('toast').classList.add('roster-sheet-open');
 }
 
-function renderRosterSummary(player, timerPrefix = '', status = player.status) {
+function renderRosterSummary(player, timerPrefix = '', status = player.status, showLocation = true) {
     const safePlayerName = escapeHTML(player.name);
     const statusLabels = {waiting:'대기 중', reserved:'예약됨', playing:'게임 중', resting:'휴식 중'};
     const locations = courts.flatMap(court => [
@@ -233,7 +233,7 @@ function renderRosterSummary(player, timerPrefix = '', status = player.status) {
         </span>
         <span class="roster-metrics">
             ${status === 'waiting' || status === 'reserved' ? `<span id="${timerPrefix}waiting-time-${player.id}" class="roster-wait-time">${formatWaitingTime(player)}</span>` : `<span class="roster-status-label">${statusLabels[status]}</span>`}
-            ${locations ? `<span class="roster-location">${locations}</span>` : ''}
+            ${showLocation && locations ? `<span class="roster-location">${locations}</span>` : ''}
         </span>
     </span>`;
 }
@@ -293,7 +293,7 @@ function renderRoster() {
 
             container.innerHTML += `
             <div id="roster-player-${p.id}" class="player-chip waiting-chip roster-chip gender-card ${getGenderCardClass(p.gender)} roster-status-${p.status} ${p.shuttlecock ? 'has-shuttlecock' : ''} ${isSelected ? 'action-selected' : ''}" role="button" tabindex="0" aria-expanded="${isSelected}" aria-controls="rosterActionSheet" aria-label="${safePlayerName} · ${p.gender === 'M' ? '남' : '여'} · ${tiers[p.tier]} · ${p.games}경기 · ${statusLabels[p.status]}${p.shuttlecock ? ' · 콕 냄' : ''} 선수 관리 ${isSelected ? '닫기' : '열기'}" onclick="toggleRosterActionSheet(${p.id})" onkeydown="handleRosterCardKey(event, ${p.id})">
-                ${renderRosterSummary(p)}
+                ${renderRosterSummary(p, '', p.status, false)}
             </div>`;
         });
     };
