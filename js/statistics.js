@@ -242,7 +242,6 @@ function openStatsModal(playerId = null) {
     statsPlayerId = requestedPlayer?.id ?? currentPlayer?.id ?? sortedPlayers[0]?.id ?? null;
     if(playerId !== null) statsView = 'player';
 
-    document.getElementById('statsSearch').value = '';
     setStatsView(statsView);
     document.getElementById('statsModal').style.display = 'flex';
 }
@@ -261,13 +260,11 @@ function selectStatsPlayer(playerId) {
 
 function renderStatsPlayerList() {
     const list = document.getElementById('statsPlayerList');
-    const keyword = document.getElementById('statsSearch').value.trim().toLowerCase();
     const filteredPlayers = [...players]
-        .filter(player => player.name.toLowerCase().includes(keyword))
         .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
     if(filteredPlayers.length === 0) {
-        list.innerHTML = '<div class="empty-state" style="padding:18px 8px;">검색된 선수가 없습니다.</div>';
+        list.innerHTML = '<div class="empty-state" style="padding:18px 8px;">등록된 선수가 없습니다.</div>';
         return;
     }
 
@@ -326,7 +323,6 @@ function renderStatsDetail() {
         </div>
         <div class="stats-section-heading">
             <strong>선수별 경기 관계</strong>
-            <span>전체 = 같은 팀 + 상대</span>
         </div>
         ${statistics.relations.length > 0 ? `
             <div class="stats-relation-head"><span>선수</span><span>전체</span><span>같은 팀</span><span>상대</span></div>
