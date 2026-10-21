@@ -32,7 +32,6 @@ let pendingHistoryIndex = null;
 let statsPlayerId = null;
 let statsView = 'overall';
 let selectedRosterPlayerId = null;
-let waitingRoomCollapsed = false;
 let deferredInstallPrompt = null;
 let editMemberId = null;
 let memberRegistrationMode = 'member';

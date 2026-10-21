@@ -151,7 +151,7 @@ function addCourt() {
     courts.push({id, type:'A', active:[], next:[], startTime:null});
     if(!saveAction(`${courts.length}번 코트 추가`)) return;
     render();
-    if(window.matchMedia('(max-width: 600px), (max-height: 500px) and (max-width: 950px)').matches) setMobileView('courts');
+    setMobileView('courts');
 }
 
 function assignmentFor(id, area) {

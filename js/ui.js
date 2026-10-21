@@ -18,12 +18,13 @@ function setMobileView(view) {
         document.getElementById(id).classList.toggle('active', selected);
         document.getElementById(id).setAttribute('aria-selected', String(selected));
     }
-    if(view !== 'waiting' && selectedRosterPlayerId !== null) closeRosterActionSheet();
-    if(view === 'waiting' && waitingRoomCollapsed) {
-        waitingRoomCollapsed = false;
-        container.classList.remove('waiting-collapsed');
-        updateWaitingToggleButton();
+    for(const [key,id] of [['game','workspaceGameTab'],['waiting','workspaceWaitingTab']]) {
+        const selected = key === (view === 'waiting' ? 'waiting' : 'game');
+        const tab = document.getElementById(id);
+        tab.classList.toggle('active', selected);
+        tab.setAttribute('aria-selected', String(selected));
     }
+    if(view !== 'waiting' && selectedRosterPlayerId !== null) closeRosterActionSheet();
 }
 
 function showConfirmModal(msg, callback) {
@@ -62,13 +63,6 @@ function showToast(msg) {
     setTimeout(() => { t.className = t.className.replace("show", ""); }, 3000);
 }
 
-function toggleWaitingRoom() {
-    waitingRoomCollapsed = !waitingRoomCollapsed;
-    document.getElementById('mainContainer').classList.toggle('waiting-collapsed', waitingRoomCollapsed);
-    updateWaitingToggleButton();
-    if(waitingRoomCollapsed && selectedRosterPlayerId !== null) closeRosterActionSheet();
-}
-
 function setRosterFilter(status) {
     rosterFilter = status;
     selectedRosterPlayerId = null;
@@ -104,14 +98,6 @@ function toggleRosterSearch(forceOpen = null) {
 function handleRosterSearchKey(event) {
     if(event.key !== 'Escape') return;
     toggleRosterSearch(false);
-}
-
-function updateWaitingToggleButton() {
-    const button = document.getElementById('waitingToggle');
-    if(!button) return;
-    button.innerHTML = renderUIIcon(waitingRoomCollapsed ? 'chevron-right' : 'chevron-left');
-    button.title = waitingRoomCollapsed ? '대기실 펼치기' : '대기실 접기';
-    button.setAttribute('aria-label', button.title);
 }
 
 function formatTime(timestamp) {
@@ -260,11 +246,12 @@ function render() {
     renderQueue();
     document.getElementById('mobileQueueCount').innerText = matchQueue.length;
 
-    const cg = document.getElementById('courtGrid'); cg.innerHTML = '';
+    const cg = document.getElementById('courtGrid');
+    cg.innerHTML = '';
     courts.forEach((c, idx) => {
         const hasActive = c.active.length > 0;
         const pending = c.pendingMatch;
-        cg.innerHTML += `<article class="court-card">
+        cg.innerHTML += `<article class="court-card" aria-label="코트 ${idx + 1}">
             <div class="cc-header"><div class="court-heading"><span class="court-title">코트 ${idx + 1}</span><span class="court-live-state">${hasActive ? '경기 중' : pending ? '대기 입장' : '비어 있음'}</span><span id="timer-${c.id}" class="timer-badge" style="display:${hasActive && c.startTime ? 'inline-flex' : 'none'}">${hasActive && c.startTime ? formatElapsedTime(c.startTime) : '00:00'}</span></div><button type="button" class="court-delete" onclick="delCourt(${c.id})" aria-label="코트 ${idx + 1} 삭제">${renderUIIcon('trash')}</button></div>
             ${hasActive || !pending ? `<div class="game-section">${hasActive ? renderMatchTeams(c, 'active') : '<div class="empty-state">준비된 다음 경기를 입장시키세요.</div>'}</div>` : ''}
             ${hasActive ? `<div class="btn-group"><button type="button" class="btn btn-danger" onclick="endGame(${c.id})" ${isCourtActionLocked(c.id) ? 'disabled' : ''}>경기 종료</button></div>` : ''}

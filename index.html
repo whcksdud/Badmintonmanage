@@ -65,6 +65,10 @@
 </div>
 
 <div id="storageError" role="alert" style="padding:8px 16px; background:#fef2f2; color:#991b1b;" hidden></div>
+<nav class="workspace-tabs" role="tablist" aria-label="화면 선택">
+    <button id="workspaceGameTab" class="workspace-tab active" type="button" role="tab" aria-selected="true" aria-controls="queueArea courtArea" onclick="setMobileView('queue')"><svg class="ui-icon" aria-hidden="true"><use href="#icon-shuttle"></use></svg>경기 관리</button>
+    <button id="workspaceWaitingTab" class="workspace-tab" type="button" role="tab" aria-selected="false" aria-controls="waitingCourt" onclick="setMobileView('waiting')"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg>대기실</button>
+</nav>
 <nav class="mobile-view-tabs" role="tablist" aria-label="모바일 화면 선택">
     <button id="mobileQueueTab" class="mobile-view-tab active" type="button" role="tab" aria-selected="true" aria-controls="queueArea" onclick="setMobileView('queue')"><svg class="ui-icon" aria-hidden="true"><use href="#icon-history"></use></svg><span>다음 경기</span><span id="mobileQueueCount" class="mobile-tab-count">0</span></button>
     <button id="mobileCourtsTab" class="mobile-view-tab" type="button" role="tab" aria-selected="false" aria-controls="courtArea" onclick="setMobileView('courts')">
@@ -84,7 +88,6 @@
                     <span class="wc-title">대기실</span>
                     <div class="wc-heading-actions">
                         <button id="waitingSearchToggle" class="waiting-search-toggle" type="button" onclick="toggleRosterSearch()" aria-label="선수 검색 열기" aria-expanded="false" aria-controls="rosterSearch" title="선수 검색 열기"><svg class="ui-icon" aria-hidden="true" focusable="false"><use id="waitingSearchIcon" href="#icon-search"></use></svg></button>
-                        <button id="waitingToggle" class="waiting-toggle" onclick="toggleWaitingRoom()" aria-label="대기실 접기" title="대기실 접기"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron-left"></use></svg></button>
                     </div>
                 </div>
             </div>
@@ -122,8 +125,8 @@
         <div id="queueList" class="queue-list" onscroll="closeQueueCourtMenu()"></div>
     </section>
     <!-- 코트 영역 -->
-    <div id="courtArea" class="court-area" role="tabpanel" aria-labelledby="mobileCourtsTab">
-        <div id="courtGrid" class="court-grid"></div>
+    <div id="courtArea" class="court-area" role="tabpanel" aria-labelledby="mobileCourtsTab" tabindex="0">
+        <div id="courtGrid" class="court-grid" role="region" aria-label="코트 목록"></div>
     </div>
 </div>
 

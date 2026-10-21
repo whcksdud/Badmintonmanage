@@ -77,9 +77,9 @@ input[type="checkbox"] { accent-color:var(--primary); }
 .wc-title-row { display: flex; flex-direction:column; align-items:stretch; gap:8px; font-weight: 700; }
 .wc-heading-line { display:flex; align-items:center; justify-content:space-between; gap:8px; }
 .wc-heading-actions { display: inline-flex; align-items: center; gap: 5px; }
-.waiting-search-toggle, .waiting-toggle { flex:0 0 auto; width:30px; height:30px; padding:0; border:1px solid #cbd5e1; border-radius:7px; background:#fff; color:#475569; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+.waiting-search-toggle { flex:0 0 auto; width:30px; height:30px; padding:0; border:1px solid #cbd5e1; border-radius:7px; background:#fff; color:#475569; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
 .waiting-search-toggle[aria-expanded="true"] { border-color:#93c5fd; background:#eff6ff; color:#1d4ed8; }
-.waiting-search-toggle .ui-icon, .waiting-toggle .ui-icon { width:16px; height:16px; }
+.waiting-search-toggle .ui-icon { width:16px; height:16px; }
 .wc-title { white-space:nowrap; font-size:1.05rem; }
 .roster-search { position:relative; display:flex; align-items:center; }
 .roster-search[hidden] { display:none; }
@@ -148,12 +148,6 @@ input[type="checkbox"] { accent-color:var(--primary); }
 .wc-list { flex: 1; overflow-y: auto; padding: 10px; display: grid; grid-auto-rows: max-content; gap: 8px; align-content: start; }
 #waitList { grid-template-columns: minmax(0, 1fr); }
 #waitList .list-section, #waitList .empty-state { grid-column: 1 / -1; }
-.main-container.waiting-collapsed { grid-template-columns:54px 1fr; }
-.main-container.waiting-collapsed .wc-header { padding:10px; }
-.main-container.waiting-collapsed .wc-title,
-.main-container.waiting-collapsed .waiting-search-toggle,
-.main-container.waiting-collapsed .roster-search, .main-container.waiting-collapsed .roster-filters,
-.main-container.waiting-collapsed .wc-list { display:none !important; }
 
 /* --- Court Area --- */
 .court-area {
@@ -179,7 +173,6 @@ input[type="checkbox"] { accent-color:var(--primary); }
     .court-area { order: 1; padding-bottom: 10px; }
     .court-grid { grid-template-columns: 1fr; }
     .waiting-court { display: flex !important; order: 2; border-top: 2px solid var(--border); }
-    .main-container.waiting-collapsed { grid-template-columns:1fr; grid-template-rows:1fr 52px; }
     #waitList { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -252,8 +245,7 @@ input[type="checkbox"] { accent-color:var(--primary); }
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
     }
 
-    .main-container,
-    .main-container.waiting-collapsed {
+    .main-container {
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: minmax(0, 1fr);
         gap: 0;
@@ -267,7 +259,6 @@ input[type="checkbox"] { accent-color:var(--primary); }
         border-top: 1px solid var(--border);
     }
 
-    .waiting-toggle { display: none; }
     .waiting-court { border-radius: 12px; }
     .wc-header { padding: 10px; gap: 8px; }
     .search-input { min-height: 44px; margin-bottom: 0; font-size: 16px; }
@@ -812,17 +803,34 @@ label { display: block; font-size: 0.85rem; font-weight: 700; color: #64748b; ma
 #toast.members-open, #toast.members-open.show { bottom: max(86px, calc(env(safe-area-inset-bottom) + 78px)); }
 
 /* Shared queue: participants, matches awaiting a court, current games. */
-.main-container { grid-template-columns:240px minmax(320px,1fr) minmax(280px,.8fr); grid-template-areas:"waiting queue courts"; gap:16px; padding:16px; }
+.workspace-tabs { display:flex; flex-shrink:0; gap:6px; padding:6px 12px; background:#fff; border-bottom:1px solid var(--border); }
+.workspace-tab { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-width:120px; min-height:44px; padding:8px 18px; border:1px solid transparent; border-radius:9px; background:transparent; color:var(--text-secondary); font-size:.88rem; font-weight:750; cursor:pointer; }
+.workspace-tab.active { border-color:#bfdbfe; background:#eff6ff; color:var(--primary); }
+.workspace-tab:hover:not(.active) { background:var(--surface-muted); }
+.workspace-tab .ui-icon { width:17px; height:17px; }
+.main-container { grid-template-columns:clamp(300px,30vw,420px) minmax(0,1fr); grid-template-areas:"queue courts"; grid-template-rows:minmax(0,1fr); gap:12px; padding:12px; }
+.main-container:not(.mobile-view-waiting) .waiting-court { display:none!important; }
+.main-container.mobile-view-waiting { grid-template-columns:minmax(0,1fr); grid-template-areas:"waiting"; }
+.main-container.mobile-view-waiting .queue-area,.main-container.mobile-view-waiting .court-area { display:none!important; }
 .waiting-court { grid-area:waiting; }
-.court-area { grid-area:courts; padding-bottom:16px; }
-.court-grid { grid-template-columns:minmax(0,1fr); }
+.waiting-court .wc-header { padding:14px 16px; }
+.waiting-court .roster-filters { max-width:380px; }
+.waiting-court .roster-search { max-width:380px; }
+#waitList { grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; padding:14px; }
+.waiting-court .roster-sheet-action-buttons { max-width:560px; width:100%; margin-inline:auto; }
+.court-area { grid-area:courts; overflow-x:hidden; overflow-y:auto; padding-bottom:0; }
+.court-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; align-content:start; gap:12px; min-height:0; padding:0 0 6px; }
+.court-grid>.court-card { min-width:0; }
+.court-grid .game-section { padding:12px; }
+.court-grid .match-teams { grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr); gap:4px; padding:6px; }
+.court-grid .match-player-chip .p-name { font-size:.9rem; }
 .queue-area { grid-area:queue; display:flex; flex-direction:column; min-width:0; min-height:0; overflow:hidden; border:1px solid var(--border); background:#f8fafc; border-radius:12px; }
-.queue-header { padding:15px; border-bottom:1px solid var(--border); background:#fff; flex-shrink:0; }
+.queue-header { padding:14px 12px; border-bottom:1px solid var(--border); background:#fff; flex-shrink:0; }
 .queue-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; }
 .queue-heading h2 { margin:0; font-size:1.05rem; }
 .queue-toolbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:12px; }
 .queue-toolbar .btn { flex:1; white-space:nowrap; padding:8px; }
-.queue-toolbar .reserve-type-trigger { flex:0 0 72px; padding:6px; }
+.queue-toolbar .reserve-type-trigger { flex:0 0 60px; padding:6px; }
 .auto-match-menu { position:fixed; inset:auto; box-sizing:border-box; margin:0; padding:5px; border:1px solid var(--border); border-radius:10px; background:#fff; box-shadow:0 8px 24px #0f172a24; }
 .auto-match-menu button { display:block; width:100%; min-height:44px; border:0; border-radius:6px; background:transparent; padding:10px 12px; text-align:left; color:var(--dark); font:inherit; cursor:pointer; }
 .auto-match-menu button:hover,.auto-match-menu button:focus-visible { background:var(--reserved-bg); color:var(--dark); }
@@ -841,8 +849,8 @@ label { display: block; font-size: 0.85rem; font-weight: 700; color: #64748b; ma
 .queue-card .match-player-content { padding:6px 2px; }
 .queue-card .p-name { font-size:.85rem; }
 .queue-empty-slot { min-width:0; min-height:64px; width:100%; border:1px dashed #cbd5e1; border-radius:8px; background:#f8fafc; color:var(--text-secondary); font-size:.75rem; cursor:pointer; }
-.queue-dispatch { display:flex; gap:6px; margin-top:10px; }
-.queue-court-picker { flex:1; min-width:0; }
+.queue-dispatch { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.queue-court-picker { flex:1 1 160px; min-width:0; }
 .court-choice-trigger { display:flex; align-items:center; gap:6px; width:100%; min-height:44px; padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:var(--dark); cursor:pointer; text-align:left; }
 .court-choice-trigger:hover:not(:disabled),.court-choice-trigger[aria-expanded="true"] { border-color:#93c5fd; background:#f8fbff; }
 .court-choice-trigger:disabled { color:#94a3b8; background:var(--surface-muted); cursor:default; }
@@ -861,7 +869,7 @@ label { display: block; font-size: 0.85rem; font-weight: 700; color: #64748b; ma
 .court-choice-check { width:16px; height:16px; color:var(--primary); }
 .court-choice-option[aria-selected="false"] .court-choice-check { visibility:hidden; }
 .court-choice-option:focus-visible { outline-offset:-2px; }
-.queue-dispatch .btn { flex:1; font-size:.85rem; }
+.queue-dispatch .btn { flex:1 1 120px; font-size:.85rem; }
 .queue-empty { padding:34px 8px; line-height:1.6; }
 .queue-empty strong { font-size:.95rem; }
 .court-card>.btn-group { display:flex; padding:12px; }
@@ -870,25 +878,40 @@ label { display: block; font-size: 0.85rem; font-weight: 700; color: #64748b; ma
 .court-waiting-heading { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; font-size:.85rem; }
 .court-waiting-heading .btn-text { min-height:32px; }
 .court-waiting-help { margin:8px 0 0; color:var(--text-secondary); font-size:.75rem; line-height:1.5; }
-.main-container.waiting-collapsed { grid-template-columns:54px minmax(320px,1fr) minmax(280px,.8fr); }
-@media(max-width:1150px) and (min-width:769px) {
-    .main-container { grid-template-columns:230px minmax(0,1fr); grid-template-areas:"waiting queue" "waiting courts"; grid-template-rows:minmax(0,1.35fr) minmax(0,1fr); }
-    .main-container.waiting-collapsed { grid-template-columns:54px minmax(0,1fr); }
-    .court-grid { grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
-}
 @media(max-width:768px), (max-height:500px) and (max-width:950px) {
+    .workspace-tabs { display:none; }
     .mobile-view-tabs { grid-template-columns:repeat(3,minmax(0,1fr)); }
     .mobile-view-tab { padding:6px 5px; gap:4px; font-size:.78rem; white-space:nowrap; }
-    .main-container,.main-container.waiting-collapsed { grid-template-columns:minmax(0,1fr); grid-template-areas:"content"; grid-template-rows:minmax(0,1fr); gap:0; padding:8px max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left)); }
+    .main-container,.main-container.mobile-view-waiting { grid-template-columns:minmax(0,1fr); grid-template-areas:"content"; grid-template-rows:minmax(0,1fr); gap:0; padding:8px max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left)); }
     .waiting-court,.queue-area,.court-area { grid-area:content; }
     .main-container.mobile-view-queue .waiting-court,.main-container.mobile-view-queue .court-area,
     .main-container.mobile-view-courts .queue-area,.main-container.mobile-view-waiting .queue-area { display:none!important; }
     .main-container.mobile-view-queue .queue-area { display:flex; }
-    .court-grid { grid-template-columns:minmax(0,1fr); }
     .queue-header { padding:12px; }
     .queue-list { padding:10px; }
     .queue-area select { font-size:16px; }
     .queue-card-heading select { font-size:14px; min-height:36px; }
+    .waiting-court .wc-header { padding:12px; }
+    .waiting-court .roster-filters,.waiting-court .roster-search { max-width:none; }
+}
+@media(max-width:600px) {
+    #waitList { grid-template-columns:minmax(0,1fr); padding:10px; }
+    .court-grid { gap:8px; }
+    .court-grid .cc-header { padding:8px 6px; align-items:flex-start; gap:2px; }
+    .court-grid .court-heading { gap:4px; }
+    .court-grid .court-title { font-size:.86rem; }
+    .court-grid .court-delete { width:28px; height:32px; }
+    .court-grid .game-section { padding:8px 5px; }
+    .court-grid .match-teams { grid-template-columns:minmax(0,1fr) 14px minmax(0,1fr); gap:2px; padding:3px; border-radius:8px; }
+    .court-grid .match-versus { font-size:.62rem; }
+    .court-grid .match-team .player-chip { padding:5px 2px; }
+    .court-grid .match-player-chip .p-name { font-size:.75rem; }
+    .court-grid .p-info { font-size:.68rem; }
+    .court-grid .empty-state { padding:12px 6px; font-size:.78rem; line-height:1.6; }
+    .court-grid .btn-group { padding:8px 6px; }
+    .court-grid .court-waiting { padding:8px 5px; }
+    .court-grid .court-waiting-heading { font-size:.75rem; gap:3px; }
+    .court-grid .court-waiting-heading .btn-text { padding:3px; font-size:.7rem; }
 }
 
 @media (max-height: 600px) {
