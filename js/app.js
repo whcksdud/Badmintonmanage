@@ -7,6 +7,7 @@ let storageBlocked = false;
 const initialEnvelope = readInitialState();
 let players = initialEnvelope.current.players;
 let courts = initialEnvelope.current.courts;
+let matchQueue = initialEnvelope.current.matchQueue || [];
 let history = initialEnvelope.current.history;
 let members = initialEnvelope.current.members || [];
 const tiers = ["E조", "E조", "D조", "C조", "B조", "A조"];
@@ -21,8 +22,8 @@ let undoLabel = typeof initialEnvelope.undoLabel === 'string' ? initialEnvelope.
 
 let editPId = null;
 let swapTarget = null;
-let manualTargetCId = null;
-let manualTargetArea = null;
+let manualQueueId = null;
+let queueType = 'A';
 let manualSelected = new Set();
 const courtActionLocks = new Map();
 const collapsedStatuses = new Set();
@@ -32,7 +33,6 @@ let statsPlayerId = null;
 let statsView = 'overall';
 let selectedRosterPlayerId = null;
 let waitingRoomCollapsed = false;
-let transferSourceCourtId = null;
 let deferredInstallPrompt = null;
 let editMemberId = null;
 let memberRegistrationMode = 'member';
@@ -76,9 +76,7 @@ setInterval(() => {
 }, 1000);
 
 document.addEventListener('click', handleRosterActionSheetOutsideClick);
-document.addEventListener('click', handleReserveTypeOutside);
-document.addEventListener('focusin', handleReserveTypeOutside);
-document.addEventListener('keydown', handleReserveTypeEscape);
+window.addEventListener('resize', closeQueueCourtMenu);
 
 render();
 updateInstallButton();

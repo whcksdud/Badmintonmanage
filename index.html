@@ -66,7 +66,8 @@
 
 <div id="storageError" role="alert" style="padding:8px 16px; background:#fef2f2; color:#991b1b;" hidden></div>
 <nav class="mobile-view-tabs" role="tablist" aria-label="모바일 화면 선택">
-    <button id="mobileCourtsTab" class="mobile-view-tab active" type="button" role="tab" aria-selected="true" aria-controls="courtArea" onclick="setMobileView('courts')">
+    <button id="mobileQueueTab" class="mobile-view-tab active" type="button" role="tab" aria-selected="true" aria-controls="queueArea" onclick="setMobileView('queue')"><svg class="ui-icon" aria-hidden="true"><use href="#icon-history"></use></svg><span>다음 경기</span><span id="mobileQueueCount" class="mobile-tab-count">0</span></button>
+    <button id="mobileCourtsTab" class="mobile-view-tab" type="button" role="tab" aria-selected="false" aria-controls="courtArea" onclick="setMobileView('courts')">
         <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-shuttle"></use></svg><span>코트</span><span id="mobileCourtCount" class="mobile-tab-count">0</span>
     </button>
     <button id="mobileWaitingTab" class="mobile-view-tab" type="button" role="tab" aria-selected="false" aria-controls="waitingCourt" onclick="setMobileView('waiting')">
@@ -74,7 +75,7 @@
     </button>
 </nav>
 
-<div id="mainContainer" class="main-container mobile-view-courts">
+<div id="mainContainer" class="main-container mobile-view-queue">
     <!-- 대기실 -->
     <div id="waitingCourt" class="waiting-court" role="tabpanel" aria-labelledby="mobileWaitingTab">
         <div class="wc-header">
@@ -94,7 +95,7 @@
             <div class="roster-filters" role="group" aria-label="선수 상태 필터">
                 <button id="rosterFilter-all" type="button" class="roster-filter" aria-pressed="true" onclick="setRosterFilter('all')">전체<strong id="rosterCount-all">0</strong></button>
                 <button id="rosterFilter-waiting" type="button" class="roster-filter" aria-pressed="false" onclick="setRosterFilter('waiting')">대기<strong id="rosterCount-waiting">0</strong></button>
-                <button id="rosterFilter-reserved" type="button" class="roster-filter" aria-pressed="false" onclick="setRosterFilter('reserved')">예약<strong id="rosterCount-reserved">0</strong></button>
+                <button id="rosterFilter-reserved" type="button" class="roster-filter" aria-pressed="false" onclick="setRosterFilter('reserved')">편성<strong id="rosterCount-reserved">0</strong></button>
                 <button id="rosterFilter-playing" type="button" class="roster-filter" aria-pressed="false" onclick="setRosterFilter('playing')">경기<strong id="rosterCount-playing">0</strong></button>
                 <button id="rosterFilter-resting" type="button" class="roster-filter" aria-pressed="false" onclick="setRosterFilter('resting')">휴식<strong id="rosterCount-resting">0</strong></button>
             </div>
@@ -103,6 +104,23 @@
         <section id="rosterActionSheet" class="roster-action-sheet" aria-label="선수 관리" onkeydown="if(event.key === 'Escape') closeRosterActionSheet(true)" onclick="event.stopPropagation()" hidden></section>
     </div>
 
+    <section id="queueArea" class="queue-area" role="tabpanel" aria-labelledby="mobileQueueTab">
+        <div class="queue-header"><div class="queue-heading"><h2>다음 경기</h2></div>
+        <div class="queue-toolbar">
+            <div class="reserve-split"><div class="reserve-split-control">
+                <button id="autoMatchButton" type="button" class="btn btn-reserve reserve-match" onclick="autoQueueMatch()">자동 편성</button>
+                <button id="autoMatchTypeButton" type="button" class="btn reserve-type-trigger" popovertarget="autoMatchMenu" onclick="positionAutoMatchMenu()" aria-label="자동 편성 경기 유형: 자율"><span id="autoMatchTypeLabel">자율</span><svg class="ui-icon" aria-hidden="true"><use href="#icon-chevron-right"></use></svg></button>
+            </div></div>
+            <div id="autoMatchMenu" class="auto-match-menu" popover role="group" aria-label="자동 편성 경기 유형">
+                <button id="auto-type-A" type="button" onclick="chooseAutoMatch('A')" aria-pressed="true">자율</button>
+                <button id="auto-type-M" type="button" onclick="chooseAutoMatch('M')" aria-pressed="false">남복</button>
+                <button id="auto-type-F" type="button" onclick="chooseAutoMatch('F')" aria-pressed="false">여복</button>
+                <button id="auto-type-X" type="button" onclick="chooseAutoMatch('X')" aria-pressed="false">혼복</button>
+            </div>
+            <button type="button" class="btn btn-outline" onclick="openManualMatch()">직접 편성</button>
+        </div></div>
+        <div id="queueList" class="queue-list" onscroll="closeQueueCourtMenu()"></div>
+    </section>
     <!-- 코트 영역 -->
     <div id="courtArea" class="court-area" role="tabpanel" aria-labelledby="mobileCourtsTab">
         <div id="courtGrid" class="court-grid"></div>
@@ -110,6 +128,7 @@
 </div>
 
 
+<div id="queueCourtMenu" class="court-choice-menu" popover role="listbox" aria-label="입장할 코트" onkeydown="handleQueueCourtMenuKey(event)" ontoggle="handleQueueCourtMenuToggle(event)"></div>
 <div id="toast">알림 메시지</div>
 <input type="file" id="fileInput" style="display:none" onchange="importData(this)">
 
@@ -135,6 +154,11 @@
             <label><input type="radio" name="pTierChoice" id="pTier-1" value="1" checked onchange="document.getElementById('pTier').value=this.value"><span>E조</span></label>
         </div>
     </fieldset>
+    <div id="pPartnerField" hidden>
+        <label for="pPartner">파트너 지정</label>
+        <select id="pPartner" aria-describedby="pPartnerNote"><option value="">지정 안 함</option></select>
+        <p id="pPartnerNote" class="field-note">출전 순서와 경기 유형을 지키며 같은 팀으로 우선 편성합니다. 기존 경기·다음 경기 편성은 유지됩니다.</p>
+    </div>
     <label for="pGames">실제 경기 수</label>
     <input type="number" id="pGames" min="0" step="1" value="0" inputmode="numeric">
     <p id="playerMatchingInfo" class="field-note"></p>
@@ -387,8 +411,8 @@
             <h4 id="helpStartTitle">처음 시작할 때</h4>
             <ol class="help-steps">
                 <li><strong>선수 등록</strong><p><span class="help-action">참석자 선택</span>에서 회원을 불러오세요. 처음 오는 선수는 <span class="help-action">등록·관리</span>에서 회원 또는 게스트로 등록합니다.</p></li>
-                <li><strong>경기 배정</strong><p>코트의 <span class="help-action">자동 매칭</span> 또는 <span class="help-action">수동</span>으로 선수 4명을 배정합니다.</p></li>
-                <li><strong>경기 시작·종료</strong><p>배정 후 <span class="help-action">경기 시작</span>을 누르세요. 경기 종료 시 다음 예약이 있으면 이어서 시작합니다.</p></li>
+                <li><strong>경기 편성</strong><p><span class="help-action">다음 경기</span>에서 <span class="help-action">자동 편성</span> 또는 <span class="help-action">직접 편성</span>으로 선수를 선택합니다.</p></li>
+                <li><strong>경기 시작·종료</strong><p>입장할 경기에서 코트를 선택하세요. 빈 코트는 바로 시작하고, 경기 중인 코트는 대기 입장합니다. 현재 경기와 대기 선수의 다른 경기가 끝나면 자동으로 시작합니다.</p></li>
             </ol>
         </section>
         <details class="help-section">
@@ -396,6 +420,7 @@
             <dl class="help-topics">
                 <div><dt>회원 선택</dt><dd>참석자를 검색해 체크한 뒤 <strong>선택 N명 불러오기</strong>를 누릅니다. 검색이나 탭을 바꿔도 선택은 유지되며, 이미 참가 중인 회원은 중복 선택되지 않습니다.</dd></div>
                 <div><dt>회원 명단</dt><dd><strong>등록·관리</strong>에서 회원을 저장합니다. 이름 옆 연필 버튼에서 수정·삭제할 수 있습니다.</dd></div>
+                <div><dt>대회 파트너</dt><dd>대기실에서 선수를 누르고 <strong>수정 → 대회 파트너</strong>에서 지정·해제합니다. 이번 모임에 적용되며 출전 순서와 경기 유형이 허용하는 범위에서 함께 선발하고 같은 팀으로 우선 편성합니다. 한 명이 휴식·경기 중이면 따로 출전할 수 있습니다.</dd></div>
                 <div><dt>휴식·복귀·콕 냄</dt><dd>대기실에서 선수 카드를 누르면 관리 버튼이 표시됩니다. 휴식 중인 선수는 자동 매칭에서 제외됩니다.</dd></div>
                 <div><dt>선수 찾기</dt><dd>대기실의 상태별 인원이나 검색 아이콘을 사용하세요. 남성 카드는 파란색, 여성 카드는 분홍색으로 구분합니다.</dd></div>
             </dl>
@@ -403,12 +428,12 @@
         <details class="help-section">
             <summary><svg class="ui-icon" aria-hidden="true"><use href="#icon-shuttle"></use></svg><span>코트 운영</span><svg class="ui-icon help-chevron" aria-hidden="true"><use href="#icon-chevron-right"></use></svg></summary>
             <dl class="help-topics">
-                <div><dt>자동·수동 배정</dt><dd>자동 매칭은 대기 중인 선수만 선택합니다. 수동으로는 게임 중인 선수도 다음 대기에 예약할 수 있습니다. VS 양쪽이 각각 한 팀입니다.</dd></div>
-                <div><dt>선수 교체</dt><dd>코트에 배치된 선수를 누르면 교체할 수 있습니다. 다음 대기의 교체 후보에는 게임 중인 선수도 포함됩니다.</dd></div>
-                <div><dt>팀 변경</dt><dd>코트의 선수를 누른 뒤 <strong>팀 변경</strong>에서 상대 팀 선수를 선택하면 두 선수의 자리를 바꿉니다. 현재 경기와 다음 대기 모두 가능하며, 혼복 코트에서는 같은 성별끼리 바꿉니다.</dd></div>
-                <div><dt>코트 변경</dt><dd>다음 대기의 <strong>코트 변경</strong>에서 대상 코트를 고릅니다. 대상에도 예약이 있으면 두 예약을 서로 옮깁니다. 팀 구성은 유지됩니다.</dd></div>
-                <div><dt>다음 경기 시작</dt><dd>예약 선수 중 다른 코트에서 게임 중인 사람이 있으면 시작을 보류합니다. 해당 선수가 경기를 마친 뒤 시작할 수 있습니다.</dd></div>
-                <div><dt>경기 유형</dt><dd>자동 매칭·다음 예약 버튼 오른쪽에 표시된 유형을 누르면 자율·남복·여복·혼복을 선택할 수 있습니다. 유형 선택만으로는 예약되지 않으며, 왼쪽 실행 버튼을 누르면 선택한 유형으로 다음 경기를 예약합니다.</dd></div>
+                <div><dt>자동·직접 편성</dt><dd>자동 편성은 대기 중인 선수를 먼저 선발하고 부족한 인원을 경기 중인 선수로 채웁니다. 혼복은 남녀 각각 2명 조건 안에서 대기 선수를 우선합니다. 직접 편성은 경기 중인 선수도 선택하고 0~4명으로 경기를 추가할 수 있습니다. 휴식 중이거나 다른 다음 경기에 편성된 선수는 새 후보에서 제외합니다. 경기 중인 선수를 넣은 경기는 현재 경기가 끝난 뒤 입장할 수 있습니다.</dd></div>
+                <div><dt>선수 교체</dt><dd>코트의 선수는 미편성 대기 선수로 교체합니다. 다음 경기의 선수는 대기·경기 중 선수로 교체할 수 있습니다. 편성 수정에서는 기존 경기 유형과 성별에 관계없이 인원을 다시 선택할 수 있습니다.</dd></div>
+                <div><dt>팀 변경</dt><dd>코트의 선수를 누른 뒤 <strong>팀 변경</strong>에서 상대 팀 선수를 선택하면 두 선수의 자리를 바꿉니다. 현재 경기와 다음 경기 목록 모두 가능하며, 혼복에서는 같은 성별끼리 바꿉니다.</dd></div>
+                <div><dt>경기 선택</dt><dd>다음 경기는 만든 순서대로 표시되며, 원하는 경기에서 코트를 골라 입장하거나 대기 입장할 수 있습니다.</dd></div>
+                <div><dt>다음 경기 시작</dt><dd>4명이 모두 출전 가능한 경기는 빈 코트에서 바로 시작합니다. 경기 중인 코트에는 한 경기씩 대기 입장할 수 있으며, 현재 경기와 대기 선수의 다른 경기가 끝나면 자동으로 시작합니다. 대기 취소를 누르면 다음 경기 목록 맨 앞으로 돌아갑니다.</dd></div>
+                <div><dt>경기 유형</dt><dd>자동 편성 버튼을 누른 뒤 자율·남복·여복·혼복 중 하나를 고르면 바로 편성합니다. 직접 편성은 유형 설정 없이 원하는 선수를 선택합니다.</dd></div>
             </dl>
         </details>
         <details class="help-section">
@@ -442,7 +467,7 @@
 
 <!-- 수동 매칭 모달 -->
 <div id="manualModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="manualTitle"><div class="modal-box picker-modal">
-    <div class="dialog-heading"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg><h3 id="manualTitle">수동 매칭</h3></div>
+    <div class="dialog-heading"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg><h3 id="manualTitle">다음 경기 직접 편성</h3></div>
     <p id="manualHelp" class="picker-note"></p>
     <div id="manualList" class="wc-list manual-player-list picker-list"></div>
     <div class="picker-footer dialog-actions">
@@ -519,23 +544,7 @@
     <div class="picker-footer dialog-actions"><button class="btn btn-outline" onclick="closeSwapModal()">닫기</button></div>
 </div></div>
 
-<!-- 다음 대기 코트 이동 모달 -->
-<div id="transferModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="transferTitle"><div class="modal-box form-modal dialog-compact">
-    <div class="dialog-heading"><svg class="ui-icon" aria-hidden="true"><use href="#icon-resume"></use></svg><h3 id="transferTitle">코트 변경</h3></div>
-    <div class="dialog-body">
-    <section class="transfer-source" aria-label="현재 예약">
-        <div class="transfer-court-heading"><strong id="transferSourceName"></strong><span class="transfer-state">현재 예약</span></div>
-        <div id="transferSourcePlayers" class="transfer-players"></div>
-    </section>
-    <input type="hidden" id="transferCourtSelect">
-    <fieldset class="profile-choice-field"><legend>변경할 코트</legend>
-        <div id="transferCourtOptions" class="transfer-court-options"></div>
-    </fieldset>
-    </div><div class="dialog-actions">
-        <button id="transferConfirmButton" class="btn btn-primary" onclick="confirmTransferNext()">코트 변경</button>
-        <button class="btn btn-outline" onclick="closeTransferModal()">취소</button>
-    </div>
-</div></div>
+
 
 <!-- iOS용 공통 확인 모달 (window.confirm 대체) -->
 <div id="confirmModal" class="modal" style="z-index:2000;" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
@@ -554,6 +563,7 @@
     <script src="./js/storage.js"></script>
     <script src="./js/matching.js"></script>
     <script src="./js/courts.js"></script>
+    <script src="./js/queue.js"></script>
     <script src="./js/members.js"></script>
     <script src="./js/vendor/qrcode.js"></script>
     <script src="./js/vendor/jsQR.js"></script>

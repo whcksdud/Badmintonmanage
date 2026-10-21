@@ -1,15 +1,17 @@
-// Court lifecycle, reservations, transfers, scores, and player swaps.
+// Current court games, scores, and player/team changes.
 
 function courtLabel(courtId) { return `${courts.findIndex(court => court.id === courtId) + 1}번 코트`; }
 
 function delCourt(id) {
-    showConfirmModal("이 코트를 삭제하시겠습니까?\n(배정된 선수들은 대기실로 이동합니다)", () => {
+    showConfirmModal("이 코트를 삭제하시겠습니까?\n진행 선수는 대기실로, 대기 입장 경기는 다음 경기 목록 맨 앞으로 이동합니다.", () => {
         const c = courts.find(x => x.id === id);
         if (c) {
             const label = courtLabel(id);
-            const affectedPlayerIds = [...c.active, ...c.next].map(p => p.id);
+            const affectedPlayerIds = c.active.map(p => p.id);
+            if(c.pendingMatch) matchQueue.unshift(c.pendingMatch);
             courts = courts.filter(x => x.id !== id);
             syncPlayerAssignmentStatuses(affectedPlayerIds, 'waiting');
+            startReadyCourtMatches();
             if(!saveAction(`${label} 삭제`)) return;
             render();
             showToast("코트가 삭제되었습니다.");
@@ -29,7 +31,7 @@ function isCourtActionLocked(cId) {
 function endGame(cId) {
     if(isCourtActionLocked(cId)) return;
     const court = courts.find(candidate => candidate.id === cId);
-    if(!court || (court.active.length === 0 && court.next.length === 0)) return;
+    if(!court || court.active.length === 0) return;
     const previousState = committedState;
     courtActionLocks.set(cId, Date.now() + 1000);
     completeGame(cId);
@@ -81,8 +83,8 @@ function completeGame(cId) {
     if(!court) return;
     const now = Date.now();
     const hadActiveGame = court.active.length > 0;
-    const successionBlockers = court.next.filter(player => isPlayerPlayingOutsideCourt(player.id, cId));
-    const affectedPlayerIds = [...court.active, ...court.next].map(p => p.id);
+    if(!hadActiveGame) return;
+    const affectedPlayerIds = court.active.map(p => p.id);
 
     if(court.active.length > 0) {
         const activePlayers = [...court.active];
@@ -110,90 +112,19 @@ function completeGame(cId) {
         });
     }
 
-    if(court.next.length > 0 && successionBlockers.length === 0) {
-        court.active = [...court.next];
-        court.next = [];
-        court.startTime = Date.now();
-    } else {
-        court.active = [];
-        court.startTime = null;
-    }
+    court.active = [];
+    court.startTime = null;
     syncPlayerAssignmentStatuses(affectedPlayerIds, 'waiting');
-    if(!saveAction(`${courtLabel(cId)} ${hadActiveGame ? '경기 종료' : '경기 시작'}`)) return;
+    const started = startReadyCourtMatches(now);
+    if(!saveAction(`${courtLabel(cId)} 경기 종료`)) return;
     render();
-
-    if(successionBlockers.length > 0) {
-        const blockerNames = successionBlockers.map(player => player.name).join(', ');
-        const prefix = hadActiveGame ? '게임 종료 · 승계 불가' : '게임 시작 불가';
-        showToast(`${prefix}: ${blockerNames} 선수가 아직 다른 코트에서 게임 중입니다.`);
-    }
-}
-
-function cancelNext(cId) {
-    const court = courts.find(c => c.id === cId);
-    if(!court) return;
-    const affectedPlayerIds = court.next.map(p => p.id);
-    court.next = [];
-    syncPlayerAssignmentStatuses(affectedPlayerIds, 'waiting');
-    if(!saveAction(`${courtLabel(cId)} 다음 예약 취소`)) return;
-    render();
-}
-
-function renderTransferPlayers(match) {
-    const names = match.map(player => escapeHTML(player.name));
-    if(names.length !== 4) return `<span>${names.join(' · ')}</span>`;
-    const renderTeam = team => `<span class="transfer-team">${team.map(name => `<span class="transfer-player" title="${name}">${name}</span>`).join('')}</span>`;
-    return `${renderTeam(names.slice(0, 2))}<span class="transfer-versus" aria-label="대">VS</span>${renderTeam(names.slice(2))}`;
-}
-
-function openTransferNext(cId) {
-    const source = courts.find(c => c.id === cId);
-    if(!source || source.next.length === 0) return showToast("이동할 다음 대기 선수가 없습니다.");
-    const targets = courts.filter(c => c.id !== cId);
-    if(targets.length === 0) return showToast("변경할 다른 코트가 없습니다.");
-    transferSourceCourtId = cId;
-    document.getElementById('transferSourceName').innerText = courtLabel(source.id);
-    document.getElementById('transferSourcePlayers').innerHTML = renderTransferPlayers(source.next);
-    document.getElementById('transferCourtSelect').value = String(targets[0].id);
-    document.getElementById('transferCourtOptions').innerHTML = targets.map(c => `<label class="transfer-court-option">
-        <input type="radio" name="transferCourt" id="transfer-court-${c.id}" value="${c.id}" onchange="document.getElementById('transferCourtSelect').value=this.value; updateTransferNextPreview()">
-        <span class="transfer-court-card">
-            <span class="transfer-court-heading"><strong>${courtLabel(c.id)}</strong><span class="transfer-state ${c.active.length ? 'is-playing' : ''}">${c.active.length ? '경기 중' : '비어 있음'}</span></span>
-            <span class="transfer-reservation-label">${c.next.length ? '예약 있음' : '예약 없음'}</span>
-            ${c.next.length ? `<span class="transfer-players">${renderTransferPlayers(c.next)}</span>` : ''}
-        </span>
-    </label>`).join('');
-    updateTransferNextPreview();
-    document.getElementById('transferModal').style.display = 'flex';
-}
-
-function updateTransferNextPreview() {
-    const target = courts.find(c => c.id === Number(document.getElementById('transferCourtSelect').value));
-    courts.filter(c => c.id !== transferSourceCourtId).forEach(c => {
-        document.getElementById(`transfer-court-${c.id}`).checked = c.id === target?.id;
-    });
-}
-
-function closeTransferModal() {
-    document.getElementById('transferModal').style.display = 'none';
-    transferSourceCourtId = null;
-}
-
-function confirmTransferNext() {
-    const source = courts.find(c => c.id === transferSourceCourtId);
-    const target = courts.find(c => c.id === Number(document.getElementById('transferCourtSelect').value));
-    if(!source || !target || source.id === target.id || source.next.length === 0) return closeTransferModal();
-    const swap = target.next.length > 0;
-    [source.next, target.next] = [target.next, source.next];
-    const action = `${courtLabel(source.id)} ${swap ? '↔' : '→'} ${courtLabel(target.id)} 예약 코트 변경`;
-    if(!saveAction(action)) return;
-    closeTransferModal(); render();
-    showToast(swap ? `${courtLabel(source.id)}와 ${courtLabel(target.id)}의 예약 코트를 변경했습니다.`
-                   : `${courtLabel(target.id)}로 다음 대기를 이동했습니다.`);
+    showToast(started.length ? `경기를 종료하고 ${started.map(courtLabel).join(', ')}의 대기 경기를 시작했습니다.` : court.pendingMatch ? '경기를 종료했습니다. 대기 선수의 다른 경기가 끝나면 자동으로 시작합니다.' : '경기를 종료했습니다. 준비된 다음 경기를 입장시키세요.');
 }
 
 function isPlayerInCourtArea(playerId, area) {
-    return courts.some(court => court[area].some(player => player.id === playerId));
+    return area === 'queue'
+        ? [...matchQueue, ...courts.map(court => court.pendingMatch).filter(Boolean)].some(game => game.players.some(player => player.id === playerId))
+        : courts.some(court => court.active.some(player => player.id === playerId));
 }
 
 function isPlayerPlayingOutsideCourt(playerId, courtId) {
@@ -205,7 +136,7 @@ function syncPlayerAssignmentStatus(playerId, fallbackStatus = null) {
     if(!player) return;
 
     if(isPlayerInCourtArea(playerId, 'active')) setPlayerStatus(player, 'playing');
-    else if(isPlayerInCourtArea(playerId, 'next')) setPlayerStatus(player, 'reserved');
+    else if(isPlayerInCourtArea(playerId, 'queue')) setPlayerStatus(player, 'reserved');
     else if(fallbackStatus) setPlayerStatus(player, fallbackStatus);
     else if(player.status === 'playing' || player.status === 'reserved') setPlayerStatus(player, 'waiting');
 }
@@ -214,108 +145,90 @@ function syncPlayerAssignmentStatuses(playerIds, fallbackStatus = null) {
     [...new Set(playerIds)].forEach(playerId => syncPlayerAssignmentStatus(playerId, fallbackStatus));
 }
 
-function setType(id, val) {
-    const court = courts.find(c => c.id === id);
-    if(!court || !['A','M','F','X'].includes(val)) return false;
-    court.type = val;
-    if(!saveAction(`${courtLabel(id)} 경기 유형 변경`)) return false;
-    render();
-    document.getElementById(`reserve-type-${id}`)?.focus({preventScroll:true});
-    return true;
-}
-
 function addCourt() {
-    courts.push({id:Date.now(), type:'A', active:[], next:[], startTime:null});
+    let id = Date.now();
+    while(courts.some(court => court.id === id)) id++;
+    courts.push({id, type:'A', active:[], next:[], startTime:null});
     if(!saveAction(`${courts.length}번 코트 추가`)) return;
     render();
     if(window.matchMedia('(max-width: 600px), (max-height: 500px) and (max-width: 950px)').matches) setMobileView('courts');
 }
 
-function openSwap(cId, area, idx) {
-    const court = courts.find(candidate => candidate.id === cId);
-    if(!court || !court[area] || !court[area][idx]) return;
+function assignmentFor(id, area) {
+    if(area === 'queue') {
+        const game = matchQueue.find(game => game.id === id);
+        return game ? {match:game.players, type:game.type, label:`다음 경기 ${matchQueue.indexOf(game) + 1}번`} : null;
+    }
+    const court = courts.find(court => court.id === id);
+    if(area === 'waiting' && court?.pendingMatch) return {match:court.pendingMatch.players, type:court.pendingMatch.type, gameId:court.pendingMatch.id, label:`${courtLabel(id)} 대기 입장`};
+    return area === 'active' && court ? {match:court.active, type:court.type, label:courtLabel(id)} : null;
+}
 
-    swapTarget = {cId, area, idx, playerId:court[area][idx].id};
+function openSwap(cId, area, idx) {
+    const assignment = assignmentFor(cId, area);
+    if(!assignment?.match[idx]) return;
+    swapTarget = {cId, area, idx, playerId:assignment.match[idx].id, gameId:assignment.gameId};
     renderSwapList();
+}
+
+function getSwapCandidates() {
+    if(!swapTarget) return [];
+    const assignment = assignmentFor(swapTarget.cId, swapTarget.area);
+    if(!assignment?.match[swapTarget.idx] || assignment.gameId !== swapTarget.gameId) return [];
+    const selected = assignment.match[swapTarget.idx];
+    const pool = swapTarget.area === 'queue'
+        ? manualCandidates(swapTarget.cId).filter(player => !assignment.match.some(p => p.id === player.id))
+        : getAutoMatchPool({includePlaying:swapTarget.area === 'waiting'});
+    return pool.filter(player => assignment.type === 'A' || (assignment.type === 'X' ? player.gender === selected.gender : player.gender === assignment.type));
 }
 
 function renderSwapList() {
     if(!swapTarget) return;
-    const list = document.getElementById('swapList'); list.innerHTML='';
-    const court = courts.find(candidate => candidate.id === swapTarget.cId);
-    const match = court && court[swapTarget.area];
-    if(!match || !match[swapTarget.idx] || match[swapTarget.idx].id !== swapTarget.playerId) return closeSwapModal();
+    const assignment = assignmentFor(swapTarget.cId, swapTarget.area);
+    if(!assignment || assignment.match[swapTarget.idx]?.id !== swapTarget.playerId || assignment.gameId !== swapTarget.gameId) return closeSwapModal();
+    const {match, type, label} = assignment;
     const selected = match[swapTarget.idx];
-    const allowPlayingPlayers = swapTarget.area === 'next';
-    document.getElementById('swapHelp').innerText = `${selected.name} · ${courtLabel(court.id)} ${swapTarget.area === 'next' ? '다음 대기' : '현재 경기'}`;
-    if(match.length === 4) {
-        list.innerHTML = '<h4 class="picker-section-label">팀 변경 · 상대 팀 선수와 자리 바꾸기</h4>';
-        match.forEach((player, index) => {
-            if(Math.floor(index / 2) === Math.floor(swapTarget.idx / 2)) return;
-            if(court.type === 'X' && player.gender !== selected.gender) return;
-            const status = isPlayerInCourtArea(player.id, 'active') ? 'playing' : player.status;
-            list.innerHTML += `<button type="button" class="player-chip waiting-chip roster-chip manual-chip swap-chip gender-card ${getGenderCardClass(player.gender)} roster-status-${status} team-change-choice" onclick="changeCourtTeam(${index}, ${player.id})" aria-label="${escapeHTML(selected.name)}와 ${escapeHTML(player.name)} 자리 바꾸기">
-                ${renderRosterSummary(player, 'swap-', status)}
-            </button>`;
-        });
-    }
-    list.innerHTML += `<h4 class="picker-section-label">선수 교체</h4><p class="picker-section-description">${allowPlayingPlayers ? '대기 중인 선수와 현재 게임 중인 선수를 선택할 수 있습니다.' : '대기 중인 선수를 선택할 수 있습니다.'}</p>`;
-
-    const candidates = players.filter(player => {
-        const isPlaying = isPlayerInCourtArea(player.id, 'active');
-        const isAlreadyReserved = isPlayerInCourtArea(player.id, 'next');
-        if(isAlreadyReserved) return false;
-        if(isPlaying) return allowPlayingPlayers;
-        return player.status === 'waiting';
-    }).sort((a, b) => {
-        const playingOrder = Number(isPlayerInCourtArea(a.id, 'active')) - Number(isPlayerInCourtArea(b.id, 'active'));
-        return playingOrder || a.games - b.games || a.lastTime - b.lastTime;
+    const list = document.getElementById('swapList');
+    document.getElementById('swapHelp').innerText = `${selected.name} · ${label}`;
+    list.innerHTML = '<h4 class="picker-section-label">팀 변경 · 상대 팀 선수와 자리 바꾸기</h4>';
+    match.forEach((player,index) => {
+        if(Math.floor(index / 2) === Math.floor(swapTarget.idx / 2) || (type === 'X' && player.gender !== selected.gender)) return;
+        list.innerHTML += `<button type="button" class="player-chip roster-chip manual-chip swap-chip gender-card ${getGenderCardClass(player.gender)}" onclick="changeCourtTeam(${index}, ${player.id})">${renderRosterSummary(player, 'swap-')}</button>`;
     });
-
-    if(candidates.length === 0) {
-        list.innerHTML += '<div class="empty-state" style="padding:24px 12px;">교체 가능한 선수가 없습니다.</div>';
-    }
-
-    candidates.forEach(p => {
-        const status = isPlayerInCourtArea(p.id, 'active') ? 'playing' : p.status;
-        list.innerHTML += `<button type="button" class="player-chip waiting-chip roster-chip manual-chip swap-chip gender-card ${getGenderCardClass(p.gender)} roster-status-${status}" onclick="doSwap(${p.id})">
-            ${renderRosterSummary(p, 'swap-', status)}
-        </button>`;
+    list.innerHTML += `<h4 class="picker-section-label">선수 교체</h4><p class="picker-section-description">${swapTarget.area !== 'active' ? '다른 다음 경기나 대기 입장에 편성되지 않은 대기·경기 중 선수로 교체합니다.' : '편성되지 않은 대기 선수로 교체합니다.'}</p>`;
+    const candidates = getSwapCandidates();
+    if(!candidates.length) list.innerHTML += '<div class="empty-state">교체 가능한 선수가 없습니다.</div>';
+    shuffleByGameCount(candidates).forEach(player => {
+        list.innerHTML += `<button type="button" class="player-chip roster-chip manual-chip swap-chip gender-card ${getGenderCardClass(player.gender)}" onclick="doSwap(${player.id})">${renderRosterSummary(player, 'swap-')}</button>`;
     });
-    document.getElementById('swapModal').style.display='flex';
+    document.getElementById('swapModal').style.display = 'flex';
 }
 
 function changeCourtTeam(otherIndex, expectedPlayerId) {
     if(!swapTarget) return;
-    const {cId, area, idx, playerId} = swapTarget;
-    const court = courts.find(candidate => candidate.id === cId);
-    const match = court && ['active', 'next'].includes(area) ? court[area] : null;
-    if(!match || match.length !== 4 || !Number.isInteger(otherIndex) || otherIndex < 0 || otherIndex > 3 ||
-        !match[idx] || match[idx].id !== playerId || match[otherIndex].id !== expectedPlayerId ||
+    const assignment = assignmentFor(swapTarget.cId, swapTarget.area);
+    const {idx, playerId} = swapTarget;
+    if(!assignment || assignment.gameId !== swapTarget.gameId || !Number.isInteger(otherIndex) || !assignment.match[otherIndex] ||
+        assignment.match[idx]?.id !== playerId || assignment.match[otherIndex].id !== expectedPlayerId ||
         Math.floor(idx / 2) === Math.floor(otherIndex / 2) ||
-        (court.type === 'X' && match[idx].gender !== match[otherIndex].gender)) return closeSwapModal();
-    [match[idx], match[otherIndex]] = [match[otherIndex], match[idx]];
-    if(!saveAction(`${courtLabel(cId)} ${area === 'next' ? '다음 대기' : '현재 경기'} 팀 변경`)) return;
+        (assignment.type === 'X' && assignment.match[idx].gender !== assignment.match[otherIndex].gender)) return closeSwapModal();
+    [assignment.match[idx], assignment.match[otherIndex]] = [assignment.match[otherIndex], assignment.match[idx]];
+    if(!saveAction(`${assignment.label} 팀 변경`)) return;
     closeSwapModal(); render(); showToast('팀 구성을 변경했습니다.');
 }
 
 function doSwap(pId) {
     if(!swapTarget) return;
-    const c = courts.find(x=>x.id===swapTarget.cId);
-    const replacement = players.find(x=>x.id===pId);
-    if(!c || !replacement || !c[swapTarget.area] || !c[swapTarget.area][swapTarget.idx]) return closeSwapModal();
-
-    const replacementIsPlaying = isPlayerInCourtArea(pId, 'active');
-    if(swapTarget.area !== 'next' && replacementIsPlaying) return showToast('게임 중인 선수는 다음 대기에만 넣을 수 있습니다.');
-    if(isPlayerInCourtArea(pId, 'next')) return showToast('이미 다음 대기에 배정된 선수입니다.');
-
-    const oldP = c[swapTarget.area][swapTarget.idx];
-    c[swapTarget.area][swapTarget.idx] = replacement;
-    syncPlayerAssignmentStatus(oldP.id, 'waiting');
-    syncPlayerAssignmentStatus(pId);
-    if(!saveAction(`${courtLabel(c.id)} ${oldP.name} → ${replacement.name} 선수 교체`)) return;
-    closeSwapModal(); render();
-    showToast(replacementIsPlaying ? '교체 완료 · 현재 게임 중인 선수입니다.' : '교체 완료');
+    const assignment = assignmentFor(swapTarget.cId, swapTarget.area);
+    const replacement = getSwapCandidates().find(player => player.id === pId);
+    if(!assignment || assignment.match[swapTarget.idx]?.id !== swapTarget.playerId || assignment.gameId !== swapTarget.gameId) return closeSwapModal();
+    const old = assignment.match[swapTarget.idx];
+    if(!replacement || (assignment.type === 'X' ? replacement.gender !== old.gender : assignment.type !== 'A' && replacement.gender !== assignment.type)) return showToast('현재 교체할 수 없는 선수입니다.');
+    assignment.match[swapTarget.idx] = replacement;
+    syncPlayerAssignmentStatuses([old.id, replacement.id], 'waiting');
+    startReadyCourtMatches();
+    if(!saveAction(`${assignment.label} 선수 교체`)) return;
+    closeSwapModal(); render(); showToast('선수를 교체했습니다.');
 }
 
 function closeSwapModal() {

@@ -59,7 +59,10 @@ test('GitHub Pages 하위 경로에서 캐시를 업데이트하고 앱 파일�
             const entries = stores.get(name);
             return {
                 async addAll(requests) {
-                    for (const request of requests) entries.set(keyFor(request), await fetchFile(request));
+                    for (const request of requests) {
+                        assert.equal(request.cache, 'reload', '앱 업데이트는 HTTP 캐시의 이전 파일을 재사용하지 않아야 합니다.');
+                        entries.set(keyFor(request), await fetchFile(request));
+                    }
                 },
                 async put(request, response) { entries.set(keyFor(request), response.clone()); }
             };
@@ -75,6 +78,7 @@ test('GitHub Pages 하위 경로에서 캐시를 업데이트하고 앱 파일�
     };
     const context = vm.createContext({
         caches, fetch: fetchFile, Response,
+        Request: class extends Request { constructor(input, options) { super(new URL(input, base), options); } },
         self: {
             addEventListener(type, callback) { callbacks.set(type, callback); },
             async skipWaiting() {},

@@ -345,6 +345,9 @@ input[type="checkbox"] { accent-color:var(--primary); }
 .roster-details { display:flex; align-items:center; flex-wrap:wrap; gap:5px 8px; color:#64748b; font-size:0.75rem; }
 .roster-shuttle { flex-shrink:0; color:var(--primary); display:inline-flex; align-items:center; }
 .roster-shuttle .ui-icon { width:13px; height:13px; }
+.roster-partner { min-width:0; display:flex; align-items:center; gap:5px; color:var(--primary); font-size:0.7rem; font-weight:600; line-height:1.4; }
+.roster-partner .ui-icon { width:13px; height:13px; }
+.roster-partner>span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .roster-metrics { flex:0 0 auto; max-width:45%; display:grid; justify-items:end; gap:7px; font-size:0.75rem; text-align:right; }
 .roster-wait-time { color:#1d4ed8; font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap; }
 .roster-location { color:#64748b; font-size:0.7rem; line-height:1.4; }
@@ -807,6 +810,86 @@ label { display: block; font-size: 0.85rem; font-weight: 700; color: #64748b; ma
 
 #toast.roster-sheet-open, #toast.roster-sheet-open.show { bottom: max(90px, calc(env(safe-area-inset-bottom) + 82px)); }
 #toast.members-open, #toast.members-open.show { bottom: max(86px, calc(env(safe-area-inset-bottom) + 78px)); }
+
+/* Shared queue: participants, matches awaiting a court, current games. */
+.main-container { grid-template-columns:240px minmax(320px,1fr) minmax(280px,.8fr); grid-template-areas:"waiting queue courts"; gap:16px; padding:16px; }
+.waiting-court { grid-area:waiting; }
+.court-area { grid-area:courts; padding-bottom:16px; }
+.court-grid { grid-template-columns:minmax(0,1fr); }
+.queue-area { grid-area:queue; display:flex; flex-direction:column; min-width:0; min-height:0; overflow:hidden; border:1px solid var(--border); background:#f8fafc; border-radius:12px; }
+.queue-header { padding:15px; border-bottom:1px solid var(--border); background:#fff; flex-shrink:0; }
+.queue-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.queue-heading h2 { margin:0; font-size:1.05rem; }
+.queue-toolbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:12px; }
+.queue-toolbar .btn { flex:1; white-space:nowrap; padding:8px; }
+.queue-toolbar .reserve-type-trigger { flex:0 0 72px; padding:6px; }
+.auto-match-menu { position:fixed; inset:auto; box-sizing:border-box; margin:0; padding:5px; border:1px solid var(--border); border-radius:10px; background:#fff; box-shadow:0 8px 24px #0f172a24; }
+.auto-match-menu button { display:block; width:100%; min-height:44px; border:0; border-radius:6px; background:transparent; padding:10px 12px; text-align:left; color:var(--dark); font:inherit; cursor:pointer; }
+.auto-match-menu button:hover,.auto-match-menu button:focus-visible { background:var(--reserved-bg); color:var(--dark); }
+.auto-match-menu button[aria-pressed="true"] { background:var(--reserved-panel); }
+.queue-area select { width:auto; margin:0; min-width:0; min-height:44px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:var(--dark); padding:7px; font-size:.82rem; }
+.queue-list { min-height:0; overflow-y:auto; overscroll-behavior:contain; flex:1; display:flex; flex-direction:column; gap:12px; padding:12px; }
+.queue-card { flex-shrink:0; min-width:0; padding:12px; border:1px solid var(--border); border-radius:10px; background:#fff; }
+.queue-card-heading { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:12px; }
+.queue-card-heading>strong { display:flex; align-items:center; gap:4px; font-size:.85rem; }
+.queue-card-heading select { min-height:34px; font-size:.75rem; padding:4px; }
+.queue-order { min-width:24px; height:24px; border-radius:6px; background:#eff6ff; color:var(--primary); display:inline-flex; align-items:center; justify-content:center; }
+.queue-card:first-child .queue-order { background:var(--primary); color:#fff; }
+.queue-card-heading>.court-delete { margin-left:auto; }
+.queue-card .match-teams { padding:0; }
+.queue-card .match-team-players { gap:6px; }
+.queue-card .match-player-content { padding:6px 2px; }
+.queue-card .p-name { font-size:.85rem; }
+.queue-empty-slot { min-width:0; min-height:64px; width:100%; border:1px dashed #cbd5e1; border-radius:8px; background:#f8fafc; color:var(--text-secondary); font-size:.75rem; cursor:pointer; }
+.queue-dispatch { display:flex; gap:6px; margin-top:10px; }
+.queue-court-picker { flex:1; min-width:0; }
+.court-choice-trigger { display:flex; align-items:center; gap:6px; width:100%; min-height:44px; padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:var(--dark); cursor:pointer; text-align:left; }
+.court-choice-trigger:hover:not(:disabled),.court-choice-trigger[aria-expanded="true"] { border-color:#93c5fd; background:#f8fbff; }
+.court-choice-trigger:disabled { color:#94a3b8; background:var(--surface-muted); cursor:default; }
+.court-choice-name { flex:1; min-width:0; font-size:.8rem; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.court-choice-status { display:inline-flex; align-items:center; flex-shrink:0; padding:3px 7px; border-radius:6px; font-size:.68rem; font-weight:700; line-height:1.4; white-space:nowrap; }
+.court-choice-empty { color:#2563eb; background:#eff6ff; }
+.court-choice-playing { color:#047857; background:#ecfdf5; }
+.court-choice-pending { color:#92400e; background:#fef3c7; }
+.court-choice-chevron { width:14px; height:14px; transform:rotate(90deg); color:#64748b; }
+.court-choice-menu { position:fixed; inset:auto; box-sizing:border-box; margin:0; padding:6px; border:1px solid var(--border); border-radius:12px; background:#fff; box-shadow:0 12px 36px #0f172a24,0 2px 6px #0f172a0d; overflow-y:auto; overscroll-behavior:contain; }
+.court-choice-option { display:flex; align-items:center; gap:10px; width:100%; min-height:58px; padding:10px 12px; border:1px solid transparent; border-radius:8px; background:#fff; color:var(--dark); cursor:pointer; text-align:left; }
+.court-choice-option .court-choice-name { font-size:.86rem; }
+.court-choice-option[aria-selected="true"] { border-color:#bfdbfe; background:#eff6ff; }
+.court-choice-option:hover:not(:disabled) { background:#f1f5f9; }
+.court-choice-option:disabled { color:#94a3b8; cursor:default; }
+.court-choice-check { width:16px; height:16px; color:var(--primary); }
+.court-choice-option[aria-selected="false"] .court-choice-check { visibility:hidden; }
+.court-choice-option:focus-visible { outline-offset:-2px; }
+.queue-dispatch .btn { flex:1; font-size:.85rem; }
+.queue-empty { padding:34px 8px; line-height:1.6; }
+.queue-empty strong { font-size:.95rem; }
+.court-card>.btn-group { display:flex; padding:12px; }
+.court-card>.btn-group>.btn { flex:1; }
+.court-waiting { padding:12px 15px; border-top:1px solid var(--border); background:#f8fafc; }
+.court-waiting-heading { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; font-size:.85rem; }
+.court-waiting-heading .btn-text { min-height:32px; }
+.court-waiting-help { margin:8px 0 0; color:var(--text-secondary); font-size:.75rem; line-height:1.5; }
+.main-container.waiting-collapsed { grid-template-columns:54px minmax(320px,1fr) minmax(280px,.8fr); }
+@media(max-width:1150px) and (min-width:769px) {
+    .main-container { grid-template-columns:230px minmax(0,1fr); grid-template-areas:"waiting queue" "waiting courts"; grid-template-rows:minmax(0,1.35fr) minmax(0,1fr); }
+    .main-container.waiting-collapsed { grid-template-columns:54px minmax(0,1fr); }
+    .court-grid { grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
+}
+@media(max-width:768px), (max-height:500px) and (max-width:950px) {
+    .mobile-view-tabs { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .mobile-view-tab { padding:6px 5px; gap:4px; font-size:.78rem; white-space:nowrap; }
+    .main-container,.main-container.waiting-collapsed { grid-template-columns:minmax(0,1fr); grid-template-areas:"content"; grid-template-rows:minmax(0,1fr); gap:0; padding:8px max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left)); }
+    .waiting-court,.queue-area,.court-area { grid-area:content; }
+    .main-container.mobile-view-queue .waiting-court,.main-container.mobile-view-queue .court-area,
+    .main-container.mobile-view-courts .queue-area,.main-container.mobile-view-waiting .queue-area { display:none!important; }
+    .main-container.mobile-view-queue .queue-area { display:flex; }
+    .court-grid { grid-template-columns:minmax(0,1fr); }
+    .queue-header { padding:12px; }
+    .queue-list { padding:10px; }
+    .queue-area select { font-size:16px; }
+    .queue-card-heading select { font-size:14px; min-height:36px; }
+}
 
 @media (max-height: 600px) {
     #membersModal .modal-box { height:calc(100dvh - 16px); max-height:calc(100dvh - 16px); }
