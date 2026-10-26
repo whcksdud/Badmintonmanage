@@ -5,8 +5,25 @@ const assert = require('node:assert/strict');
 
 const { html, styles, appSource, runApp } = require('./helpers/app-runtime');
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
+
+test('관리 메뉴는 외부 클릭·Escape·탭 전환으로 닫히고 경기 데이터를 변경하지 않는다', () => {
+    const app = createRuntime([], []);
+    const before = vm.runInContext('serializeState()', app);
+    let focused = false;
+    app.document.getElementById('headerMenuButton').focus = () => {focused = true;};
+    vm.runInContext('toggleHeaderActions(); handleHeaderActionsOutside({target:{closest:()=>true}})', app);
+    assert.equal(vm.runInContext('headerActionsOpen', app), true);
+    vm.runInContext('handleHeaderActionsOutside({target:{closest:()=>null}})', app);
+    assert.equal(vm.runInContext('headerActionsOpen', app), false);
+    vm.runInContext("toggleHeaderActions(); handleHeaderActionsKey({key:'Escape'})", app);
+    assert.equal(focused, true);
+    assert.equal(vm.runInContext('headerActionsOpen', app), false);
+    vm.runInContext("toggleHeaderActions(); setMobileView('waiting')", app);
+    assert.equal(vm.runInContext('headerActionsOpen', app), false);
+    assert.equal(vm.runInContext('serializeState()', app), before);
+});
 if (html.includes('>F조</option>') || appSource.includes('const tiers = ["F조"') || !['pTier','memberTier'].every(field => html.includes(`id="${field}-1" value="1" checked`))) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
-if (!serviceWorker.includes('app-v96') || !serviceWorker.includes('runtime-v96') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
+if (!serviceWorker.includes('app-v191') || !serviceWorker.includes('runtime-v191') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
 
 function createPlayers() {
     return Array.from({ length: 13 }, (_, index) => ({
@@ -317,10 +334,9 @@ function assertInRuntime(context, assertion, message) {
     const context = createRuntime(players, courts);
 
     vm.runInContext('matchCourt(1)', context);
-    assertInRuntime(context, 'courts[0].next.length === 0', '대기 인원이 부족한데 게임 중 선수를 자동 예약했습니다.');
-    assertInRuntime(context, 'players.find(player => player.id === 1).status === "playing"', '자동 예약 실패 후 게임 중 상태가 손실되었습니다.');
-    assertInRuntime(context, '[5, 6, 7].every(id => players.find(player => player.id === id).status === "waiting")', '자동 예약 실패 후 대기 선수 상태가 변경되었습니다.');
-    if (!context.__elements.get('toast').innerText.includes('인원이 부족')) throw new Error('다음 자동 예약의 인원 부족 안내가 없습니다.');
+    assertInRuntime(context, 'courts[0].next.map(player => player.id).sort((a,b)=>a-b).join(",") === "1,5,6,7"', '대기 선수 3명을 모두 우선하고 경기 중 선수로 한 자리를 보충하지 못했습니다.');
+    assertInRuntime(context, 'players.find(player => player.id === 1).status === "playing"', '다음 예약 후 현재 경기 상태가 손실되었습니다.');
+    assertInRuntime(context, '[5, 6, 7].every(id => players.find(player => player.id === id).status === "reserved")', '우선 선발된 대기 선수의 예약 상태가 반영되지 않았습니다.');
 }
 
 {
@@ -332,9 +348,8 @@ function assertInRuntime(context, assertion, message) {
     const context = createRuntime(players, courts);
 
     vm.runInContext('matchCourt(1)', context);
-    assertInRuntime(context, 'courts[0].next.length === 0', '혼복 대기 인원이 부족한데 게임 중 선수를 자동 예약했습니다.');
-    if (!context.__elements.get('toast').innerText.includes('혼복 인원이 부족')) throw new Error('혼복 자동 예약의 인원 부족 안내가 없습니다.');
-    vm.runInContext('players.find(player => player.id === 7).status = "waiting"; matchCourt(1)', context);
+    assertInRuntime(context, 'courts[0].next.map(player => player.id).sort((a,b)=>a-b).join(",") === "1,5,6,8"', '혼복에서 대기 선수를 우선하고 부족한 성별만 경기 중 선수로 보충하지 못했습니다.');
+    vm.runInContext('cancelNext(1); players.find(player => player.id === 7).status = "waiting"; matchCourt(1)', context);
     assertInRuntime(context, 'courts[0].next.map(player => player.id).sort((a, b) => a - b).join(",") === "5,6,7,8"', '혼복 자동 예약에서 대기 중인 남녀 2명씩을 선발하지 못했습니다.');
     assertInRuntime(context, 'courts[0].next.slice(0, 2).filter(player => player.gender === "M").length === 1 && courts[0].next.slice(2).filter(player => player.gender === "M").length === 1', '혼복의 각 팀에 남녀 한 명씩 배정되지 않았습니다.');
 }
@@ -363,8 +378,8 @@ function assertInRuntime(context, assertion, message) {
     const context = createRuntime(players, courts);
 
     vm.runInContext('matchCourt(2)', context);
-    assertInRuntime(context, 'courts[1].next.length === 0', '빈 코트의 첫 경기에 게임 중인 선수가 자동 배정되었습니다.');
-    if (!context.__elements.get('toast').innerText.includes('인원이 부족')) throw new Error('빈 코트 자동 매칭의 인원 부족 안내가 없습니다.');
+    assertInRuntime(context, 'courts[1].active.length === 0 && courts[1].next.length === 4', '빈 코트에서도 경기 중인 선수를 포함한 다음 예약을 만들 수 있어야 합니다.');
+    assertInRuntime(context, '[5,6,7].every(id=>courts[1].next.some(player=>player.id===id))', '빈 코트의 다음 예약에서도 대기 선수가 우선이어야 합니다.');
 }
 
 {

@@ -32,6 +32,62 @@ function runtime(state, random = () => 0, saved = null) {
 }
 function selectedIds(app) { return app.json('courts[0].next.map(p => p.id)').sort((a, b) => a - b); }
 
+test('대기 선수가 충분하면 경기 수와 반복 조합에 앞서 대기 선수를 우선한다', () => {
+    const roster=Array.from({length:8},(_,i)=>player(i+1,{games:i<4?0:10,status:i<4?'playing':'waiting'}));
+    const app=runtime({players:roster,courts:[court(1,'A',roster.slice(0,4))],history:[{pIds:[5,6,7,8]}]});
+    app.run('matchCourt(1)');
+    assert.deepEqual(selectedIds(app),[5,6,7,8]);
+    assert.deepEqual(app.json('courts[0].active.map(p=>p.id)'),[1,2,3,4]);
+    assert.equal(app.run('courts[0].startTime'),1000);
+});
+
+test('대기 인원이 부족한 경우에만 경기 중인 선수를 보충하고 현재 경기는 유지한다', () => {
+    const roster=Array.from({length:7},(_,i)=>player(i+1,{games:i<4?0:10,status:i<4?'playing':i===6?'resting':'waiting'}));
+    const app=runtime({players:roster,courts:[court(1,'A',roster.slice(0,4))]});
+    app.run('matchCourt(1)');
+    const ids=selectedIds(app);
+    assert.equal(ids.length,4);
+    assert.ok(ids.includes(5)&&ids.includes(6));
+    assert.equal(ids.filter(id=>id<=4).length,2);
+    assert.ok(!ids.includes(7));
+    assert.equal(app.run('players.slice(0,4).every(p=>p.status==="playing"&&p.games===0)'),true);
+    app.run('cancelNext(1)');
+    assert.equal(app.run('players.slice(0,4).every(p=>p.status==="playing")'),true);
+});
+
+test('혼복은 성별마다 대기 선수를 우선하고 부족한 여성만 경기 중에서 보충한다', () => {
+    const roster=[player(1,{status:'playing',gender:'F'}),player(2,{status:'playing',gender:'F'}),
+        player(3,{status:'playing'}),player(4,{status:'playing'}),player(5,{games:10}),player(6,{games:10}),player(7,{games:10,gender:'F'})];
+    const app=runtime({players:roster,courts:[court(1,'X',roster.slice(0,4))]});
+    app.run('matchCourt(1)');
+    assert.ok([5,6,7].every(id=>selectedIds(app).includes(id)));
+    assert.equal(app.run('courts[0].next.filter(p=>p.gender==="F").length'),2);
+    assert.equal(app.run('courts[0].next.slice(0,2).filter(p=>p.gender==="F").length'),1);
+});
+
+test('대기 인원이 없어도 다음 예약이 가능하고 이미 예약된 선수는 다시 선발하지 않는다', () => {
+    const roster=Array.from({length:8},(_,i)=>player(i+1,{status:'playing'}));
+    const app=runtime({players:roster,courts:[court(1,'A',roster.slice(0,4)),court(2,'A',roster.slice(4))]});
+    app.run('matchCourt(1); matchCourt(2)');
+    assert.equal(app.run('courts.every(c=>c.next.length===4)'),true);
+    assert.equal(app.run('new Set(courts.flatMap(c=>c.next.map(p=>p.id))).size'),8);
+    assert.equal(app.run('players.every(p=>p.status==="playing")'),true);
+});
+
+test('다른 코트 경기 중 선수가 포함된 자동 예약은 그 경기 종료 전에는 시작하지 않는다', () => {
+    const roster=Array.from({length:6},(_,i)=>player(i+1,{status:i<4?'playing':'waiting'}));
+    const app=runtime({players:roster,courts:[court(1,'A',roster.slice(0,4)),court(2)]});
+    app.run('matchCourt(2)');
+    const reserved=app.json('courts[1].next.map(p=>p.id)');
+    app.run('completeGame(2)');
+    assert.equal(app.run('courts[1].active.length'),0);
+    assert.deepEqual(app.json('courts[1].next.map(p=>p.id)'),reserved);
+    app.run('completeGame(1); completeGame(2)');
+    assert.deepEqual(app.json('courts[1].active.map(p=>p.id)'),reserved);
+    assert.equal(app.run('courts[1].next.length'),0);
+    assert.equal(app.run('history.length'),1);
+});
+
 test('예약 버튼 안 유형 목록은 한 코트씩 열리고 외부 클릭·Escape·재클릭으로 닫힌다', () => {
     const roster=Array.from({length:12},(_,i)=>player(i+1));
     const app=runtime({players:roster,courts:[court(1),court(2),court(3,'A',[],roster.slice(0,4))]});

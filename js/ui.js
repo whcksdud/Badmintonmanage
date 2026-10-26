@@ -1,6 +1,29 @@
 // Shared dialogs, roster/court rendering, and responsive navigation.
 
 let openReserveTypeCourtId = null;
+let headerActionsOpen = false;
+
+function closeHeaderActions(restoreFocus = false) {
+    const wasOpen = headerActionsOpen;
+    headerActionsOpen = false;
+    document.getElementById('headerActionMenu').classList.remove('is-open');
+    document.getElementById('headerMenuButton').setAttribute('aria-expanded', 'false');
+    if(wasOpen && restoreFocus) document.getElementById('headerMenuButton').focus({preventScroll:true});
+}
+
+function toggleHeaderActions() {
+    headerActionsOpen = !headerActionsOpen;
+    document.getElementById('headerActionMenu').classList.toggle('is-open', headerActionsOpen);
+    document.getElementById('headerMenuButton').setAttribute('aria-expanded', String(headerActionsOpen));
+}
+
+function handleHeaderActionsOutside(event) {
+    if(headerActionsOpen && !event.target.closest?.('.header-actions')) closeHeaderActions();
+}
+
+function handleHeaderActionsKey(event) {
+    if(event.key === 'Escape' && headerActionsOpen) closeHeaderActions(true);
+}
 
 function closeReserveTypeMenu(restoreFocus = false) {
     if(openReserveTypeCourtId === null) return;
@@ -59,6 +82,8 @@ function setFormChoice(fieldId, value, options) {
 }
 
 function setMobileView(view) {
+    closeHeaderActions();
+    closeReserveTypeMenu();
     const showWaitingRoom = view === 'waiting';
     const mainContainer = document.getElementById('mainContainer');
     const courtsTab = document.getElementById('mobileCourtsTab');
@@ -70,6 +95,8 @@ function setMobileView(view) {
     waitingTab.classList.toggle('active', showWaitingRoom);
     courtsTab.setAttribute('aria-selected', String(!showWaitingRoom));
     waitingTab.setAttribute('aria-selected', String(showWaitingRoom));
+    courtsTab.setAttribute('tabindex', showWaitingRoom ? '-1' : '0');
+    waitingTab.setAttribute('tabindex', showWaitingRoom ? '0' : '-1');
 
     if (!showWaitingRoom && selectedRosterPlayerId !== null) closeRosterActionSheet();
 
@@ -78,6 +105,15 @@ function setMobileView(view) {
         mainContainer.classList.remove('waiting-collapsed');
         updateWaitingToggleButton();
     }
+}
+
+function handleWorkspaceTabKey(event) {
+    if(!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const waitingSelected = document.getElementById('mobileWaitingTab').getAttribute('aria-selected') === 'true';
+    const showWaiting = event.key === 'End' || (event.key !== 'Home' && !waitingSelected);
+    setMobileView(showWaiting ? 'waiting' : 'courts');
+    document.getElementById(showWaiting ? 'mobileWaitingTab' : 'mobileCourtsTab').focus({preventScroll:true});
 }
 
 function showConfirmModal(msg, callback) {
@@ -215,6 +251,7 @@ function renderRosterActionSheet() {
 
 function renderRosterSummary(player, timerPrefix = '', status = player.status, showLocation = true) {
     const safePlayerName = escapeHTML(player.name);
+    const partner = getTournamentPartner(player);
     const statusLabels = {waiting:'대기 중', reserved:'예약됨', playing:'게임 중', resting:'휴식 중'};
     const locations = courts.flatMap(court => [
         court.active.some(p => p.id === player.id) ? `${courtLabel(court.id)} 경기 중` : '',
@@ -222,12 +259,12 @@ function renderRosterSummary(player, timerPrefix = '', status = player.status, s
     ]).filter(Boolean).join(' · ');
     return `<span class="roster-summary">
         <span class="roster-identity">
-            <span class="roster-name-line"><span class="p-name" title="${safePlayerName}">${safePlayerName}</span></span>
+            <span class="roster-name-line"><span class="p-name" title="${safePlayerName}">${safePlayerName}</span>${partner ? `<span class="roster-partner" title="파트너: ${escapeHTML(partner.name)}">${renderUIIcon('users')}<span>파트너 · ${escapeHTML(partner.name)}</span></span>` : ''}</span>
             <span class="roster-details"><span>${player.gender === 'M' ? '남' : '여'} · ${tiers[player.tier]}</span><span>${player.games}경기</span>${isGuestPlayer(player) ? '<span class="roster-guest-badge">게스트</span>' : ''}${player.shuttlecock ? `<span class="roster-shuttle" role="img" aria-label="콕 냄" title="콕 냄">${renderUIIcon('shuttle')}</span>` : ''}</span>
         </span>
         <span class="roster-metrics">
             ${status === 'waiting' || status === 'reserved' ? `<span id="${timerPrefix}waiting-time-${player.id}" class="roster-wait-time">${formatWaitingTime(player)}</span>` : `<span class="roster-status-label">${statusLabels[status]}</span>`}
-            ${showLocation && locations ? `<span class="roster-location">${locations}</span>` : ''}
+            ${showLocation && locations ? `<span class="roster-location" title="${locations}">${locations}</span>` : ''}
         </span>
     </span>`;
 }

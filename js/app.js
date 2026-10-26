@@ -79,6 +79,9 @@ document.addEventListener('click', handleRosterActionSheetOutsideClick);
 document.addEventListener('click', handleReserveTypeOutside);
 document.addEventListener('focusin', handleReserveTypeOutside);
 document.addEventListener('keydown', handleReserveTypeEscape);
+document.addEventListener('click', handleHeaderActionsOutside);
+document.addEventListener('keydown', handleHeaderActionsKey);
+window.addEventListener('resize', () => closeHeaderActions());
 
 render();
 updateInstallButton();

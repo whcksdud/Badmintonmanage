@@ -1,11 +1,49 @@
 // Player registration, availability, waiting time, and identity.
 
+function getTournamentPartner(player) {
+    if(!player || player.tournamentPartnerId === undefined) return null;
+    const partner = players.find(candidate => candidate.id === player.tournamentPartnerId);
+    return partner && partner.id !== player.id && partner.tournamentPartnerId === player.id ? partner : null;
+}
+
+function canAssignTournamentPartner(player, partnerId) {
+    if(!player) return false;
+    if(partnerId === null) return true;
+    const partner = players.find(candidate => candidate.id === partnerId);
+    return Boolean(partner && partner.id !== player.id &&
+        (partner.tournamentPartnerId === undefined || partner.tournamentPartnerId === player.id));
+}
+
+function assignTournamentPartner(player, partnerId) {
+    if(!canAssignTournamentPartner(player, partnerId)) return false;
+    const previous = getTournamentPartner(player);
+    if(previous) delete previous.tournamentPartnerId;
+    delete player.tournamentPartnerId;
+    if(partnerId !== null) {
+        const partner = players.find(candidate => candidate.id === partnerId);
+        player.tournamentPartnerId = partner.id;
+        partner.tournamentPartnerId = player.id;
+    }
+    return true;
+}
+
+function renderTournamentPartnerChoice(player) {
+    document.getElementById('pPartnerField').hidden = !player;
+    const select = document.getElementById('pPartner');
+    select.innerHTML = '<option value="">지정 안 함</option>' + players.filter(candidate => candidate.id !== player?.id).map(candidate => {
+        const occupied = candidate.tournamentPartnerId !== undefined && candidate.tournamentPartnerId !== player?.id;
+        return `<option value="${candidate.id}" ${occupied ? 'disabled' : ''}>${escapeHTML(candidate.name)} · ${candidate.gender === 'M' ? '남' : '여'} · ${tiers[candidate.tier]}${occupied ? ' (파트너 지정됨)' : ''}</option>`;
+    }).join('');
+    select.value = player?.tournamentPartnerId === undefined ? '' : String(player.tournamentPartnerId);
+}
+
 function deletePlayer() {
     const playerId = editPId;
     if(isPlayerInCourtArea(playerId, 'active') || isPlayerInCourtArea(playerId, 'next')) return showToast('배정된 선수는 교체하거나 예약을 해제한 뒤 삭제하세요.');
     showConfirmModal("선수를 삭제하시겠습니까?\n최근 작업 되돌리기로 한 단계 복원할 수 있습니다.", () => {
         if(isPlayerInCourtArea(playerId, 'active') || isPlayerInCourtArea(playerId, 'next')) return showToast('선수가 코트에 배정되어 삭제할 수 없습니다.');
         const name = players.find(player => player.id === playerId)?.name || '선수';
+        assignTournamentPartner(players.find(player => player.id === playerId), null);
         players = players.filter(x => x.id !== playerId);
         if(!saveAction(`${name} 선수 삭제`)) return;
         closePModal();
@@ -69,18 +107,21 @@ function nextPersonId() {
 }
 
 function openPModal(id=null) {
-    editPId = id; const p = players.find(x=>x.id===id);
-    document.getElementById('pModalTitle').innerText = id ? "선수 정보 수정" : "선수 등록";
-    document.getElementById('pName').value = id ? p.name : "";
-    setFormChoice('pGen', id ? p.gender : 'M', ['M', 'F']);
-    setFormChoice('pTier', id ? p.tier : 1, [5, 4, 3, 2, 1]);
-    document.getElementById('pGames').value = id ? p.games : 0;
-    document.getElementById('playerMatchingInfo').innerText = id
+    const p = players.find(x=>x.id===id);
+    if(id !== null && !p) return showToast('선수를 찾을 수 없습니다.');
+    editPId = id;
+    document.getElementById('pModalTitle').innerText = p ? "선수 정보 수정" : "선수 등록";
+    document.getElementById('pName').value = p ? p.name : "";
+    setFormChoice('pGen', p ? p.gender : 'M', ['M', 'F']);
+    setFormChoice('pTier', p ? p.tier : 1, [5, 4, 3, 2, 1]);
+    document.getElementById('pGames').value = p ? p.games : 0;
+    document.getElementById('playerMatchingInfo').innerText = p
         ? `실제 ${p.games}경기 · 매칭 기준 ${getMatchingGameCount(p)}경기 (보정 +${getMatchingGameCount(p) - p.games})`
         : `신규 선수는 실제 0경기로 시작합니다. 현재 매칭 기준은 ${getInitialMatchingGames()}경기입니다.`;
     document.getElementById('pStatusField').hidden = id !== null;
     document.getElementById('pStatus').value = 'waiting';
-    document.getElementById('deletePlayerButton').hidden = !id;
+    document.getElementById('deletePlayerButton').hidden = !p;
+    renderTournamentPartnerChoice(p);
     document.getElementById('pModal').style.display = 'flex';
     document.getElementById('pName').focus();
 }
@@ -127,14 +168,20 @@ function savePlayer() {
     const games = Number(document.getElementById('pGames').value);
     if(!Number.isSafeInteger(games) || games < 0) return showToast('실제 경기 수는 0 이상의 정수로 입력하세요.');
     const status = document.getElementById('pStatus').value;
-    if(editPId) {
+    const partnerValue = document.getElementById('pPartner').value;
+    const partnerId = partnerValue === '' ? null : Number(partnerValue);
+    if(editPId !== null && !canAssignTournamentPartner(players.find(p => p.id === editPId), partnerId)) {
+        return showToast('파트너를 다시 선택하세요. 다른 선수와 지정된 파트너는 먼저 해제해야 합니다.');
+    }
+    if(editPId !== null) {
         const p=players.find(x=>x.id===editPId);
         p.name=name; p.tier=tier; p.gender=gen; p.games=games;
+        assignTournamentPartner(p, partnerId);
         const member = members.find(m => m.id === p.memberId);
         if(member) Object.assign(member, {name, gender:gen, tier});
     }
     else { players.push({id:nextPersonId(), name, gender:gen, tier, games, matchingOffset:Math.max(0, getInitialMatchingGames() - games), lastTime:0, status, shuttlecock:false}); }
-    if(!saveAction(`${name} 선수 ${editPId ? '정보 수정' : '등록'}`)) return;
+    if(!saveAction(`${name} 선수 ${editPId !== null ? '정보 수정' : '등록'}`)) return;
     closePModal(); render();
     if(editPId === null) setMobileView('waiting');
     showToast("저장됨");

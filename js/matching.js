@@ -4,6 +4,37 @@
 const MATCH_VARIETY_WAIT_WINDOW = 15 * 60 * 1000;
 const MATCH_VARIETY_CANDIDATE_LIMIT = 12;
 
+function isTournamentPairAllowed(first, second, type) {
+    if(type === 'X') return first.gender !== second.gender;
+    if(type === 'M' || type === 'F') return first.gender === type && second.gender === type;
+    return true;
+}
+
+function countTournamentPairs(selected, type) {
+    return selected.reduce((count, player) => {
+        const partner = getTournamentPartner(player);
+        return count + Number(Boolean(partner && player.id < partner.id &&
+            selected.some(candidate => candidate.id === partner.id) && isTournamentPairAllowed(player, partner, type)));
+    }, 0);
+}
+
+function getTournamentTeamPlan(selected, type) {
+    if(selected.length !== 4 || !countTournamentPairs(selected, type)) return null;
+    const candidates = [[0,1,2,3], [0,2,1,3], [0,3,1,2]]
+        .map(indexes => indexes.map(index => selected[index]))
+        .filter(plan => isTournamentPairAllowed(plan[0], plan[1], type) && isTournamentPairAllowed(plan[2], plan[3], type));
+    const score = plan => ({
+        pairs: Number(getTournamentPartner(plan[0])?.id === plan[1].id) + Number(getTournamentPartner(plan[2])?.id === plan[3].id),
+        gap: Math.abs(plan[0].tier + plan[1].tier - plan[2].tier - plan[3].tier),
+        repeats: getScore(plan[0].id, plan[1].id) + getScore(plan[2].id, plan[3].id)
+    });
+    candidates.sort((a, b) => {
+        const left = score(a), right = score(b);
+        return right.pairs - left.pairs || left.gap - right.gap || left.repeats - right.repeats;
+    });
+    return candidates[0] || null;
+}
+
 function getMatchingGameCount(player) {
     const offset = Number(player.matchingOffset);
     return player.games + (Number.isFinite(offset) && offset >= 0 ? offset : 0);
@@ -11,9 +42,8 @@ function getMatchingGameCount(player) {
 
 function getAutoMatchPool() {
     return players.filter(player => {
-        if(isPlayerInCourtArea(player.id, 'next')) return false;
-        if(isPlayerInCourtArea(player.id, 'active')) return false;
-        return player.status === 'waiting';
+        if(player.status === 'resting' || isPlayerInCourtArea(player.id, 'next')) return false;
+        return isPlayerInCourtArea(player.id, 'active') || player.status === 'waiting';
     });
 }
 
@@ -53,6 +83,15 @@ function matchCourt(cId) {
 }
 
 function getSelectionOptions(pool, count, waitWindow, breakLockedGroup = false) {
+    // Waiting players fill every eligible seat before active players are considered.
+    // Mixed doubles applies this rule separately to the two men and two women.
+    const waiting = pool.filter(player => !isPlayerInCourtArea(player.id, 'active'));
+    if(waiting.length && waiting.length < pool.length) {
+        if(waiting.length >= count) return getSelectionOptions(waiting, count, waitWindow, breakLockedGroup);
+        const playing = pool.filter(player => isPlayerInCourtArea(player.id, 'active'));
+        return getSelectionOptions(playing, count - waiting.length, waitWindow, breakLockedGroup)
+            .map(selected => [...waiting, ...selected]);
+    }
     const ordered = shuffleByGameCount(pool);
     if(ordered.length < count) return [];
     const cutoff = getMatchingGameCount(ordered[count - 1]);
@@ -128,10 +167,11 @@ function selectMatchPlayers(pool, type, courtId) {
         const ids = option.map(p => p.id);
         let together = 0;
         for(let i = 0; i < 4; i++) for(let j = i + 1; j < 4; j++) together += pairs.get(pairKey(ids[i], ids[j])) || 0;
-        const cost = [groups.get(groupKey(ids)) || 0, together,
+        // Partner preference stays inside the existing waiting/game-count window.
+        const cost = [-countTournamentPairs(option, type), groups.get(groupKey(ids)) || 0, together,
             option.reduce((sum, player) => sum + (Number.isFinite(player.waitingSince) ? player.waitingSince : now), 0)];
-        const better = !bestCost || cost[0] < bestCost[0] ||
-            (cost[0] === bestCost[0] && (cost[1] < bestCost[1] || (cost[1] === bestCost[1] && cost[2] < bestCost[2])));
+        const firstDifference = bestCost ? cost.findIndex((value, index) => value !== bestCost[index]) : -1;
+        const better = !bestCost || (firstDifference >= 0 && cost[firstDifference] < bestCost[firstDifference]);
         if(better) { best = option; bestCost = cost; }
     });
     return best;
@@ -237,7 +277,10 @@ function applyMatch(cId, selectedPlayers, targetArea) {
     const fs = selectedPlayers.filter(p=>p.gender==='F');
     let bestTeam = [];
 
-    if(ms.length === 2 && fs.length === 2) {
+    const partnerPlan = getTournamentTeamPlan(selectedPlayers, court.type);
+    if(partnerPlan) {
+         bestTeam = partnerPlan;
+    } else if(ms.length === 2 && fs.length === 2) {
          const gap1 = Math.abs((ms[0].tier + fs[0].tier) - (ms[1].tier + fs[1].tier));
          const gap2 = Math.abs((ms[0].tier + fs[1].tier) - (ms[1].tier + fs[0].tier));
          const s1 = getScore(ms[0].id, fs[0].id) + getScore(ms[1].id, fs[1].id);

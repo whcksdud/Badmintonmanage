@@ -1,6 +1,6 @@
 const CACHE_PREFIX = 'badminton-manager-';
-const APP_CACHE = `${CACHE_PREFIX}app-v96`;
-const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-v96`;
+const APP_CACHE = `${CACHE_PREFIX}app-v191`;
+const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-v191`;
 
 const APP_SHELL = [
     './',
@@ -28,7 +28,7 @@ const APP_SHELL = [
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(APP_CACHE)
-            .then(cache => cache.addAll(APP_SHELL))
+            .then(cache => cache.addAll(APP_SHELL.map(url => new Request(url, {cache:'reload'}))))
             .then(() => self.skipWaiting())
     );
 });

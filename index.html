@@ -54,25 +54,27 @@
 
 <div class="header">
     <div class="logo">BM</div>
-    <div class="h-btn-group">
-        <button class="h-btn" onclick="openMembersModal()" aria-label="선수 등록" title="선수 등록" aria-haspopup="dialog" aria-controls="membersModal"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-users"></use></svg><span class="h-label">선수 등록</span></button>
-        <button class="h-btn primary" onclick="addCourt()" aria-label="코트 추가" title="코트 추가"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-add"></use></svg><span class="h-label">코트</span></button>
-        <button class="h-btn" onclick="openHistory()" aria-label="경기 기록" title="경기 기록"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-history"></use></svg><span class="h-label">기록</span></button>
-        <button class="h-btn" onclick="openStatsModal()" aria-label="경기 통계" title="경기 통계"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-chart"></use></svg><span class="h-label">통계</span></button>
-        <button id="undoButton" class="h-btn" onclick="undoLastAction()" aria-label="최근 작업 되돌리기" title="최근 작업 되돌리기" disabled><svg class="ui-icon" aria-hidden="true"><use href="#icon-undo"></use></svg><span class="h-label">되돌리기</span></button>
-        <button class="h-btn" onclick="openSettings()" aria-label="설정" title="설정"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><span class="h-label">설정</span></button>
+    <nav class="mobile-view-tabs" role="tablist" aria-label="화면 선택" onkeydown="handleWorkspaceTabKey(event)">
+    <button id="mobileCourtsTab" class="mobile-view-tab active" type="button" role="tab" aria-selected="true" aria-controls="courtArea" onclick="setMobileView('courts')">
+        <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-shuttle"></use></svg><span>코트</span><span id="mobileCourtCount" class="mobile-tab-count">0</span>
+    </button>
+    <button id="mobileWaitingTab" class="mobile-view-tab" type="button" role="tab" aria-selected="false" aria-controls="waitingCourt" tabindex="-1" onclick="setMobileView('waiting')">
+        <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-users"></use></svg><span>대기실</span><span id="mobileRosterCount" class="mobile-tab-count">0</span>
+    </button>
+</nav>
+    <div class="header-actions">
+        <button id="headerMenuButton" class="header-menu-toggle" type="button" onclick="toggleHeaderActions()" aria-label="관리 메뉴" aria-expanded="false" aria-controls="headerActionMenu"><svg class="ui-icon" aria-hidden="true"><use href="#icon-more"></use></svg></button>
+        <div id="headerActionMenu" class="h-btn-group" role="group" aria-label="관리 메뉴">
+        <button class="h-btn" onclick="closeHeaderActions(); openHistory()" aria-label="경기 기록" title="경기 기록"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-history"></use></svg><span class="h-label">기록</span></button>
+        <button class="h-btn" onclick="closeHeaderActions(); openStatsModal()" aria-label="경기 통계" title="경기 통계"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-chart"></use></svg><span class="h-label">통계</span></button>
+        <button id="undoButton" class="h-btn" onclick="closeHeaderActions(); undoLastAction()" aria-label="최근 작업 되돌리기" title="최근 작업 되돌리기" disabled><svg class="ui-icon" aria-hidden="true"><use href="#icon-undo"></use></svg><span class="h-label">되돌리기</span></button>
+        <button class="h-btn" onclick="closeHeaderActions(); openSettings()" aria-label="설정" title="설정"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><span class="h-label">설정</span></button>
+        </div>
     </div>
 </div>
 
 <div id="storageError" role="alert" style="padding:8px 16px; background:#fef2f2; color:#991b1b;" hidden></div>
-<nav class="mobile-view-tabs" role="tablist" aria-label="모바일 화면 선택">
-    <button id="mobileCourtsTab" class="mobile-view-tab active" type="button" role="tab" aria-selected="true" aria-controls="courtArea" onclick="setMobileView('courts')">
-        <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-shuttle"></use></svg><span>코트</span><span id="mobileCourtCount" class="mobile-tab-count">0</span>
-    </button>
-    <button id="mobileWaitingTab" class="mobile-view-tab" type="button" role="tab" aria-selected="false" aria-controls="waitingCourt" onclick="setMobileView('waiting')">
-        <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-users"></use></svg><span>대기실</span><span id="mobileRosterCount" class="mobile-tab-count">0</span>
-    </button>
-</nav>
+
 
 <div id="mainContainer" class="main-container mobile-view-courts">
     <!-- 대기실 -->
@@ -82,6 +84,7 @@
                 <div class="wc-heading-line">
                     <span class="wc-title">대기실</span>
                     <div class="wc-heading-actions">
+                        <button id="waitingRegisterButton" class="btn btn-outline workspace-action" type="button" onclick="closeHeaderActions(); openMembersModal()" aria-haspopup="dialog" aria-controls="membersModal"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg>선수 등록</button>
                         <button id="waitingSearchToggle" class="waiting-search-toggle" type="button" onclick="toggleRosterSearch()" aria-label="선수 검색 열기" aria-expanded="false" aria-controls="rosterSearch" title="선수 검색 열기"><svg class="ui-icon" aria-hidden="true" focusable="false"><use id="waitingSearchIcon" href="#icon-search"></use></svg></button>
                         <button id="waitingToggle" class="waiting-toggle" onclick="toggleWaitingRoom()" aria-label="대기실 접기" title="대기실 접기"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron-left"></use></svg></button>
                     </div>
@@ -91,7 +94,7 @@
                 <svg class="ui-icon" aria-hidden="true"><use href="#icon-search"></use></svg>
                 <input type="search" id="searchInput" class="search-input" placeholder="선수 이름 검색" aria-label="대기실 선수 이름 검색" oninput="renderRoster()" onkeydown="handleRosterSearchKey(event)">
             </div>
-            <div class="roster-filters" role="group" aria-label="선수 상태 필터">
+            <div class="roster-filters" role="group" aria-label="선수 상태 필터" hidden>
                 <button id="rosterFilter-all" type="button" class="roster-filter" aria-pressed="true" onclick="setRosterFilter('all')">전체<strong id="rosterCount-all">0</strong></button>
                 <button id="rosterFilter-waiting" type="button" class="roster-filter" aria-pressed="false" onclick="setRosterFilter('waiting')">대기<strong id="rosterCount-waiting">0</strong></button>
                 <button id="rosterFilter-reserved" type="button" class="roster-filter" aria-pressed="false" onclick="setRosterFilter('reserved')">예약<strong id="rosterCount-reserved">0</strong></button>
@@ -105,6 +108,7 @@
 
     <!-- 코트 영역 -->
     <div id="courtArea" class="court-area" role="tabpanel" aria-labelledby="mobileCourtsTab">
+        <div class="court-area-toolbar"><h2>코트</h2><button id="addCourtButton" class="btn btn-outline workspace-action" type="button" onclick="closeHeaderActions(); addCourt()"><svg class="ui-icon" aria-hidden="true"><use href="#icon-add"></use></svg>코트 추가</button></div>
         <div id="courtGrid" class="court-grid"></div>
     </div>
 </div>
@@ -138,6 +142,11 @@
     <label for="pGames">실제 경기 수</label>
     <input type="number" id="pGames" min="0" step="1" value="0" inputmode="numeric">
     <p id="playerMatchingInfo" class="field-note"></p>
+    <div id="pPartnerField">
+        <label for="pPartner">파트너 지정</label>
+        <select id="pPartner" aria-describedby="pPartnerNote"><option value="">지정 안 함</option></select>
+        <p id="pPartnerNote" class="field-note">이번 모임에서 같은 팀으로 우선 편성합니다. 대기 순서와 경기 유형을 따르며, 이미 편성된 경기는 유지됩니다.</p>
+    </div>
     <div id="pStatusField">
         <label for="pStatus">선수 상태</label>
         <select id="pStatus">
@@ -403,7 +412,7 @@
         <details class="help-section">
             <summary><svg class="ui-icon" aria-hidden="true"><use href="#icon-shuttle"></use></svg><span>코트 운영</span><svg class="ui-icon help-chevron" aria-hidden="true"><use href="#icon-chevron-right"></use></svg></summary>
             <dl class="help-topics">
-                <div><dt>자동·수동 배정</dt><dd>자동 매칭은 대기 중인 선수만 선택합니다. 수동으로는 게임 중인 선수도 다음 대기에 예약할 수 있습니다. VS 양쪽이 각각 한 팀입니다.</dd></div>
+                <div><dt>자동·수동 배정</dt><dd>자동 매칭은 대기 중인 선수를 먼저 선택하고 부족한 자리는 게임 중인 선수로 채웁니다. 수동으로도 게임 중인 선수를 다음 대기에 예약할 수 있습니다. VS 양쪽이 각각 한 팀입니다.</dd></div>
                 <div><dt>선수 교체</dt><dd>코트에 배치된 선수를 누르면 교체할 수 있습니다. 다음 대기의 교체 후보에는 게임 중인 선수도 포함됩니다.</dd></div>
                 <div><dt>팀 변경</dt><dd>코트의 선수를 누른 뒤 <strong>팀 변경</strong>에서 상대 팀 선수를 선택하면 두 선수의 자리를 바꿉니다. 현재 경기와 다음 대기 모두 가능하며, 혼복 코트에서는 같은 성별끼리 바꿉니다.</dd></div>
                 <div><dt>코트 변경</dt><dd>다음 대기의 <strong>코트 변경</strong>에서 대상 코트를 고릅니다. 대상에도 예약이 있으면 두 예약을 서로 옮깁니다. 팀 구성은 유지됩니다.</dd></div>

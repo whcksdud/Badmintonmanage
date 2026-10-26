@@ -75,6 +75,7 @@ test('GitHub Pages 하위 경로에서 캐시를 업데이트하고 앱 파일�
     };
     const context = vm.createContext({
         caches, fetch: fetchFile, Response,
+        Request: class extends Request { constructor(url, options) { super(new URL(url, base), options); } },
         self: {
             addEventListener(type, callback) { callbacks.set(type, callback); },
             async skipWaiting() {},

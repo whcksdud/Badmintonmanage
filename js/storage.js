@@ -161,6 +161,12 @@ function validateImportData(data, allowLegacyAssignments = false) {
             attendingMembers.add(p.memberId);
         }
     });
+    const playerById = new Map(data.players.map(player => [player.id, player]));
+    data.players.forEach(player => {
+        if(player.tournamentPartnerId === undefined) return;
+        const partner = playerById.get(player.tournamentPartnerId);
+        if(!idOK(player.tournamentPartnerId) || !partner || partner.id === player.id || partner.tournamentPartnerId !== player.id) fail();
+    });
     const courtIds = new Set();
     const assignments = {active:new Set(), next:new Set()};
     data.courts.forEach(c => {
