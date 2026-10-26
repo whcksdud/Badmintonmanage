@@ -171,6 +171,8 @@ function validateImportData(data, allowLegacyAssignments = false) {
     const assignments = {active:new Set(), next:new Set()};
     data.courts.forEach(c => {
         if(!c || !idOK(c.id) || courtIds.has(c.id) || !['A','M','F','X'].includes(c.type) || !timeOK(c.startTime)) fail();
+        if(c.isWaiting !== undefined && typeof c.isWaiting !== 'boolean') fail();
+        if(c.isWaiting && (!Array.isArray(c.active) || c.active.length !== 0 || c.startTime != null)) fail();
         courtIds.add(c.id);
         ['active','next'].forEach(area => {
             if(!Array.isArray(c[area]) || (allowLegacyAssignments ? c[area].length > 4 : ![0,4].includes(c[area].length))) fail();

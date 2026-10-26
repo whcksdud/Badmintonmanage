@@ -52,7 +52,7 @@ function matchCourt(cId) {
     if(!court) return;
     if(court.next.length > 0) return showToast("이미 다음 경기가 예약되어 있습니다.");
 
-    const isNextReservation = court.active.length > 0;
+    const isNextReservation = isWaitingCourt(court) || court.active.length > 0;
     const pool = getAutoMatchPool();
     const type = court.type;
 
@@ -191,7 +191,8 @@ function openManualMatch(cId) {
 function renderManualList() {
     const list = document.getElementById('manualList'); list.innerHTML = '';
     const allowPlayingPlayers = manualTargetArea === 'next';
-    document.getElementById('manualHelp').innerText = '4명을 선택해 다음 경기에 배정하세요.';
+    const court = courts.find(c => c.id === manualTargetCId);
+    document.getElementById('manualHelp').innerText = isWaitingCourt(court) ? '4명을 선택해 대기 코트에 편성하세요.' : '4명을 선택해 다음 경기에 배정하세요.';
 
     const candidates = players.filter(player => {
         const isPlaying = isPlayerInCourtArea(player.id, 'active');
@@ -271,6 +272,7 @@ function closeManualModal() {
 
 function applyMatch(cId, selectedPlayers, targetArea) {
     const court = courts.find(c => c.id === cId);
+    if(!court || (isWaitingCourt(court) && targetArea !== 'next')) return;
     selectedPlayers.sort((a,b) => b.tier - a.tier);
 
     const ms = selectedPlayers.filter(p=>p.gender==='M');

@@ -255,7 +255,7 @@ function renderRosterSummary(player, timerPrefix = '', status = player.status, s
     const statusLabels = {waiting:'대기 중', reserved:'예약됨', playing:'게임 중', resting:'휴식 중'};
     const locations = courts.flatMap(court => [
         court.active.some(p => p.id === player.id) ? `${courtLabel(court.id)} 경기 중` : '',
-        court.next.some(p => p.id === player.id) ? `${courtLabel(court.id)} 예약` : ''
+        court.next.some(p => p.id === player.id) ? `${courtLabel(court.id)} ${isWaitingCourt(court) ? '편성' : '예약'}` : ''
     ]).filter(Boolean).join(' · ');
     return `<span class="roster-summary">
         <span class="roster-identity">
@@ -343,15 +343,18 @@ function render() {
     renderRoster();
 
     const cg = document.getElementById('courtGrid'); cg.innerHTML = '';
-    courts.forEach((c, idx) => {
+    courts.forEach(c => {
+        if(isWaitingCourt(c)) {
+            cg.innerHTML += renderWaitingCourt(c);
+            return;
+        }
+        const title = courtTitle(c.id);
         const hasActive = c.active.length > 0;
         const hasNext = c.next.length > 0;
         const actionLocked = isCourtActionLocked(c.id);
         const blockers = c.next.filter(player => isPlayerPlayingOutsideCourt(player.id, c.id));
         const stateLabel = hasActive ? '경기 중' : !hasNext ? '비어 있음' : blockers.length ? '다른 코트 종료 대기' : '시작 가능';
         const stateColor = hasActive ? '#2563eb' : blockers.length ? '#d97706' : hasNext ? '#16a34a' : '#94a3b8';
-        const typeNames = {A:'자율', M:'남복', F:'여복', X:'혼복'};
-        const typeOptions = Object.entries(typeNames).map(([type,name]) => `<button id="reserve-type-${c.id}-${type}" type="button" class="btn reserve-type-option" aria-pressed="${c.type === type}" onclick="setType(${c.id}, '${type}')"><span>${name}</span>${renderUIIcon('checkmark')}</button>`).join('');
 
         let activeHTML = hasActive ? renderMatchTeams(c, 'active') : `<div class="empty-state"><span class="empty-state-content">${renderUIIcon('shuttle')}<span>${hasNext ? '예약 선수 입장 대기' : '선수를 배정해 주세요'}</span></span></div>`;
 
@@ -364,17 +367,7 @@ function render() {
                             <button class="btn btn-outline" style="flex:1; font-size:0.8rem;" onclick="cancelNext(${c.id})">예약 취소</button>
                         </div>`;
         } else {
-             nextHTML = `
-             <div class="reservation-actions">
-                 <div class="reserve-split" onkeydown="handleReserveTypeKey(event, ${c.id})">
-                     <div class="reserve-split-control">
-                         <button type="button" class="btn btn-reserve reserve-match" onclick="matchCourt(${c.id})" aria-label="코트 ${idx+1} ${typeNames[c.type]} ${hasActive ? '다음 예약' : '자동 매칭'}">${hasActive ? '다음 예약' : '자동 매칭'}</button>
-                         <button id="reserve-type-${c.id}" type="button" class="btn reserve-type-trigger" onclick="toggleReserveTypeMenu(${c.id})" aria-label="코트 ${idx+1} 예약 경기 유형 · ${typeNames[c.type]}" aria-expanded="false" aria-controls="reserve-type-menu-${c.id}"><span>${typeNames[c.type]}</span>${renderUIIcon('chevron-right')}</button>
-                     </div>
-                     <div id="reserve-type-menu-${c.id}" class="reserve-type-menu" role="group" aria-label="코트 ${idx+1} 예약 경기 유형" hidden>${typeOptions}</div>
-                 </div>
-                 <button class="btn btn-outline" style="flex:1" onclick="openManualMatch(${c.id})">수동</button>
-             </div>`;
+             nextHTML = renderReservationControls(c, hasActive ? '다음 예약' : '자동 매칭');
         }
 
         let mainBtnHTML = '';
@@ -388,12 +381,12 @@ function render() {
         <div class="court-card">
             <div class="cc-header">
                 <div class="court-heading">
-                    <span class="court-title">코트 ${idx+1}</span>
+                    <span class="court-title">${title}</span>
                     <span class="court-live-state">${stateLabel} <span class="status-dot" style="background:${stateColor}" aria-hidden="true"></span></span>
                     <span id="timer-${c.id}" class="timer-badge" style="display:${hasActive && c.startTime ? 'inline-flex' : 'none'}">${hasActive && c.startTime ? formatElapsedTime(c.startTime) : '00:00'}</span>
                 </div>
                 <div class="cc-actions">
-                    <button type="button" class="court-delete" onclick="delCourt(${c.id})" aria-label="코트 ${idx+1} 삭제" title="코트 삭제">${renderUIIcon('trash')}</button>
+                    <button type="button" class="court-delete" onclick="delCourt(${c.id})" aria-label="${title} 삭제" title="코트 삭제">${renderUIIcon('trash')}</button>
                 </div>
             </div>
             <div class="game-section">
@@ -406,6 +399,42 @@ function render() {
             ${mainBtnHTML ? `<div class="btn-group">${mainBtnHTML}</div>` : ''}
         </div>`;
     });
+}
+
+function renderReservationControls(court, actionLabel) {
+    const title = courtTitle(court.id);
+    const typeNames = {A:'자율', M:'남복', F:'여복', X:'혼복'};
+    const typeOptions = Object.entries(typeNames).map(([type,name]) => `<button id="reserve-type-${court.id}-${type}" type="button" class="btn reserve-type-option" aria-pressed="${court.type === type}" onclick="setType(${court.id}, '${type}')"><span>${name}</span>${renderUIIcon('checkmark')}</button>`).join('');
+    return `<div class="reservation-actions">
+        <div class="reserve-split" onkeydown="handleReserveTypeKey(event, ${court.id})">
+            <div class="reserve-split-control">
+                <button type="button" class="btn btn-reserve reserve-match" onclick="matchCourt(${court.id})" aria-label="${title} ${typeNames[court.type]} ${actionLabel}">${actionLabel}</button>
+                <button id="reserve-type-${court.id}" type="button" class="btn reserve-type-trigger" onclick="toggleReserveTypeMenu(${court.id})" aria-label="${title} 예약 경기 유형 · ${typeNames[court.type]}" aria-expanded="false" aria-controls="reserve-type-menu-${court.id}"><span>${typeNames[court.type]}</span>${renderUIIcon('chevron-right')}</button>
+            </div>
+            <div id="reserve-type-menu-${court.id}" class="reserve-type-menu" role="group" aria-label="${title} 예약 경기 유형" hidden>${typeOptions}</div>
+        </div>
+        <button class="btn btn-outline" style="flex:1" onclick="openManualMatch(${court.id})">수동</button>
+    </div>`;
+}
+
+function renderWaitingCourt(court) {
+    const title = courtTitle(court.id);
+    const hasPlayers = court.next.length > 0;
+    return `<div class="court-card staging-court-card">
+        <div class="cc-header">
+            <div class="court-heading"><span class="court-title">${title}</span></div>
+            <div class="cc-actions"><button type="button" class="court-delete" onclick="delCourt(${court.id})" aria-label="${title} 삭제" title="대기 코트 삭제">${renderUIIcon('trash')}</button></div>
+        </div>
+        <div class="game-section">
+            ${hasPlayers ? renderMatchTeams(court, 'next', 'next-chip') : `<div class="empty-state"><span class="empty-state-content">${renderUIIcon('users')}<span>다른 코트에 들어갈 선수 4명을 편성하세요</span></span></div>`}
+        </div>
+        <div class="next-section">
+            ${hasPlayers ? `<div class="reservation-actions">
+                <button type="button" class="btn btn-primary" style="flex:1" onclick="openTransferNext(${court.id})">코트 배정</button>
+                <button type="button" class="btn btn-outline" style="flex:1" onclick="cancelNext(${court.id})">편성 취소</button>
+            </div>` : renderReservationControls(court, '자동 편성')}
+        </div>
+    </div>`;
 }
 
 function renderMatchTeams(court, area, chipClass = '') {

@@ -351,7 +351,7 @@ function editHistoryScore(historyIndex) {
 
 function openHistory() {
     const hList = document.getElementById('historyList'); hList.innerHTML='';
-    const courtMap = {}; courts.forEach((c, i) => courtMap[c.id] = i + 1);
+    const courtMap = {}; courts.filter(c => !isWaitingCourt(c)).forEach((c, i) => courtMap[c.id] = i + 1);
     document.getElementById('historySummary').innerText = `총 ${history.length}경기 · 최신순`;
 
     if(history.length === 0) {
