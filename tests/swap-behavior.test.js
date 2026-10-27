@@ -54,7 +54,7 @@ test('상단 코트 추가 메뉴는 관리 메뉴·외부 클릭·Escape·탭 �
     assert.equal(vm.runInContext('serializeState()', app), before);
 });
 if (html.includes('>F조</option>') || appSource.includes('const tiers = ["F조"') || !['pTier','memberTier'].every(field => html.includes(`id="${field}-1" value="1" checked`))) throw new Error('F조가 제거되지 않았거나 E조가 기본 급수로 설정되지 않았습니다.');
-if (!serviceWorker.includes('app-v208') || !serviceWorker.includes('runtime-v208') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
+if (!serviceWorker.includes('app-v210') || !serviceWorker.includes('runtime-v210') || !appSource.includes("navigator.serviceWorker.addEventListener('controllerchange'")) throw new Error('배포 후 최신 화면을 적용하는 서비스 워커 캐시 갱신 처리가 없습니다.');
 
 function createPlayers() {
     return Array.from({ length: 13 }, (_, index) => ({
