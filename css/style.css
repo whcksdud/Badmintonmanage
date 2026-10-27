@@ -851,14 +851,14 @@ label { display: block; font-size: 0.85rem; font-weight: 700; color: #64748b; ma
 .header .mobile-view-tabs { flex:0 1 230px; grid-template-columns:repeat(2,minmax(0,1fr)); min-width:0; padding:0; border:0; background:transparent; }
 .header .mobile-view-tab { padding:6px 8px; font-size:0.82rem; white-space:nowrap; }
 .header-actions { margin-left:auto; min-width:0; }
-.btn.workspace-action { min-height:44px; height:44px; padding:8px 10px; font-size:0.8rem; white-space:nowrap; }
-.workspace-toolbar { padding:10px 12px; background:#f8fafc; }
-.workspace-toolbar-row { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-start; gap:10px; min-height:44px; }
-.workspace-toolbar-title { margin:0; flex:0 0 auto; font-size:1.05rem; font-weight:800; line-height:1.25; }
-.workspace-toolbar-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-width:0; }
-.workspace-toolbar .waiting-search-toggle { width:44px; height:44px; border-radius:var(--radius-control); }
-.workspace-toolbar .ui-icon { width:16px; height:16px; }
-.court-area-toolbar { margin-bottom:10px; border:1px solid var(--border); border-radius:12px; }
+.header-context-actions { position:relative; flex:0 0 auto; display:flex; align-items:center; gap:4px; }
+.header-context-actions[hidden], .workspace-add-menu[hidden], .wc-header[hidden] { display:none; }
+.header-context-button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-width:44px; height:44px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:#fff; color:#475569; font-size:0.82rem; font-weight:700; white-space:nowrap; cursor:pointer; }
+.header-context-button .ui-icon { width:18px; height:18px; }
+.header-search-button { width:44px; padding:0; }
+.header-context-button[aria-expanded="true"] { background:#eff6ff; border-color:#93c5fd; color:#1d4ed8; }
+.workspace-add-menu { position:absolute; top:calc(100% + 8px); right:0; width:190px; padding:6px; border:1px solid var(--border); border-radius:12px; background:#fff; box-shadow:0 12px 32px #0f172a24; z-index:20; }
+.workspace-add-menu .h-btn { width:100%; flex-direction:row; justify-content:flex-start; height:44px; padding:8px 10px; gap:8px; font-size:0.84rem; }
 .header .h-btn-group { display:flex; gap:2px; border:0; background:transparent; max-width:none; flex:initial; margin:0; padding:0; }
 .header .h-btn { flex-direction:row; height:44px; padding:8px 10px; gap:5px; }
 .header-menu-toggle { display:none; width:44px; height:44px; padding:0; border:1px solid var(--border); border-radius:8px; background:#fff; color:#475569; cursor:pointer; }
@@ -874,10 +874,11 @@ label { display: block; font-size: 0.85rem; font-weight: 700; color: #64748b; ma
 }
 
 @media (max-width:600px) {
-    .workspace-toolbar { padding:8px; }
-    .workspace-toolbar-row { gap:6px; }
-    .workspace-toolbar-actions { gap:6px; }
-    .workspace-toolbar .workspace-action { padding-inline:8px; }
+    .header { gap:6px; }
+    .header .logo, .context-action-label, .header .mobile-view-tab > .ui-icon { display:none; }
+    .header .mobile-view-tab { gap:4px; padding:6px; }
+    .header .mobile-tab-count { min-width:18px; padding:0 4px; }
+    .header-context-button { width:44px; padding:0; }
     #waitList { grid-template-columns:repeat(2,minmax(0,1fr)); padding:8px; }
 }
 @container roster-card (max-width:210px) {

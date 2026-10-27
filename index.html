@@ -62,6 +62,17 @@
         <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-users"></use></svg><span>대기실</span><span id="mobileRosterCount" class="mobile-tab-count">0</span>
     </button>
 </nav>
+    <div id="courtHeaderActions" class="header-context-actions court-add">
+        <button id="courtAddButton" class="header-context-button" type="button" onclick="toggleCourtAddMenu()" aria-label="코트 추가" title="코트 추가" aria-expanded="false" aria-controls="courtAddMenu"><svg class="ui-icon" aria-hidden="true"><use href="#icon-add"></use></svg><span class="context-action-label">코트 추가</span></button>
+        <div id="courtAddMenu" class="workspace-add-menu" role="group" aria-label="추가할 코트 유형" hidden>
+            <button id="addRegularCourtButton" class="h-btn" type="button" onclick="closeHeaderActions(); addCourt(false)"><svg class="ui-icon" aria-hidden="true"><use href="#icon-shuttle"></use></svg>일반 코트 추가</button>
+            <button id="addCourtButton" class="h-btn" type="button" onclick="closeHeaderActions(); addCourt()"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg>대기 코트 추가</button>
+        </div>
+    </div>
+    <div id="waitingHeaderActions" class="header-context-actions" hidden>
+        <button id="waitingRegisterButton" class="header-context-button" type="button" onclick="closeHeaderActions(); openMembersModal()" aria-label="선수 등록" title="선수 등록" aria-haspopup="dialog" aria-controls="membersModal"><svg class="ui-icon" aria-hidden="true"><use href="#icon-add"></use></svg><span class="context-action-label">선수 등록</span></button>
+        <button id="waitingSearchToggle" class="header-context-button header-search-button" type="button" onclick="toggleRosterSearch()" aria-label="선수 검색 열기" aria-expanded="false" aria-controls="rosterSearch" title="선수 검색 열기"><svg class="ui-icon" aria-hidden="true" focusable="false"><use id="waitingSearchIcon" href="#icon-search"></use></svg></button>
+    </div>
     <div class="header-actions">
         <button id="headerMenuButton" class="header-menu-toggle" type="button" onclick="toggleHeaderActions()" aria-label="관리 메뉴" aria-expanded="false" aria-controls="headerActionMenu"><svg class="ui-icon" aria-hidden="true"><use href="#icon-more"></use></svg></button>
         <div id="headerActionMenu" class="h-btn-group" role="group" aria-label="관리 메뉴">
@@ -79,17 +90,7 @@
 <div id="mainContainer" class="main-container mobile-view-courts">
     <!-- 대기실 -->
     <div id="waitingCourt" class="waiting-court" role="tabpanel" aria-labelledby="mobileWaitingTab">
-        <div class="wc-header workspace-toolbar">
-            <div class="wc-title-row">
-                <div class="wc-heading-line workspace-toolbar-row">
-                    <span class="wc-title workspace-toolbar-title">대기실</span>
-                    <div class="wc-heading-actions workspace-toolbar-actions">
-                        <button id="waitingRegisterButton" class="btn btn-outline workspace-action" type="button" onclick="closeHeaderActions(); openMembersModal()" aria-haspopup="dialog" aria-controls="membersModal"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg>선수 등록</button>
-                        <button id="waitingSearchToggle" class="waiting-search-toggle" type="button" onclick="toggleRosterSearch()" aria-label="선수 검색 열기" aria-expanded="false" aria-controls="rosterSearch" title="선수 검색 열기"><svg class="ui-icon" aria-hidden="true" focusable="false"><use id="waitingSearchIcon" href="#icon-search"></use></svg></button>
-                        <button id="waitingToggle" class="waiting-toggle" onclick="toggleWaitingRoom()" aria-label="대기실 접기" title="대기실 접기"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron-left"></use></svg></button>
-                    </div>
-                </div>
-            </div>
+        <div id="rosterSearchHeader" class="wc-header" hidden>
             <div id="rosterSearch" class="roster-search" hidden>
                 <svg class="ui-icon" aria-hidden="true"><use href="#icon-search"></use></svg>
                 <input type="search" id="searchInput" class="search-input" placeholder="선수 이름 검색" aria-label="대기실 선수 이름 검색" oninput="renderRoster()" onkeydown="handleRosterSearchKey(event)">
@@ -108,15 +109,6 @@
 
     <!-- 코트 영역 -->
     <div id="courtArea" class="court-area" role="tabpanel" aria-labelledby="mobileCourtsTab">
-        <div class="court-area-toolbar workspace-toolbar">
-            <div class="workspace-toolbar-row">
-                <h2 class="workspace-toolbar-title">코트</h2>
-                <div class="workspace-toolbar-actions">
-                    <button id="addRegularCourtButton" class="btn btn-outline workspace-action" type="button" onclick="closeHeaderActions(); addCourt(false)"><svg class="ui-icon" aria-hidden="true"><use href="#icon-add"></use></svg>일반 코트 추가</button>
-                    <button id="addCourtButton" class="btn btn-outline workspace-action" type="button" onclick="closeHeaderActions(); addCourt()"><svg class="ui-icon" aria-hidden="true"><use href="#icon-add"></use></svg>대기 코트 추가</button>
-                </div>
-            </div>
-        </div>
         <div id="courtGrid" class="court-grid"></div>
     </div>
 </div>
@@ -403,7 +395,7 @@
         <section class="help-start" aria-labelledby="helpStartTitle">
             <h4 id="helpStartTitle">처음 시작할 때</h4>
             <ol class="help-steps">
-                <li><strong>선수 등록</strong><p><span class="help-action">참석자 선택</span>에서 회원을 불러오세요. 처음 오는 선수는 <span class="help-action">등록·관리</span>에서 회원 또는 게스트로 등록합니다.</p></li>
+                <li><strong>선수 등록</strong><p>대기실 탭의 상단 <span class="help-action">선수 등록</span>(모바일 <span class="help-action">+</span>)을 눌러 <span class="help-action">참석자 선택</span>에서 회원을 불러오세요. 처음 오는 선수는 <span class="help-action">등록·관리</span>에서 회원 또는 게스트로 등록합니다.</p></li>
                 <li><strong>경기 배정</strong><p>코트의 <span class="help-action">자동 매칭</span> 또는 <span class="help-action">수동</span>으로 선수 4명을 배정합니다.</p></li>
                 <li><strong>경기 시작·종료</strong><p>배정 후 <span class="help-action">경기 시작</span>을 누르세요. 경기 종료 시 다음 예약이 있으면 이어서 시작합니다.</p></li>
             </ol>
@@ -414,13 +406,13 @@
                 <div><dt>회원 선택</dt><dd>참석자를 검색해 체크한 뒤 <strong>선택 N명 불러오기</strong>를 누릅니다. 검색이나 탭을 바꿔도 선택은 유지되며, 이미 참가 중인 회원은 중복 선택되지 않습니다.</dd></div>
                 <div><dt>회원 명단</dt><dd><strong>등록·관리</strong>에서 회원을 저장합니다. 이름 옆 연필 버튼에서 수정·삭제할 수 있습니다.</dd></div>
                 <div><dt>휴식·복귀·콕 냄</dt><dd>대기실에서 선수 카드를 누르면 관리 버튼이 표시됩니다. 휴식 중인 선수는 자동 매칭에서 제외됩니다.</dd></div>
-                <div><dt>선수 찾기</dt><dd>대기실의 상태별 인원이나 검색 아이콘을 사용하세요. 남성 카드는 파란색, 여성 카드는 분홍색으로 구분합니다.</dd></div>
+                <div><dt>선수 찾기</dt><dd>대기실 탭에서 상단의 돋보기를 누르면 검색창이 열립니다. 남성 카드는 파란색, 여성 카드는 분홍색으로 구분합니다.</dd></div>
             </dl>
         </details>
         <details class="help-section">
             <summary><svg class="ui-icon" aria-hidden="true"><use href="#icon-shuttle"></use></svg><span>코트 운영</span><svg class="ui-icon help-chevron" aria-hidden="true"><use href="#icon-chevron-right"></use></svg></summary>
             <dl class="help-topics">
-                <div><dt>코트 추가·배정</dt><dd><strong>일반 코트 추가</strong>로 경기할 코트를, <strong>대기 코트 추가</strong>로 선수 4명을 미리 편성할 공간을 만듭니다. 대기 코트의 <strong>코트 배정</strong>에서 빈 일반 코트를 고르면 바로 입장해 경기를 시작하고, 경기 중인 코트를 고르면 대기 입장해 종료 후 승계합니다. 편성된 선수가 다른 코트에서 게임 중이면 종료 전까지 대기 입장합니다. 대상의 기존 예약은 대기 코트로 이동하며, 대기 코트에서는 경기를 시작하지 않습니다.</dd></div>
+                <div><dt>코트 추가·배정</dt><dd>코트 탭에서 상단 <strong>코트 추가</strong>(모바일 <strong>+</strong>)를 누르세요. <strong>일반 코트 추가</strong>로 경기할 코트를, <strong>대기 코트 추가</strong>로 선수 4명을 미리 편성할 공간을 만듭니다. 대기 코트의 <strong>코트 배정</strong>에서 빈 일반 코트를 고르면 바로 입장해 경기를 시작하고, 경기 중인 코트를 고르면 대기 입장해 종료 후 승계합니다. 편성된 선수가 다른 코트에서 게임 중이면 종료 전까지 대기 입장합니다. 대상의 기존 예약은 대기 코트로 이동하며, 대기 코트에서는 경기를 시작하지 않습니다.</dd></div>
                 <div><dt>자동·수동 배정</dt><dd>자동 매칭은 대기 중인 선수를 먼저 선택하고 부족한 자리는 게임 중인 선수로 채웁니다. 수동으로도 게임 중인 선수를 다음 대기에 예약할 수 있습니다. VS 양쪽이 각각 한 팀입니다.</dd></div>
                 <div><dt>선수 교체</dt><dd>코트에 배치된 선수를 누르면 교체할 수 있습니다. 다음 대기의 교체 후보에는 게임 중인 선수도 포함됩니다.</dd></div>
                 <div><dt>팀 변경</dt><dd>코트의 선수를 누른 뒤 <strong>팀 변경</strong>에서 상대 팀 선수를 선택하면 두 선수의 자리를 바꿉니다. 현재 경기와 다음 대기 모두 가능하며, 혼복 코트에서는 같은 성별끼리 바꿉니다.</dd></div>

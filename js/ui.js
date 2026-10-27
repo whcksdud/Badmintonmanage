@@ -4,6 +4,7 @@ let openReserveTypeCourtId = null;
 let headerActionsOpen = false;
 
 function closeHeaderActions(restoreFocus = false) {
+    closeCourtAddMenu();
     const wasOpen = headerActionsOpen;
     headerActionsOpen = false;
     document.getElementById('headerActionMenu').classList.remove('is-open');
@@ -12,6 +13,7 @@ function closeHeaderActions(restoreFocus = false) {
 }
 
 function toggleHeaderActions() {
+    closeCourtAddMenu();
     headerActionsOpen = !headerActionsOpen;
     document.getElementById('headerActionMenu').classList.toggle('is-open', headerActionsOpen);
     document.getElementById('headerMenuButton').setAttribute('aria-expanded', String(headerActionsOpen));
@@ -19,10 +21,29 @@ function toggleHeaderActions() {
 
 function handleHeaderActionsOutside(event) {
     if(headerActionsOpen && !event.target.closest?.('.header-actions')) closeHeaderActions();
+    if(!event.target.closest?.('.court-add')) closeCourtAddMenu();
 }
 
 function handleHeaderActionsKey(event) {
+    if(event.key === 'Escape') closeCourtAddMenu(true);
     if(event.key === 'Escape' && headerActionsOpen) closeHeaderActions(true);
+}
+
+function closeCourtAddMenu(restoreFocus = false) {
+    const menu = document.getElementById('courtAddMenu');
+    const wasOpen = !menu.hidden;
+    menu.hidden = true;
+    document.getElementById('courtAddButton').setAttribute('aria-expanded', 'false');
+    if(wasOpen && restoreFocus) document.getElementById('courtAddButton').focus({preventScroll:true});
+}
+
+function toggleCourtAddMenu() {
+    const menu = document.getElementById('courtAddMenu');
+    const opening = menu.hidden;
+    closeHeaderActions();
+    menu.hidden = !opening;
+    document.getElementById('courtAddButton').setAttribute('aria-expanded', String(opening));
+    if(opening) document.getElementById('addRegularCourtButton').focus({preventScroll:true});
 }
 
 function closeReserveTypeMenu(restoreFocus = false) {
@@ -97,6 +118,8 @@ function setMobileView(view) {
     waitingTab.setAttribute('aria-selected', String(showWaitingRoom));
     courtsTab.setAttribute('tabindex', showWaitingRoom ? '-1' : '0');
     waitingTab.setAttribute('tabindex', showWaitingRoom ? '0' : '-1');
+    document.getElementById('courtHeaderActions').hidden = showWaitingRoom;
+    document.getElementById('waitingHeaderActions').hidden = !showWaitingRoom;
 
     if (!showWaitingRoom && selectedRosterPlayerId !== null) closeRosterActionSheet();
 
@@ -170,11 +193,13 @@ function resetRosterFilters() {
 }
 
 function toggleRosterSearch(forceOpen = null) {
+    closeHeaderActions();
     const search = document.getElementById('rosterSearch');
     const button = document.getElementById('waitingSearchToggle');
     const input = document.getElementById('searchInput');
     const shouldOpen = forceOpen === null ? search.hidden : forceOpen;
     search.hidden = !shouldOpen;
+    document.getElementById('rosterSearchHeader').hidden = !shouldOpen;
     button.setAttribute('aria-expanded', String(shouldOpen));
     button.title = shouldOpen ? '선수 검색 닫기' : '선수 검색 열기';
     button.setAttribute('aria-label', button.title);
