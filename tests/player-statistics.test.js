@@ -165,6 +165,42 @@ const emojiPattern = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/u;
 if (emojiPattern.test(html)) throw new Error('화면에 OS 글꼴에 의존하는 문자 이모지가 남아 있습니다.');
 if (!html.includes('class="ui-icon-sprite"') || !html.includes('id="icon-chart"') || !html.includes('<use href="#icon-settings"></use>') || !html.includes('<use href="#icon-phone"></use>')) throw new Error('공통 SVG 아이콘 체계가 화면 요소에 적용되지 않았습니다.');
 
+test('경기 관계에 아직 만나지 않은 등록 선수도 0회로 표시하고 실제 함께한 선수 수는 유지한다', () => {
+    const unmetPlayer = { ...players[0], id: 6, name: '가나다', games: 0 };
+    const runtime = createRuntime([...players, unmetPlayer], history);
+    const statistics = vm.runInContext('getPlayerStatistics("1")', runtime);
+    assert.equal(statistics.relations.length, 5);
+    assert.ok(statistics.relations.every(relation => String(relation.playerId) !== '1'));
+    const unmet = statistics.relations.at(-1);
+    assert.equal(unmet.playerId, 6);
+    assert.equal(unmet.name, '가나다');
+    assert.equal(unmet.together, 0);
+    assert.equal(unmet.sameTeam, 0);
+    assert.equal(unmet.opponent, 0);
+    assert.equal(statistics.uniquePartners, 2);
+    assert.equal(statistics.uniqueOpponents, 4);
+    assert.equal(statistics.relations.find(relation => relation.playerId === 5).currentPlayer, null);
+    vm.runInContext('openStatsModal(1)', runtime);
+    const detail = runtime.__elements.get('statsDetail').innerHTML;
+    assert.match(detail, /<strong>4<\/strong><span>함께한 선수<\/span>/);
+    assert.match(detail, /stats-relation-name">가나다<\/span>[\s\S]*?stats-relation-total">0<\/span>\s*<span class="stats-relation-count">0<\/span>\s*<span class="stats-relation-count">0<\/span>/);
+});
+
+test('경기 기록이 없어도 본인을 제외한 등록 선수들을 이름순으로 0회 표시한다', () => {
+    const runtime = createRuntime(players, []);
+    const statistics = vm.runInContext('getPlayerStatistics(1)', runtime);
+    assert.equal(statistics.recordedGames, 0);
+    assert.equal(statistics.relations.length, 3);
+    assert.deepEqual(Array.from(statistics.relations, relation => relation.name),
+        players.slice(1).map(player => player.name).sort((a, b) => a.localeCompare(b, 'ko')));
+    assert.ok(statistics.relations.every(relation => relation.together === 0 && relation.sameTeam === 0 && relation.opponent === 0));
+    vm.runInContext('openStatsModal(1)', runtime);
+    const detail = runtime.__elements.get('statsDetail').innerHTML;
+    assert.match(detail, /<strong>0<\/strong><span>함께한 선수<\/span>/);
+    assert.match(detail, /stats-relation-list/);
+    players.slice(1).forEach(player => assert.ok(detail.includes(player.name)));
+});
+
 test('점수 없는 기록도 팀을 구분하고 선수 이름을 안전하게 표시한다', () => {
     const record = {cId:1,startTime:1000,endTime:3000,pIds:[1,2,3,4],teamNames:[['<img src=x onerror=alert(1)>','A&B'],['셋','넷']]};
     const runtime = createRuntime(players,[record]);

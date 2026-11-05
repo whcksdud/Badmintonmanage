@@ -25,7 +25,12 @@ function getHistoryParticipantName(record, participantIndex, playerId) {
 
 function getPlayerStatistics(playerId) {
     const playerKey = String(playerId);
-    const relationships = new Map();
+    const relationships = new Map(players
+        .filter(player => String(player.id) !== playerKey)
+        .map(player => [String(player.id), {
+            playerId: player.id, name: player.name, sameTeam: 0, opponent: 0
+        }])
+    );
     let recordedGames = 0;
 
     history.forEach(record => {
@@ -317,7 +322,7 @@ function renderStatsDetail() {
         </div>
         <div class="stats-summary">
             <div class="stats-summary-card"><strong>${statistics.recordedGames}</strong><span>기록 경기</span></div>
-            <div class="stats-summary-card"><strong>${statistics.relations.length}</strong><span>함께한 선수</span></div>
+            <div class="stats-summary-card"><strong>${statistics.relations.filter(relation => relation.together > 0).length}</strong><span>함께한 선수</span></div>
             <div class="stats-summary-card"><strong>${statistics.uniquePartners}</strong><span>같은 팀 선수</span></div>
             <div class="stats-summary-card"><strong>${statistics.uniqueOpponents}</strong><span>상대한 선수</span></div>
         </div>
