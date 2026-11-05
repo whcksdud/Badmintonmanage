@@ -23,6 +23,8 @@ input[type="checkbox"] { accent-color:var(--primary); }
 
 /* --- Header --- */
 .header {
+    /* shortcut: iOS PWA top-blur workaround; recheck on-device after WebKit updates. */
+    position: sticky; top: 0;
     background: #fff; padding: env(safe-area-inset-top) 15px 0; border-bottom: 1px solid var(--border);
     display: flex; justify-content: space-between; align-items: center; height: calc(60px + env(safe-area-inset-top)); flex-shrink: 0; z-index: 10;
 }
