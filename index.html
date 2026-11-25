@@ -35,6 +35,7 @@
     <symbol id="icon-restore" viewBox="0 0 24 24"><path d="M3 7h7l2 2h9v10H3V7Z"/><path d="M12 17v-6m-3 3 3-3 3 3"/></symbol>
     <symbol id="icon-undo" viewBox="0 0 24 24"><path d="m9 5-5 5 5 5M4 10h9a6 6 0 0 1 6 6v3"/></symbol>
     <symbol id="icon-swap" viewBox="0 0 24 24"><path d="M4 7h16m-4-4 4 4-4 4M20 17H4m4-4-4 4 4 4"/></symbol>
+    <symbol id="icon-grip" viewBox="0 0 24 24"><path d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01" stroke-width="3"/></symbol>
     <symbol id="icon-warning" viewBox="0 0 24 24"><path d="M10.3 4.2 2.8 18a2 2 0 0 0 1.8 3h14.8a2 2 0 0 0 1.8-3L13.7 4.2a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
     <symbol id="icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></symbol>
     <symbol id="icon-bolt" viewBox="0 0 24 24"><path d="m13 2-8 12h7l-1 8 8-12h-7l1-8Z"/></symbol>
@@ -115,6 +116,10 @@
 
 
 <div id="toast">알림 메시지</div>
+<div id="courtDragPreview" class="court-drag-preview" aria-hidden="true" hidden>
+    <svg class="ui-icon"><use href="#icon-grip"></use></svg><span id="courtDragPreviewName"></span>
+</div>
+<div id="courtOrderStatus" class="sr-only" role="status"></div>
 <input type="file" id="fileInput" style="display:none" onchange="importData(this)">
 
 <!-- 선수 등록 모달 -->
@@ -412,7 +417,7 @@
         <details class="help-section">
             <summary><svg class="ui-icon" aria-hidden="true"><use href="#icon-shuttle"></use></svg><span>코트 운영</span><svg class="ui-icon help-chevron" aria-hidden="true"><use href="#icon-chevron-right"></use></svg></summary>
             <dl class="help-topics">
-                <div><dt>코트 추가·배정</dt><dd>코트 탭에서 상단 <strong>코트 추가</strong>(모바일 <strong>+</strong>)를 누르세요. <strong>일반 코트 추가</strong>로 경기할 코트를, <strong>대기 코트 추가</strong>로 선수 4명을 미리 편성할 공간을 만듭니다. 대기 코트의 <strong>코트 배정</strong>에서 빈 일반 코트를 고르면 바로 입장해 경기를 시작하고, 경기 중인 코트를 고르면 대기 입장해 종료 후 승계합니다. 편성된 선수가 다른 코트에서 게임 중이면 종료 전까지 대기 입장합니다. 대상의 기존 예약은 대기 코트로 이동하며, 대기 코트에서는 경기를 시작하지 않습니다.</dd></div>
+                <div><dt>코트 추가·배정</dt><dd>코트 탭에서 상단 <strong>코트 추가</strong>(모바일 <strong>+</strong>)를 누르세요. <strong>일반 코트 추가</strong>로 경기할 코트를, <strong>대기 코트 추가</strong>로 선수 4명을 미리 편성할 공간을 만듭니다. 코트 카드를 길게 누른 상태에서 원하는 카드 위치로 끌어 놓으면 순서가 저장됩니다. 대기 코트의 <strong>코트 배정</strong>에서 빈 일반 코트를 고르면 바로 입장해 경기를 시작하고, 경기 중인 코트를 고르면 대기 입장해 종료 후 승계합니다. 편성된 선수가 다른 코트에서 게임 중이면 종료 전까지 대기 입장합니다. 대상의 기존 예약은 대기 코트로 이동하며, 대기 코트에서는 경기를 시작하지 않습니다.</dd></div>
                 <div><dt>자동·수동 배정</dt><dd>자동 매칭은 대기 중인 선수를 먼저 선택하고 부족한 자리는 게임 중인 선수로 채웁니다. 수동으로도 게임 중인 선수를 다음 대기에 예약할 수 있습니다. VS 양쪽이 각각 한 팀입니다.</dd></div>
                 <div><dt>선수 교체</dt><dd>코트에 배치된 선수를 누르면 교체할 수 있습니다. 다음 대기의 교체 후보에는 게임 중인 선수도 포함됩니다.</dd></div>
                 <div><dt>팀 변경</dt><dd>코트의 선수를 누른 뒤 <strong>팀 변경</strong>에서 상대 팀 선수를 선택하면 두 선수의 자리를 바꿉니다. 현재 경기와 다음 대기 모두 가능하며, 혼복 코트에서는 같은 성별끼리 바꿉니다.</dd></div>
@@ -564,6 +569,7 @@
     <script src="./js/storage.js"></script>
     <script src="./js/matching.js"></script>
     <script src="./js/courts.js"></script>
+    <script src="./js/court-order.js"></script>
     <script src="./js/members.js"></script>
     <script src="./js/vendor/qrcode.js"></script>
     <script src="./js/vendor/jsQR.js"></script>

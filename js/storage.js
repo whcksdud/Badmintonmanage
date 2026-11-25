@@ -172,6 +172,7 @@ function validateImportData(data, allowLegacyAssignments = false) {
     data.courts.forEach(c => {
         if(!c || !idOK(c.id) || courtIds.has(c.id) || !['A','M','F','X'].includes(c.type) || !timeOK(c.startTime)) fail();
         if(c.isWaiting !== undefined && typeof c.isWaiting !== 'boolean') fail();
+        if(c.displayOrder !== undefined && !countOK(c.displayOrder)) fail();
         if(c.isWaiting && (!Array.isArray(c.active) || c.active.length !== 0 || c.startTime != null)) fail();
         courtIds.add(c.id);
         ['active','next'].forEach(area => {

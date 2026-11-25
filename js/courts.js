@@ -1,6 +1,22 @@
-// Court lifecycle, reservations, transfers, scores, and player swaps.
+// Court lifecycle, display order, reservations, transfers, scores, and player swaps.
 
 function isWaitingCourt(court) { return court?.isWaiting === true; }
+
+function getCourtsInDisplayOrder() {
+    // Legacy and newly added courts keep their relative order after explicitly ordered courts.
+    const unordered = Number.MAX_SAFE_INTEGER;
+    return [...courts].sort((a, b) => (a.displayOrder ?? unordered) - (b.displayOrder ?? unordered));
+}
+
+function setCourtDisplayOrder(ids) {
+    const positions = new Map(ids.map((id, index) => [id, index]));
+    if(ids.length !== courts.length || positions.size !== courts.length ||
+        courts.some(court => !positions.has(court.id))) return false;
+    if(getCourtsInDisplayOrder().every((court, index) => court.id === ids[index])) return true;
+
+    courts.forEach(court => { court.displayOrder = positions.get(court.id); });
+    return saveAction('코트 순서 변경');
+}
 
 function courtNumber(courtId) {
     const court = courts.find(candidate => candidate.id === courtId);

@@ -103,6 +103,8 @@ function setFormChoice(fieldId, value, options) {
 }
 
 function setMobileView(view) {
+    cancelCourtHold();
+    clearCourtOrderSelection();
     closeHeaderActions();
     closeReserveTypeMenu();
     const showWaitingRoom = view === 'waiting';
@@ -358,6 +360,8 @@ function renderRoster() {
 }
 
 function render() {
+    cancelCourtHold();
+    clearCourtOrderSelection();
     closeReserveTypeMenu();
     if(document.getElementById('membersModal').style.display === 'flex') renderMembers();
     document.getElementById('storageError').innerText = storageError;
@@ -368,7 +372,7 @@ function render() {
     renderRoster();
 
     const cg = document.getElementById('courtGrid'); cg.innerHTML = '';
-    courts.forEach(c => {
+    getCourtsInDisplayOrder().forEach(c => {
         if(isWaitingCourt(c)) {
             cg.innerHTML += renderWaitingCourt(c);
             return;
@@ -403,7 +407,7 @@ function render() {
         }
 
         cg.innerHTML += `
-        <div class="court-card">
+        <div class="court-card" data-court-id="${c.id}">
             <div class="cc-header">
                 <div class="court-heading">
                     <span class="court-title">${title}</span>
@@ -411,6 +415,7 @@ function render() {
                     <span id="timer-${c.id}" class="timer-badge" style="display:${hasActive && c.startTime ? 'inline-flex' : 'none'}">${hasActive && c.startTime ? formatElapsedTime(c.startTime) : '00:00'}</span>
                 </div>
                 <div class="cc-actions">
+                    ${renderCourtOrderHandle(c.id, title)}
                     <button type="button" class="court-delete" onclick="delCourt(${c.id})" aria-label="${title} 삭제" title="코트 삭제">${renderUIIcon('trash')}</button>
                 </div>
             </div>
@@ -445,10 +450,13 @@ function renderReservationControls(court, actionLabel) {
 function renderWaitingCourt(court) {
     const title = courtTitle(court.id);
     const hasPlayers = court.next.length > 0;
-    return `<div class="court-card staging-court-card">
+    return `<div class="court-card staging-court-card" data-court-id="${court.id}">
         <div class="cc-header">
             <div class="court-heading"><span class="court-title">${title}</span></div>
-            <div class="cc-actions"><button type="button" class="court-delete" onclick="delCourt(${court.id})" aria-label="${title} 삭제" title="대기 코트 삭제">${renderUIIcon('trash')}</button></div>
+            <div class="cc-actions">
+                ${renderCourtOrderHandle(court.id, title)}
+                <button type="button" class="court-delete" onclick="delCourt(${court.id})" aria-label="${title} 삭제" title="대기 코트 삭제">${renderUIIcon('trash')}</button>
+            </div>
         </div>
         <div class="game-section">
             ${hasPlayers ? renderMatchTeams(court, 'next', 'next-chip') : `<div class="empty-state"><span class="empty-state-content">${renderUIIcon('users')}<span>다른 코트에 들어갈 선수 4명을 편성하세요</span></span></div>`}

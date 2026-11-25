@@ -36,6 +36,55 @@ test('대기 코트 추가는 기존 일반 코트와 번호를 유지하며 같
     assert.equal(reloaded.run('courts.length'),3);
 });
 
+test('코트 표시 순서는 저장·백업·되돌리기를 지원하고 번호와 경기 배정을 보존한다', () => {
+    const list = roster(12);
+    list.slice(0, 4).forEach(p => p.status = 'playing');
+    list.slice(4).forEach(p => p.status = 'reserved');
+    const initialCourts = [
+        court(1, {active:list.slice(0, 4), next:list.slice(4, 8), startTime:1000}),
+        court(2),
+        court(3, {isWaiting:true, next:list.slice(8)})
+    ];
+    const app = runtime(list, initialCourts);
+    const before = app.json('JSON.parse(serializeState())');
+
+    assert.equal(app.run('setCourtDisplayOrder([3, 2, 1])'), true);
+    app.run('render()');
+    const titles = [...app.elements.get('courtGrid').innerHTML.matchAll(/<span class="court-title">([^<]+)<\/span>/g)]
+        .map(([, title]) => title);
+    assert.deepEqual(titles, ['대기 코트 1', '코트 2', '코트 1']);
+    assert.deepEqual(app.json('courts.map(({displayOrder, ...court}) => court)'), before.courts);
+    assert.deepEqual(app.json('players'), before.players);
+    assert.deepEqual(app.json('history'), before.history);
+
+    const restored = runtime();
+    restored.context.backup = app.json('JSON.parse(serializeState())');
+    restored.run('importValidatedData(backup)');
+    assert.deepEqual(restored.json('getCourtsInDisplayOrder().map(c => c.id)'), [3, 2, 1]);
+
+    const reloaded = runtime([], [], app.storage);
+    assert.deepEqual(reloaded.json('getCourtsInDisplayOrder().map(c => c.id)'), [3, 2, 1]);
+    reloaded.run('undoLastAction(); executeConfirm()');
+    assert.deepEqual(reloaded.json('JSON.parse(serializeState())'), before);
+});
+
+test('코트 순서 변경은 잘못된 목록이나 저장 실패 시 기존 순서를 보존한다', () => {
+    const app = runtime([], [court(1), court(2), court(3, {isWaiting:true})]);
+    const before = app.run('serializeState()');
+    assert.equal(app.run('setCourtDisplayOrder([1, 2, 3])'), true);
+    assert.equal(app.run('undoState'), null);
+    assert.equal(app.run('setCourtDisplayOrder([1, 1, 3])'), false);
+    assert.equal(app.run('setCourtDisplayOrder([1, 2, 4])'), false);
+    app.context.localStorage.setItem = () => { throw new Error('QuotaExceededError'); };
+    assert.equal(app.run('setCourtDisplayOrder([3, 1, 2])'), false);
+    assert.equal(app.run('serializeState()'), before);
+
+    app.context.localStorage.setItem = (key, value) => app.storage.set(key, value);
+    assert.equal(app.run('setCourtDisplayOrder([3, 1, 2])'), true);
+    app.run('delCourt(1); executeConfirm(); addCourt(false)');
+    assert.deepEqual(app.json('getCourtsInDisplayOrder().map(c => c.id)'), [3, 2, 10000000]);
+});
+
 test('대기 코트의 자동 편성은 대기 선수 우선·경기 중 보충을 유지하고 경기를 시작하지 않는다',()=>{
     const list=roster(7); list.slice(0,4).forEach(p=>p.status='playing'); list[6].status='resting';
     const app=runtime(list,[court(1,{active:list.slice(0,4),startTime:1000}),court(2,{isWaiting:true})]);
@@ -120,7 +169,7 @@ test('백업은 대기 코트 구분을 유지하고 경기·타이머가 있는
     app.context.backup=base;
     app.run('importValidatedData(backup)');
     assert.equal(app.run('courts[0].isWaiting'),true);
-    for(const extra of [{isWaiting:'true'},{active:base.players},{startTime:1000}]) {
+    for(const extra of [{isWaiting:'true'},{active:base.players},{startTime:1000},{displayOrder:-1}]) {
         app.context.backup={...base,courts:[court(1,{isWaiting:true,...extra})]};
         assert.throws(()=>app.run('validateImportData(backup)'));
     }
