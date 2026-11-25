@@ -168,12 +168,15 @@ function getOverallStatistics() {
 function renderOverallStats() {
     const container = document.getElementById('statsOverall');
     const statistics = getOverallStatistics();
-    const allPlayerRows = statistics.playerAppearances.map(participant => `
-        <div class="stats-all-player-item gender-card ${getGenderCardClass(participant.gender)}">
-            <span class="stats-all-player-name">${escapeHTML(participant.name)}</span>
-            <strong class="stats-all-player-count">${participant.games}경기</strong>
-        </div>
-    `).join('');
+    const allPlayerRows = statistics.playerAppearances.map(participant => {
+        const name = escapeHTML(participant.name);
+        return `
+            <div class="stats-all-player-item gender-card ${getGenderCardClass(participant.gender)}">
+                <span class="stats-all-player-name" title="${name}">${name}</span>
+                <strong class="stats-all-player-count">${participant.games}경기</strong>
+            </div>
+        `;
+    }).join('');
     const renderPairRows = (pairs, emptyMessage) => pairs.length > 0
         ? pairs.map(pair => `
             <div class="stats-pair-row">
